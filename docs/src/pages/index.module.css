@@ -1,0 +1,48 @@
+.heroBanner {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+[data-theme='dark'] .heroBanner {
+  background: linear-gradient(135deg, #434343 0%, #1a1a2e 100%);
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.features {
+  display: flex;
+  align-items: stretch;
+  padding: 3rem 0;
+  width: 100%;
+  background-color: var(--ifm-background-color);
+}
+
+.quickStart {
+  padding: 3rem 0;
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+[data-theme='dark'] .quickStart {
+  background-color: var(--ifm-background-surface-color);
+}
+
+.quickStart pre {
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.quickStart code {
+  font-size: 0.9rem;
+}
