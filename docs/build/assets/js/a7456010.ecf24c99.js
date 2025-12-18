@@ -1,1 +1,0 @@
-"use strict";(globalThis.webpackChunkgiwa_react_native_sdk_docs=globalThis.webpackChunkgiwa_react_native_sdk_docs||[]).push([[235],{8552(a){a.exports=JSON.parse('{"name":"docusaurus-plugin-content-pages","id":"default"}')}}]);
