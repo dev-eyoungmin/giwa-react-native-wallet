@@ -4,6 +4,11 @@ node_modules/
 # Build output
 dist/
 
+# Docs build output
+docs/build/
+docs/.docusaurus/
+docs/node_modules/
+
 # IDE
 .idea/
 .vscode/
