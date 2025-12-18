@@ -1,0 +1,31 @@
+{
+  "defaultLocale": "ko",
+  "locales": [
+    "ko",
+    "en"
+  ],
+  "path": "i18n",
+  "currentLocale": "en",
+  "localeConfigs": {
+    "ko": {
+      "label": "한국어",
+      "direction": "ltr",
+      "htmlLang": "ko",
+      "calendar": "gregory",
+      "path": "ko",
+      "translate": false,
+      "url": "https://devym-37.github.io",
+      "baseUrl": "/giwa-react-native-wallet/"
+    },
+    "en": {
+      "label": "English",
+      "direction": "ltr",
+      "htmlLang": "en",
+      "calendar": "gregory",
+      "path": "en",
+      "translate": false,
+      "url": "https://devym-37.github.io",
+      "baseUrl": "/giwa-react-native-wallet/en/"
+    }
+  }
+}

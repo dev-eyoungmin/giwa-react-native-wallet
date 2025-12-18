@@ -1,0 +1,27 @@
+{
+  "id": "guides/security",
+  "title": "보안",
+  "description": "GIWA SDK 사용 시 보안 모범 사례를 설명합니다.",
+  "source": "@site/docs/guides/security.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/security",
+  "permalink": "/giwa-react-native-wallet/en/docs/guides/security",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/devym-37/giwa-react-native-wallet/tree/main/docs/docs/guides/security.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 8,
+  "frontMatter": {
+    "sidebar_position": 8
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Dojang (증명)",
+    "permalink": "/giwa-react-native-wallet/en/docs/guides/dojang"
+  },
+  "next": {
+    "title": "Hooks API",
+    "permalink": "/giwa-react-native-wallet/en/docs/api/hooks"
+  }
+}

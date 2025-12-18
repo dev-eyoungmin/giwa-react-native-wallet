@@ -1,0 +1,27 @@
+{
+  "id": "guides/flashblocks",
+  "title": "Flashblocks",
+  "description": "~200ms 빠른 트랜잭션 사전 확인(preconfirmation) 기능을 설명합니다.",
+  "source": "@site/docs/guides/flashblocks.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/flashblocks",
+  "permalink": "/giwa-react-native-wallet/en/docs/guides/flashblocks",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/devym-37/giwa-react-native-wallet/tree/main/docs/docs/guides/flashblocks.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {
+    "sidebar_position": 5
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "L1↔L2 브릿지",
+    "permalink": "/giwa-react-native-wallet/en/docs/guides/bridge"
+  },
+  "next": {
+    "title": "GIWA ID",
+    "permalink": "/giwa-react-native-wallet/en/docs/guides/giwa-id"
+  }
+}

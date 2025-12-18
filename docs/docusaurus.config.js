@@ -8,12 +8,12 @@ const config = {
   favicon: 'img/favicon.ico',
 
   // GitHub Pages URL 설정
-  url: 'https://your-username.github.io',
-  baseUrl: '/giwa-react-native-sdk/',
+  url: 'https://devym-37.github.io',
+  baseUrl: '/giwa-react-native-wallet/',
 
   // GitHub Pages 배포 설정
-  organizationName: 'your-username', // GitHub 사용자명 또는 조직명
-  projectName: 'giwa-react-native-sdk', // 저장소 이름
+  organizationName: 'devym-37', // GitHub 사용자명 또는 조직명
+  projectName: 'giwa-react-native-wallet', // 저장소 이름
   deploymentBranch: 'gh-pages',
   trailingSlash: false,
 
@@ -36,7 +36,7 @@ const config = {
       ({
         docs: {
           sidebarPath: './sidebars.js',
-          editUrl: 'https://github.com/your-username/giwa-react-native-sdk/tree/main/docs/',
+          editUrl: 'https://github.com/devym-37/giwa-react-native-wallet/tree/main/docs/',
         },
         blog: false,
         theme: {
@@ -64,7 +64,7 @@ const config = {
             label: '문서',
           },
           {
-            href: 'https://github.com/your-username/giwa-react-native-sdk',
+            href: 'https://github.com/devym-37/giwa-react-native-wallet',
             label: 'GitHub',
             position: 'right',
           },
@@ -80,14 +80,14 @@ const config = {
           {
             title: '문서',
             items: [
-              { label: '시작하기', to: '/docs/intro' },
+              { label: '시작하기', to: '/docs' },
               { label: 'API 레퍼런스', to: '/docs/api/hooks' },
             ],
           },
           {
             title: '커뮤니티',
             items: [
-              { label: 'GitHub', href: 'https://github.com/your-username/giwa-react-native-sdk' },
+              { label: 'GitHub', href: 'https://github.com/devym-37/giwa-react-native-wallet' },
               { label: 'Discord', href: 'https://discord.gg/giwa' },
             ],
           },

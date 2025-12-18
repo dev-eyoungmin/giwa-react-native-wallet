@@ -1,0 +1,27 @@
+{
+  "id": "getting-started/rn-cli-setup",
+  "title": "React Native CLI 설정",
+  "description": "React Native CLI 프로젝트에서 GIWA SDK를 설정하는 방법입니다.",
+  "source": "@site/docs/getting-started/rn-cli-setup.md",
+  "sourceDirName": "getting-started",
+  "slug": "/getting-started/rn-cli-setup",
+  "permalink": "/giwa-react-native-wallet/en/docs/getting-started/rn-cli-setup",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/devym-37/giwa-react-native-wallet/tree/main/docs/docs/getting-started/rn-cli-setup.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Expo 설정",
+    "permalink": "/giwa-react-native-wallet/en/docs/getting-started/expo-setup"
+  },
+  "next": {
+    "title": "빠른 시작",
+    "permalink": "/giwa-react-native-wallet/en/docs/getting-started/quick-start"
+  }
+}

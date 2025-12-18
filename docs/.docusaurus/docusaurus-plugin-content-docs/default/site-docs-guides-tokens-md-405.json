@@ -1,0 +1,27 @@
+{
+  "id": "guides/tokens",
+  "title": "토큰",
+  "description": "ERC-20 토큰 관리 방법을 설명합니다.",
+  "source": "@site/docs/guides/tokens.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/tokens",
+  "permalink": "/giwa-react-native-wallet/en/docs/guides/tokens",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/devym-37/giwa-react-native-wallet/tree/main/docs/docs/guides/tokens.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {
+    "sidebar_position": 3
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "트랜잭션",
+    "permalink": "/giwa-react-native-wallet/en/docs/guides/transactions"
+  },
+  "next": {
+    "title": "L1↔L2 브릿지",
+    "permalink": "/giwa-react-native-wallet/en/docs/guides/bridge"
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/giwa-react-native-wallet/en/docs",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": true,
+          "path": "/giwa-react-native-wallet/en/docs",
+          "mainDocId": "intro",
+          "docs": [
+            {
+              "id": "api/components",
+              "path": "/giwa-react-native-wallet/en/docs/api/components",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "api/core",
+              "path": "/giwa-react-native-wallet/en/docs/api/core",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "api/hooks",
+              "path": "/giwa-react-native-wallet/en/docs/api/hooks",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "api/types",
+              "path": "/giwa-react-native-wallet/en/docs/api/types",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "getting-started/expo-setup",
+              "path": "/giwa-react-native-wallet/en/docs/getting-started/expo-setup",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "getting-started/installation",
+              "path": "/giwa-react-native-wallet/en/docs/getting-started/installation",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "getting-started/quick-start",
+              "path": "/giwa-react-native-wallet/en/docs/getting-started/quick-start",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "getting-started/rn-cli-setup",
+              "path": "/giwa-react-native-wallet/en/docs/getting-started/rn-cli-setup",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "guides/bridge",
+              "path": "/giwa-react-native-wallet/en/docs/guides/bridge",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "guides/dojang",
+              "path": "/giwa-react-native-wallet/en/docs/guides/dojang",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "guides/flashblocks",
+              "path": "/giwa-react-native-wallet/en/docs/guides/flashblocks",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "guides/giwa-id",
+              "path": "/giwa-react-native-wallet/en/docs/guides/giwa-id",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "guides/security",
+              "path": "/giwa-react-native-wallet/en/docs/guides/security",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "guides/tokens",
+              "path": "/giwa-react-native-wallet/en/docs/guides/tokens",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "guides/transactions",
+              "path": "/giwa-react-native-wallet/en/docs/guides/transactions",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "guides/wallet-management",
+              "path": "/giwa-react-native-wallet/en/docs/guides/wallet-management",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "intro",
+              "path": "/giwa-react-native-wallet/en/docs/",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "testing/e2e-tests",
+              "path": "/giwa-react-native-wallet/en/docs/testing/e2e-tests",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "testing/integration-tests",
+              "path": "/giwa-react-native-wallet/en/docs/testing/integration-tests",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "testing/setup",
+              "path": "/giwa-react-native-wallet/en/docs/testing/setup",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "testing/unit-tests",
+              "path": "/giwa-react-native-wallet/en/docs/testing/unit-tests",
+              "sidebar": "tutorialSidebar"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "tutorialSidebar": {
+              "link": {
+                "path": "/giwa-react-native-wallet/en/docs/",
+                "label": "intro"
+              }
+            }
+          }
+        }
+      ],
+      "breadcrumbs": true
+    }
+  }
+}

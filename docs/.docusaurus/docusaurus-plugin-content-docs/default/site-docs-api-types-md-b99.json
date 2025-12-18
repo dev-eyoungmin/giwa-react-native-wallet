@@ -1,0 +1,27 @@
+{
+  "id": "api/types",
+  "title": "Types",
+  "description": "GIWA SDK의 TypeScript 타입 정의입니다.",
+  "source": "@site/docs/api/types.md",
+  "sourceDirName": "api",
+  "slug": "/api/types",
+  "permalink": "/giwa-react-native-wallet/en/docs/api/types",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/devym-37/giwa-react-native-wallet/tree/main/docs/docs/api/types.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Core API",
+    "permalink": "/giwa-react-native-wallet/en/docs/api/core"
+  },
+  "next": {
+    "title": "테스트 설정",
+    "permalink": "/giwa-react-native-wallet/en/docs/testing/setup"
+  }
+}

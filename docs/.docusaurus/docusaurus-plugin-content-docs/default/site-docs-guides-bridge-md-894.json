@@ -1,0 +1,27 @@
+{
+  "id": "guides/bridge",
+  "title": "L1↔L2 브릿지",
+  "description": "이더리움 메인넷(L1)과 GIWA Chain(L2) 간 자산 이동 방법을 설명합니다.",
+  "source": "@site/docs/guides/bridge.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/bridge",
+  "permalink": "/giwa-react-native-wallet/en/docs/guides/bridge",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/devym-37/giwa-react-native-wallet/tree/main/docs/docs/guides/bridge.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "토큰",
+    "permalink": "/giwa-react-native-wallet/en/docs/guides/tokens"
+  },
+  "next": {
+    "title": "Flashblocks",
+    "permalink": "/giwa-react-native-wallet/en/docs/guides/flashblocks"
+  }
+}

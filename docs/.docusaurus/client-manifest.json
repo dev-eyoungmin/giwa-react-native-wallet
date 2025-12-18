@@ -1,0 +1,417 @@
+{
+  "entrypoints": [
+    "main"
+  ],
+  "origins": {
+    "283": [
+      283
+    ],
+    "17896441": [
+      869,
+      401
+    ],
+    "89468823": [
+      633
+    ],
+    "main": [
+      354,
+      869,
+      792
+    ],
+    "runtime~main": [
+      792,
+      869,
+      354
+    ],
+    "0685996c": [
+      719
+    ],
+    "0ac02f92": [
+      646
+    ],
+    "0e384e19": [
+      976
+    ],
+    "15eabc5f": [
+      263
+    ],
+    "1df93b7f": [
+      869,
+      583
+    ],
+    "29c8854e": [
+      889
+    ],
+    "36fe3260": [
+      662
+    ],
+    "4058d8a2": [
+      657
+    ],
+    "54f44165": [
+      924
+    ],
+    "588bd741": [
+      324
+    ],
+    "5e95c892": [
+      647
+    ],
+    "77d314a6": [
+      220
+    ],
+    "82c2007b": [
+      421
+    ],
+    "9c902696": [
+      345
+    ],
+    "9ec987cd": [
+      415
+    ],
+    "a3b7a2ca": [
+      395
+    ],
+    "a4e5d33a": [
+      949
+    ],
+    "a7456010": [
+      235
+    ],
+    "a7bd4aaa": [
+      98
+    ],
+    "a94703ab": [
+      869,
+      48
+    ],
+    "aba21aa0": [
+      742
+    ],
+    "ad17972e": [
+      507
+    ],
+    "b999a6e4": [
+      212
+    ],
+    "cda643f7": [
+      853
+    ],
+    "d4decb80": [
+      270
+    ],
+    "f08cff7b": [
+      5
+    ],
+    "f1ddc14b": [
+      281
+    ],
+    "styles": [
+      48,
+      354,
+      401,
+      583,
+      792,
+      869
+    ]
+  },
+  "assets": {
+    "5": {
+      "js": [
+        {
+          "file": "assets/js/f08cff7b.c0409029.js",
+          "hash": "08314b23d1a29912",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/f08cff7b.c0409029.js"
+        }
+      ]
+    },
+    "48": {
+      "js": [
+        {
+          "file": "assets/js/a94703ab.0536455a.js",
+          "hash": "55fcda3cf47675b6",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/a94703ab.0536455a.js"
+        }
+      ]
+    },
+    "98": {
+      "js": [
+        {
+          "file": "assets/js/a7bd4aaa.d5da48a6.js",
+          "hash": "9ea79f7efa0ccef2",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/a7bd4aaa.d5da48a6.js"
+        }
+      ]
+    },
+    "212": {
+      "js": [
+        {
+          "file": "assets/js/b999a6e4.e3cc28a3.js",
+          "hash": "416b1fbea9b69447",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/b999a6e4.e3cc28a3.js"
+        }
+      ]
+    },
+    "220": {
+      "js": [
+        {
+          "file": "assets/js/77d314a6.fcf2a9d0.js",
+          "hash": "a0f7669bbab66390",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/77d314a6.fcf2a9d0.js"
+        }
+      ]
+    },
+    "235": {
+      "js": [
+        {
+          "file": "assets/js/a7456010.ecf24c99.js",
+          "hash": "a10d685fb9c0eb26",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/a7456010.ecf24c99.js"
+        }
+      ]
+    },
+    "263": {
+      "js": [
+        {
+          "file": "assets/js/15eabc5f.53f008dc.js",
+          "hash": "7fcb1cf41b573e51",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/15eabc5f.53f008dc.js"
+        }
+      ]
+    },
+    "270": {
+      "js": [
+        {
+          "file": "assets/js/d4decb80.3c03b5db.js",
+          "hash": "40a12e50e14a9da0",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/d4decb80.3c03b5db.js"
+        }
+      ]
+    },
+    "281": {
+      "js": [
+        {
+          "file": "assets/js/f1ddc14b.25f65b48.js",
+          "hash": "e9b28a70b1651b85",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/f1ddc14b.25f65b48.js"
+        }
+      ]
+    },
+    "283": {
+      "js": [
+        {
+          "file": "assets/js/283.4fbdca5b.js",
+          "hash": "e4a9fab1a9cdbd78",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/283.4fbdca5b.js"
+        }
+      ]
+    },
+    "324": {
+      "js": [
+        {
+          "file": "assets/js/588bd741.db62189a.js",
+          "hash": "715fd9b97df855a5",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/588bd741.db62189a.js"
+        }
+      ]
+    },
+    "345": {
+      "js": [
+        {
+          "file": "assets/js/9c902696.4675b68a.js",
+          "hash": "1a08f776ff756518",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/9c902696.4675b68a.js"
+        }
+      ]
+    },
+    "354": {
+      "js": [
+        {
+          "file": "assets/js/runtime~main.a18e1f82.js",
+          "hash": "9513b840f259e0b8",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/runtime~main.a18e1f82.js"
+        }
+      ]
+    },
+    "395": {
+      "js": [
+        {
+          "file": "assets/js/a3b7a2ca.ae7e6b26.js",
+          "hash": "8a8c7b690b06d2ad",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/a3b7a2ca.ae7e6b26.js"
+        }
+      ]
+    },
+    "401": {
+      "js": [
+        {
+          "file": "assets/js/17896441.2b38d028.js",
+          "hash": "ddd0ecd5bf6ede82",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/17896441.2b38d028.js"
+        }
+      ]
+    },
+    "415": {
+      "js": [
+        {
+          "file": "assets/js/9ec987cd.73cfb8b5.js",
+          "hash": "2291e8fee1b4cabc",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/9ec987cd.73cfb8b5.js"
+        }
+      ]
+    },
+    "421": {
+      "js": [
+        {
+          "file": "assets/js/82c2007b.72d1cfae.js",
+          "hash": "6ccc94341949b42a",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/82c2007b.72d1cfae.js"
+        }
+      ]
+    },
+    "507": {
+      "js": [
+        {
+          "file": "assets/js/ad17972e.9515d559.js",
+          "hash": "208889ba41f7b4a0",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/ad17972e.9515d559.js"
+        }
+      ]
+    },
+    "583": {
+      "js": [
+        {
+          "file": "assets/js/1df93b7f.22a38a8e.js",
+          "hash": "aaed84a47800a6ca",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/1df93b7f.22a38a8e.js"
+        }
+      ]
+    },
+    "633": {
+      "js": [
+        {
+          "file": "assets/js/89468823.6d546b3d.js",
+          "hash": "03a765b50c592d28",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/89468823.6d546b3d.js"
+        }
+      ]
+    },
+    "646": {
+      "js": [
+        {
+          "file": "assets/js/0ac02f92.f118ca36.js",
+          "hash": "029ac3812d9d099e",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/0ac02f92.f118ca36.js"
+        }
+      ]
+    },
+    "647": {
+      "js": [
+        {
+          "file": "assets/js/5e95c892.435e3b1c.js",
+          "hash": "9708d2866b6ef167",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/5e95c892.435e3b1c.js"
+        }
+      ]
+    },
+    "657": {
+      "js": [
+        {
+          "file": "assets/js/4058d8a2.ff23be2b.js",
+          "hash": "fd102a9b2aff14e5",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/4058d8a2.ff23be2b.js"
+        }
+      ]
+    },
+    "662": {
+      "js": [
+        {
+          "file": "assets/js/36fe3260.b8d0afe4.js",
+          "hash": "a6e093f993475ed5",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/36fe3260.b8d0afe4.js"
+        }
+      ]
+    },
+    "719": {
+      "js": [
+        {
+          "file": "assets/js/0685996c.1baf575b.js",
+          "hash": "652ec356ecc7a786",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/0685996c.1baf575b.js"
+        }
+      ]
+    },
+    "742": {
+      "js": [
+        {
+          "file": "assets/js/aba21aa0.3ed6f6c8.js",
+          "hash": "4acbdf56b132c333",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/aba21aa0.3ed6f6c8.js"
+        }
+      ]
+    },
+    "792": {
+      "js": [
+        {
+          "file": "assets/js/main.76623526.js",
+          "hash": "6929fe294268b99d",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/main.76623526.js"
+        }
+      ]
+    },
+    "853": {
+      "js": [
+        {
+          "file": "assets/js/cda643f7.3ef2b82c.js",
+          "hash": "00aaca9fc518705c",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/cda643f7.3ef2b82c.js"
+        }
+      ]
+    },
+    "869": {
+      "css": [
+        {
+          "file": "assets/css/styles.1db39c1b.css",
+          "hash": "96e10ec8bfae90c9",
+          "publicPath": "/giwa-react-native-wallet/en/assets/css/styles.1db39c1b.css"
+        }
+      ]
+    },
+    "889": {
+      "js": [
+        {
+          "file": "assets/js/29c8854e.79f04771.js",
+          "hash": "bdc6de66d33a819a",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/29c8854e.79f04771.js"
+        }
+      ]
+    },
+    "924": {
+      "js": [
+        {
+          "file": "assets/js/54f44165.cbc311a6.js",
+          "hash": "c4827fe81c2d4914",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/54f44165.cbc311a6.js"
+        }
+      ]
+    },
+    "949": {
+      "js": [
+        {
+          "file": "assets/js/a4e5d33a.6cf281d5.js",
+          "hash": "b75ef5edaa53f230",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/a4e5d33a.6cf281d5.js"
+        }
+      ]
+    },
+    "976": {
+      "js": [
+        {
+          "file": "assets/js/0e384e19.4b64292d.js",
+          "hash": "ab7ced1711c16cdf",
+          "publicPath": "/giwa-react-native-wallet/en/assets/js/0e384e19.4b64292d.js"
+        }
+      ]
+    }
+  }
+}

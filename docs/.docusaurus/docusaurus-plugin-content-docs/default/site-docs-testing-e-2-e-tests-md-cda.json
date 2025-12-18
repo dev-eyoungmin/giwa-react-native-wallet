@@ -1,0 +1,23 @@
+{
+  "id": "testing/e2e-tests",
+  "title": "E2E 테스트",
+  "description": "Detox를 사용한 End-to-End 테스트 작성 방법입니다.",
+  "source": "@site/docs/testing/e2e-tests.md",
+  "sourceDirName": "testing",
+  "slug": "/testing/e2e-tests",
+  "permalink": "/giwa-react-native-wallet/en/docs/testing/e2e-tests",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/devym-37/giwa-react-native-wallet/tree/main/docs/docs/testing/e2e-tests.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {
+    "sidebar_position": 4
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "통합 테스트",
+    "permalink": "/giwa-react-native-wallet/en/docs/testing/integration-tests"
+  }
+}

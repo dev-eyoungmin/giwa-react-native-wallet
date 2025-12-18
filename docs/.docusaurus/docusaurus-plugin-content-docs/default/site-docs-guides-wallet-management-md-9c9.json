@@ -1,0 +1,27 @@
+{
+  "id": "guides/wallet-management",
+  "title": "지갑 관리",
+  "description": "GIWA SDK의 지갑 생성, 복구, 관리 기능을 설명합니다.",
+  "source": "@site/docs/guides/wallet-management.md",
+  "sourceDirName": "guides",
+  "slug": "/guides/wallet-management",
+  "permalink": "/giwa-react-native-wallet/en/docs/guides/wallet-management",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/devym-37/giwa-react-native-wallet/tree/main/docs/docs/guides/wallet-management.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1
+  },
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "빠른 시작",
+    "permalink": "/giwa-react-native-wallet/en/docs/getting-started/quick-start"
+  },
+  "next": {
+    "title": "트랜잭션",
+    "permalink": "/giwa-react-native-wallet/en/docs/guides/transactions"
+  }
+}
