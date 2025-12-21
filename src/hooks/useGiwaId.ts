@@ -1,5 +1,6 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useGiwaManagers } from '../providers/GiwaProvider';
+import { useAsyncActions } from './shared/useAsyncAction';
 import type { Address, Hash } from 'viem';
 import type { GiwaId } from '../types';
 
@@ -17,140 +18,59 @@ export interface UseGiwaIdReturn {
 /**
  * Hook for GIWA ID (ENS-based naming) operations
  *
- * 최적화:
- * - useGiwaManagers만 사용 (wallet 상태 불필요)
- * - useRef로 giwaIdManager 참조 안정화
- * - 반환 객체 useMemo로 메모이제이션
+ * 클린 코드 적용:
+ * - useAsyncActions로 중복 상태 관리 로직 제거
  */
 export function useGiwaId(): UseGiwaIdReturn {
   const { giwaIdManager } = useGiwaManagers();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
 
-  // giwaIdManager를 ref로 저장
   const giwaIdManagerRef = useRef(giwaIdManager);
   giwaIdManagerRef.current = giwaIdManager;
 
-  const resolveAddress = useCallback(
-    async (giwaId: string): Promise<Address | null> => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        return await giwaIdManagerRef.current.resolveAddress(giwaId);
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error('GIWA ID 주소 조회 실패');
-        setError(error);
-        throw error;
-      } finally {
-        setIsLoading(false);
-      }
+  const actions = useAsyncActions({
+    resolveAddress: (giwaId: string) => giwaIdManagerRef.current.resolveAddress(giwaId),
+    resolveName: (address: Address) => giwaIdManagerRef.current.resolveName(address),
+    getGiwaId: (giwaId: string) => giwaIdManagerRef.current.getGiwaId(giwaId),
+    getTextRecord: (giwaId: string, key: string) => giwaIdManagerRef.current.getTextRecord(giwaId, key),
+    setTextRecord: async (giwaId: string, key: string, value: string) => {
+      const result = await giwaIdManagerRef.current.setTextRecord(giwaId, key, value);
+      return result.hash;
     },
-    []
-  );
+    isAvailable: (giwaId: string) => giwaIdManagerRef.current.isAvailable(giwaId),
+  });
 
-  const resolveName = useCallback(
-    async (address: Address): Promise<string | null> => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        return await giwaIdManagerRef.current.resolveName(address);
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error('GIWA ID 이름 조회 실패');
-        setError(error);
-        throw error;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    []
-  );
+  const isLoading =
+    actions.resolveAddress.isLoading ||
+    actions.resolveName.isLoading ||
+    actions.getGiwaId.isLoading ||
+    actions.getTextRecord.isLoading ||
+    actions.setTextRecord.isLoading ||
+    actions.isAvailable.isLoading;
 
-  const getGiwaId = useCallback(
-    async (giwaId: string): Promise<GiwaId | null> => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        return await giwaIdManagerRef.current.getGiwaId(giwaId);
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error('GIWA ID 정보 조회 실패');
-        setError(error);
-        throw error;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    []
-  );
+  const error =
+    actions.resolveAddress.error ||
+    actions.resolveName.error ||
+    actions.getGiwaId.error ||
+    actions.getTextRecord.error ||
+    actions.setTextRecord.error ||
+    actions.isAvailable.error;
 
-  const getTextRecord = useCallback(
-    async (giwaId: string, key: string): Promise<string | null> => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        return await giwaIdManagerRef.current.getTextRecord(giwaId, key);
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error('텍스트 레코드 조회 실패');
-        setError(error);
-        throw error;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    []
-  );
-
-  const setTextRecord = useCallback(
-    async (giwaId: string, key: string, value: string): Promise<Hash> => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const result = await giwaIdManagerRef.current.setTextRecord(giwaId, key, value);
-        return result.hash;
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error('텍스트 레코드 설정 실패');
-        setError(error);
-        throw error;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    []
-  );
-
-  const isAvailable = useCallback(
-    async (giwaId: string): Promise<boolean> => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        return await giwaIdManagerRef.current.isAvailable(giwaId);
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error('GIWA ID 가용성 확인 실패');
-        setError(error);
-        throw error;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    []
-  );
-
-  // 반환 객체 메모이제이션
   return useMemo(() => ({
-    resolveAddress,
-    resolveName,
-    getGiwaId,
-    getTextRecord,
-    setTextRecord,
-    isAvailable,
+    resolveAddress: actions.resolveAddress.execute,
+    resolveName: actions.resolveName.execute,
+    getGiwaId: actions.getGiwaId.execute,
+    getTextRecord: actions.getTextRecord.execute,
+    setTextRecord: actions.setTextRecord.execute,
+    isAvailable: actions.isAvailable.execute,
     isLoading,
     error,
   }), [
-    resolveAddress,
-    resolveName,
-    getGiwaId,
-    getTextRecord,
-    setTextRecord,
-    isAvailable,
+    actions.resolveAddress.execute,
+    actions.resolveName.execute,
+    actions.getGiwaId.execute,
+    actions.getTextRecord.execute,
+    actions.setTextRecord.execute,
+    actions.isAvailable.execute,
     isLoading,
     error,
   ]);
