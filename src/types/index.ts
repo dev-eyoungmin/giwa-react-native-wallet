@@ -1,141 +1,48 @@
-import type { Address, Hash, Hex } from 'viem';
+/**
+ * 타입 정의 통합 export
+ *
+ * 클린 아키텍처 원칙:
+ * - 도메인별 타입 분리로 응집도 향상
+ * - 단일 진입점 유지로 사용 편의성 확보
+ */
 
-// Network types
-export type NetworkType = 'mainnet' | 'testnet';
+// Network
+export type { NetworkType, GiwaNetwork } from './network';
 
-export interface GiwaNetwork {
-  id: number;
-  name: string;
-  rpcUrl: string;
-  explorerUrl: string;
-  currency: {
-    name: string;
-    symbol: string;
-    decimals: number;
-  };
-}
+// Wallet
+export type {
+  GiwaWallet,
+  WalletCreationResult,
+  SecureStorageOptions,
+  BiometricType,
+  BiometricCapability,
+} from './wallet';
 
-// Wallet types
-export interface GiwaWallet {
-  address: Address;
-  publicKey: Hex;
-}
+// Transaction
+export type {
+  TransactionRequest,
+  TransactionResult,
+  TransactionReceipt,
+} from './transaction';
 
-export interface WalletCreationResult {
-  wallet: GiwaWallet;
-  mnemonic: string;
-}
+// Token
+export type { Token, TokenBalance } from './token';
 
-// Transaction types
-export interface TransactionRequest {
-  to: Address;
-  value?: bigint;
-  data?: Hex;
-  gasLimit?: bigint;
-  maxFeePerGas?: bigint;
-  maxPriorityFeePerGas?: bigint;
-}
+// Bridge
+export type { BridgeDirection, BridgeTransaction } from './bridge';
 
-export interface TransactionResult {
-  hash: Hash;
-  wait: () => Promise<TransactionReceipt>;
-}
+// Flashblocks
+export type { FlashblocksPreconfirmation } from './flashblocks';
 
-export interface TransactionReceipt {
-  hash: Hash;
-  blockNumber: bigint;
-  status: 'success' | 'reverted';
-  gasUsed: bigint;
-}
+// Identity (GIWA ID, Dojang)
+export type {
+  GiwaId,
+  AttestationType,
+  Attestation,
+} from './identity';
 
-// Token types
-export interface Token {
-  address: Address;
-  name: string;
-  symbol: string;
-  decimals: number;
-  logoUri?: string;
-}
+// Config
+export type { GiwaConfig } from './config';
 
-export interface TokenBalance {
-  token: Token;
-  balance: bigint;
-  formattedBalance: string;
-}
-
-// Bridge types
-export type BridgeDirection = 'deposit' | 'withdraw';
-
-export interface BridgeTransaction {
-  direction: BridgeDirection;
-  amount: bigint;
-  token?: Address;
-  l1TxHash?: Hash;
-  l2TxHash?: Hash;
-  status: 'pending' | 'confirmed' | 'finalized';
-}
-
-// Flashblocks types
-export interface FlashblocksPreconfirmation {
-  txHash: Hash;
-  preconfirmedAt: number;
-  confirmedAt?: number;
-}
-
-// GIWA ID types
-export interface GiwaId {
-  name: string;
-  address: Address;
-  avatar?: string;
-  records?: Record<string, string>;
-}
-
-// Dojang types
-export type AttestationType =
-  | 'verified_address'
-  | 'balance_root'
-  | 'verified_balance'
-  | 'verified_code';
-
-export interface Attestation {
-  uid: Hex;
-  schema: Hex;
-  attester: Address;
-  recipient: Address;
-  attestationType: AttestationType;
-  data: Hex;
-  time: bigint;
-  expirationTime: bigint;
-  revocable: boolean;
-  revoked: boolean;
-}
-
-// Provider config
-export interface GiwaConfig {
-  network?: NetworkType;
-  customRpcUrl?: string;
-  autoConnect?: boolean;
-  enableFlashblocks?: boolean;
-}
-
-// Secure storage types
-export interface SecureStorageOptions {
-  requireBiometric?: boolean;
-  accessibleWhenUnlocked?: boolean;
-}
-
-// Biometric types
-export type BiometricType = 'fingerprint' | 'face' | 'iris' | 'none';
-
-export interface BiometricCapability {
-  isAvailable: boolean;
-  biometricType: BiometricType;
-  isEnrolled: boolean;
-}
-
-// Error types
-export interface GiwaErrorDetails {
-  code: string;
-  message: string;
-  cause?: Error;
-}
+// Error
+export type { GiwaErrorDetails } from './error';

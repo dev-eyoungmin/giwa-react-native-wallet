@@ -17,6 +17,10 @@ export { FlashblocksManager } from './core/FlashblocksManager';
 export { GiwaIdManager } from './core/GiwaIdManager';
 export { DojangManager } from './core/DojangManager';
 
+// Core Base (for extending managers)
+export { BaseManager } from './core/base/BaseManager';
+export type { IManager, ITransactionManager } from './core/base/BaseManager';
+
 // Providers
 export {
   GiwaProvider,
@@ -33,7 +37,7 @@ export {
 } from './providers/GiwaProvider';
 export type { GiwaProviderProps } from './providers/GiwaProvider';
 
-// Hooks
+// Hooks - Core
 export { useGiwaWallet } from './hooks/useGiwaWallet';
 export { useBalance } from './hooks/useBalance';
 export { useTransaction } from './hooks/useTransaction';
@@ -44,6 +48,18 @@ export { useGiwaId } from './hooks/useGiwaId';
 export { useDojang } from './hooks/useDojang';
 export { useFaucet } from './hooks/useFaucet';
 
+// Hooks - Shared (for custom hook development)
+export { useAsyncAction, useAsyncActions } from './hooks/shared/useAsyncAction';
+export { useAsyncQuery } from './hooks/shared/useAsyncQuery';
+export type {
+  AsyncActionState,
+  UseAsyncActionReturn,
+} from './hooks/shared/useAsyncAction';
+export type {
+  UseAsyncQueryOptions,
+  UseAsyncQueryReturn,
+} from './hooks/shared/useAsyncQuery';
+
 // Adapters (for advanced usage)
 export { AdapterFactory, getAdapterFactory } from './adapters/AdapterFactory';
 export type { Adapters, AdapterFactoryOptions } from './adapters/AdapterFactory';
@@ -53,7 +69,7 @@ export type { IClipboard } from './adapters/interfaces/IClipboard';
 export { STORAGE_KEYS } from './adapters/interfaces/ISecureStorage';
 export { BIOMETRIC_PROMPTS } from './adapters/interfaces/IBiometricAuth';
 
-// Utils
+// Utils - Errors
 export {
   GiwaError,
   GiwaSecurityError,
@@ -61,5 +77,11 @@ export {
   GiwaWalletError,
   GiwaTransactionError,
   ErrorCodes,
+  ErrorMessages,
+  toError,
+  wrapError,
 } from './utils/errors';
+export type { ErrorCode, ErrorMessage } from './utils/errors';
+
+// Utils - Environment
 export { detectEnvironment, ensureSecureStorageAvailable } from './utils/secureStorageValidator';
