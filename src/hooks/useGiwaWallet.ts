@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useGiwaContext } from '../providers/GiwaProvider';
+import { useState, useCallback, useMemo } from 'react';
+import { useGiwaManagers, useGiwaWalletContext } from '../providers/GiwaProvider';
 import type { GiwaWallet, WalletCreationResult, SecureStorageOptions } from '../types';
 import type { Hex } from 'viem';
 
@@ -7,6 +7,7 @@ export interface UseGiwaWalletReturn {
   wallet: GiwaWallet | null;
   isLoading: boolean;
   error: Error | null;
+  /** wallet !== null 파생 상태 (별도 상태 관리 불필요) */
   hasWallet: boolean;
   createWallet: (options?: SecureStorageOptions) => Promise<WalletCreationResult>;
   recoverWallet: (mnemonic: string, options?: SecureStorageOptions) => Promise<GiwaWallet>;
@@ -19,12 +20,20 @@ export interface UseGiwaWalletReturn {
 
 /**
  * Hook for wallet management
+ *
+ * 최적화:
+ * - useGiwaManagers, useGiwaWalletContext 분리 사용으로 불필요한 리렌더링 방지
+ * - hasWallet을 파생 상태로 변경 (별도 useState 제거)
+ * - 반환 객체 useMemo로 메모이제이션
  */
 export function useGiwaWallet(): UseGiwaWalletReturn {
-  const { walletManager, wallet, setWallet } = useGiwaContext();
+  const { walletManager } = useGiwaManagers();
+  const { wallet, setWallet } = useGiwaWalletContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [hasWallet, setHasWallet] = useState(false);
+
+  // hasWallet을 파생 상태로 계산 (별도 상태 관리 불필요)
+  const hasWallet = wallet !== null;
 
   const createWallet = useCallback(
     async (options?: SecureStorageOptions): Promise<WalletCreationResult> => {
@@ -33,7 +42,6 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
       try {
         const result = await walletManager.createWallet(options);
         setWallet(result.wallet);
-        setHasWallet(true);
         return result;
       } catch (err) {
         const error = err instanceof Error ? err : new Error('지갑 생성 실패');
@@ -56,7 +64,6 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
       try {
         const recoveredWallet = await walletManager.recoverWallet(mnemonic, options);
         setWallet(recoveredWallet);
-        setHasWallet(true);
         return recoveredWallet;
       } catch (err) {
         const error = err instanceof Error ? err : new Error('지갑 복구 실패');
@@ -82,7 +89,6 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
           options
         );
         setWallet(importedWallet);
-        setHasWallet(true);
         return importedWallet;
       } catch (err) {
         const error = err instanceof Error ? err : new Error('지갑 가져오기 실패');
@@ -103,7 +109,6 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
         const loadedWallet = await walletManager.loadWallet(options);
         if (loadedWallet) {
           setWallet(loadedWallet);
-          setHasWallet(true);
         }
         return loadedWallet;
       } catch (err) {
@@ -123,7 +128,6 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
     try {
       await walletManager.deleteWallet();
       setWallet(null);
-      setHasWallet(false);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('지갑 삭제 실패');
       setError(error);
@@ -167,7 +171,8 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
     [walletManager]
   );
 
-  return {
+  // 반환 객체 메모이제이션으로 불필요한 리렌더링 방지
+  return useMemo(() => ({
     wallet,
     isLoading,
     error,
@@ -179,5 +184,17 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
     deleteWallet,
     exportMnemonic,
     exportPrivateKey,
-  };
+  }), [
+    wallet,
+    isLoading,
+    error,
+    hasWallet,
+    createWallet,
+    recoverWallet,
+    importFromPrivateKey,
+    loadWallet,
+    deleteWallet,
+    exportMnemonic,
+    exportPrivateKey,
+  ]);
 }

@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useGiwaContext } from '../providers/GiwaProvider';
+import { useState, useCallback, useMemo, useRef } from 'react';
+import { useGiwaManagers } from '../providers/GiwaProvider';
 import type { Hash } from 'viem';
 import type { FlashblocksPreconfirmation, TransactionRequest, TransactionResult } from '../types';
 
@@ -20,19 +20,30 @@ export interface UseFlashblocksReturn {
 
 /**
  * Hook for Flashblocks (~200ms preconfirmation) operations
+ *
+ * 최적화:
+ * - useGiwaManagers만 사용 (wallet 상태 불필요)
+ * - useRef로 flashblocksManager 참조 안정화
+ * - isEnabled를 useMemo로 캐싱
+ * - 반환 객체 useMemo로 메모이제이션
  */
 export function useFlashblocks(): UseFlashblocksReturn {
-  const { flashblocksManager } = useGiwaContext();
+  const { flashblocksManager } = useGiwaManagers();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  // isEnabled 상태를 React 상태로 관리하여 변경 시 리렌더링
+  const [enabledState, setEnabledState] = useState(() => flashblocksManager.isEnabled());
 
-  const isEnabled = flashblocksManager.isEnabled();
+  // flashblocksManager를 ref로 저장
+  const flashblocksManagerRef = useRef(flashblocksManager);
+  flashblocksManagerRef.current = flashblocksManager;
 
   const setEnabled = useCallback(
     (enabled: boolean): void => {
-      flashblocksManager.setEnabled(enabled);
+      flashblocksManagerRef.current.setEnabled(enabled);
+      setEnabledState(enabled);
     },
-    [flashblocksManager]
+    []
   );
 
   const sendTransaction = useCallback(
@@ -45,7 +56,7 @@ export function useFlashblocks(): UseFlashblocksReturn {
       setIsLoading(true);
       setError(null);
       try {
-        return await flashblocksManager.sendTransaction(request);
+        return await flashblocksManagerRef.current.sendTransaction(request);
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Flashblocks 트랜잭션 실패');
         setError(error);
@@ -54,33 +65,34 @@ export function useFlashblocks(): UseFlashblocksReturn {
         setIsLoading(false);
       }
     },
-    [flashblocksManager]
+    []
   );
 
   const getPreconfirmation = useCallback(
     (hash: Hash): FlashblocksPreconfirmation | undefined => {
-      return flashblocksManager.getPreconfirmation(hash);
+      return flashblocksManagerRef.current.getPreconfirmation(hash);
     },
-    [flashblocksManager]
+    []
   );
 
   const getAllPreconfirmations = useCallback((): FlashblocksPreconfirmation[] => {
-    return flashblocksManager.getAllPreconfirmations();
-  }, [flashblocksManager]);
+    return flashblocksManagerRef.current.getAllPreconfirmations();
+  }, []);
 
   const getConfirmationLatency = useCallback(
     (hash: Hash): number | null => {
-      return flashblocksManager.getConfirmationLatency(hash);
+      return flashblocksManagerRef.current.getConfirmationLatency(hash);
     },
-    [flashblocksManager]
+    []
   );
 
   const getAverageLatency = useCallback((): number | null => {
-    return flashblocksManager.getAverageLatency();
-  }, [flashblocksManager]);
+    return flashblocksManagerRef.current.getAverageLatency();
+  }, []);
 
-  return {
-    isEnabled,
+  // 반환 객체 메모이제이션
+  return useMemo(() => ({
+    isEnabled: enabledState,
     setEnabled,
     sendTransaction,
     getPreconfirmation,
@@ -89,5 +101,15 @@ export function useFlashblocks(): UseFlashblocksReturn {
     getAverageLatency,
     isLoading,
     error,
-  };
+  }), [
+    enabledState,
+    setEnabled,
+    sendTransaction,
+    getPreconfirmation,
+    getAllPreconfirmations,
+    getConfirmationLatency,
+    getAverageLatency,
+    isLoading,
+    error,
+  ]);
 }

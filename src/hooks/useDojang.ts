@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useGiwaContext } from '../providers/GiwaProvider';
+import { useState, useCallback, useMemo, useRef } from 'react';
+import { useGiwaManagers } from '../providers/GiwaProvider';
 import type { Address, Hex } from 'viem';
 import type { Attestation } from '../types';
 
@@ -14,18 +14,27 @@ export interface UseDojangReturn {
 
 /**
  * Hook for Dojang (EAS-based attestation) operations
+ *
+ * 최적화:
+ * - useGiwaManagers만 사용 (wallet 상태 불필요)
+ * - useRef로 dojangManager 참조 안정화
+ * - 반환 객체 useMemo로 메모이제이션
  */
 export function useDojang(): UseDojangReturn {
-  const { dojangManager } = useGiwaContext();
+  const { dojangManager } = useGiwaManagers();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+
+  // dojangManager를 ref로 저장
+  const dojangManagerRef = useRef(dojangManager);
+  dojangManagerRef.current = dojangManager;
 
   const getAttestation = useCallback(
     async (uid: Hex): Promise<Attestation | null> => {
       setIsLoading(true);
       setError(null);
       try {
-        return await dojangManager.getAttestation(uid);
+        return await dojangManagerRef.current.getAttestation(uid);
       } catch (err) {
         const error = err instanceof Error ? err : new Error('증명 조회 실패');
         setError(error);
@@ -34,7 +43,7 @@ export function useDojang(): UseDojangReturn {
         setIsLoading(false);
       }
     },
-    [dojangManager]
+    []
   );
 
   const isAttestationValid = useCallback(
@@ -42,7 +51,7 @@ export function useDojang(): UseDojangReturn {
       setIsLoading(true);
       setError(null);
       try {
-        return await dojangManager.isAttestationValid(uid);
+        return await dojangManagerRef.current.isAttestationValid(uid);
       } catch (err) {
         const error = err instanceof Error ? err : new Error('증명 유효성 확인 실패');
         setError(error);
@@ -51,7 +60,7 @@ export function useDojang(): UseDojangReturn {
         setIsLoading(false);
       }
     },
-    [dojangManager]
+    []
   );
 
   const hasVerifiedAddress = useCallback(
@@ -59,7 +68,7 @@ export function useDojang(): UseDojangReturn {
       setIsLoading(true);
       setError(null);
       try {
-        return await dojangManager.hasVerifiedAddress(address);
+        return await dojangManagerRef.current.hasVerifiedAddress(address);
       } catch (err) {
         const error = err instanceof Error ? err : new Error('인증된 주소 확인 실패');
         setError(error);
@@ -68,7 +77,7 @@ export function useDojang(): UseDojangReturn {
         setIsLoading(false);
       }
     },
-    [dojangManager]
+    []
   );
 
   const getVerifiedBalance = useCallback(
@@ -76,7 +85,7 @@ export function useDojang(): UseDojangReturn {
       setIsLoading(true);
       setError(null);
       try {
-        return await dojangManager.getVerifiedBalance(uid);
+        return await dojangManagerRef.current.getVerifiedBalance(uid);
       } catch (err) {
         const error = err instanceof Error ? err : new Error('인증된 잔액 조회 실패');
         setError(error);
@@ -85,15 +94,23 @@ export function useDojang(): UseDojangReturn {
         setIsLoading(false);
       }
     },
-    [dojangManager]
+    []
   );
 
-  return {
+  // 반환 객체 메모이제이션
+  return useMemo(() => ({
     getAttestation,
     isAttestationValid,
     hasVerifiedAddress,
     getVerifiedBalance,
     isLoading,
     error,
-  };
+  }), [
+    getAttestation,
+    isAttestationValid,
+    hasVerifiedAddress,
+    getVerifiedBalance,
+    isLoading,
+    error,
+  ]);
 }

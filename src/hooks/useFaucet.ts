@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useGiwaContext } from '../providers/GiwaProvider';
+import { useState, useCallback, useMemo, useRef } from 'react';
+import { useGiwaManagers, useGiwaWalletContext } from '../providers/GiwaProvider';
 import type { Address } from 'viem';
 
 // GIWA Testnet Faucet URL
@@ -14,21 +14,35 @@ export interface UseFaucetReturn {
 
 /**
  * Hook for testnet faucet operations
+ *
+ * 최적화:
+ * - useGiwaManagers, useGiwaWalletContext 분리 사용
+ * - useRef로 client 참조 안정화
+ * - 반환 객체 useMemo로 메모이제이션
  */
 export function useFaucet(): UseFaucetReturn {
-  const { wallet, client } = useGiwaContext();
+  const { client } = useGiwaManagers();
+  const { wallet } = useGiwaWalletContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
+  // client를 ref로 저장
+  const clientRef = useRef(client);
+  clientRef.current = client;
+
+  // wallet address를 ref로 저장
+  const walletAddressRef = useRef(wallet?.address);
+  walletAddressRef.current = wallet?.address;
+
   const requestFaucet = useCallback(
     async (address?: Address): Promise<void> => {
-      const targetAddress = address || wallet?.address;
+      const targetAddress = address || walletAddressRef.current;
       if (!targetAddress) {
         throw new Error('지갑 주소가 필요합니다.');
       }
 
       // Check if on testnet
-      const network = client.getNetwork();
+      const network = clientRef.current.getNetwork();
       if (network !== 'testnet') {
         throw new Error('Faucet은 테스트넷에서만 사용할 수 있습니다.');
       }
@@ -56,17 +70,18 @@ export function useFaucet(): UseFaucetReturn {
         setIsLoading(false);
       }
     },
-    [wallet, client]
+    []
   );
 
   const getFaucetUrl = useCallback((): string => {
     return FAUCET_URL;
   }, []);
 
-  return {
+  // 반환 객체 메모이제이션
+  return useMemo(() => ({
     requestFaucet,
     getFaucetUrl,
     isLoading,
     error,
-  };
+  }), [requestFaucet, getFaucetUrl, isLoading, error]);
 }

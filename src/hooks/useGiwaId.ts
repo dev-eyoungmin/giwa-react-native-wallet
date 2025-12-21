@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useGiwaContext } from '../providers/GiwaProvider';
+import { useState, useCallback, useMemo, useRef } from 'react';
+import { useGiwaManagers } from '../providers/GiwaProvider';
 import type { Address, Hash } from 'viem';
 import type { GiwaId } from '../types';
 
@@ -16,18 +16,27 @@ export interface UseGiwaIdReturn {
 
 /**
  * Hook for GIWA ID (ENS-based naming) operations
+ *
+ * 최적화:
+ * - useGiwaManagers만 사용 (wallet 상태 불필요)
+ * - useRef로 giwaIdManager 참조 안정화
+ * - 반환 객체 useMemo로 메모이제이션
  */
 export function useGiwaId(): UseGiwaIdReturn {
-  const { giwaIdManager } = useGiwaContext();
+  const { giwaIdManager } = useGiwaManagers();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+
+  // giwaIdManager를 ref로 저장
+  const giwaIdManagerRef = useRef(giwaIdManager);
+  giwaIdManagerRef.current = giwaIdManager;
 
   const resolveAddress = useCallback(
     async (giwaId: string): Promise<Address | null> => {
       setIsLoading(true);
       setError(null);
       try {
-        return await giwaIdManager.resolveAddress(giwaId);
+        return await giwaIdManagerRef.current.resolveAddress(giwaId);
       } catch (err) {
         const error = err instanceof Error ? err : new Error('GIWA ID 주소 조회 실패');
         setError(error);
@@ -36,7 +45,7 @@ export function useGiwaId(): UseGiwaIdReturn {
         setIsLoading(false);
       }
     },
-    [giwaIdManager]
+    []
   );
 
   const resolveName = useCallback(
@@ -44,7 +53,7 @@ export function useGiwaId(): UseGiwaIdReturn {
       setIsLoading(true);
       setError(null);
       try {
-        return await giwaIdManager.resolveName(address);
+        return await giwaIdManagerRef.current.resolveName(address);
       } catch (err) {
         const error = err instanceof Error ? err : new Error('GIWA ID 이름 조회 실패');
         setError(error);
@@ -53,7 +62,7 @@ export function useGiwaId(): UseGiwaIdReturn {
         setIsLoading(false);
       }
     },
-    [giwaIdManager]
+    []
   );
 
   const getGiwaId = useCallback(
@@ -61,7 +70,7 @@ export function useGiwaId(): UseGiwaIdReturn {
       setIsLoading(true);
       setError(null);
       try {
-        return await giwaIdManager.getGiwaId(giwaId);
+        return await giwaIdManagerRef.current.getGiwaId(giwaId);
       } catch (err) {
         const error = err instanceof Error ? err : new Error('GIWA ID 정보 조회 실패');
         setError(error);
@@ -70,7 +79,7 @@ export function useGiwaId(): UseGiwaIdReturn {
         setIsLoading(false);
       }
     },
-    [giwaIdManager]
+    []
   );
 
   const getTextRecord = useCallback(
@@ -78,7 +87,7 @@ export function useGiwaId(): UseGiwaIdReturn {
       setIsLoading(true);
       setError(null);
       try {
-        return await giwaIdManager.getTextRecord(giwaId, key);
+        return await giwaIdManagerRef.current.getTextRecord(giwaId, key);
       } catch (err) {
         const error = err instanceof Error ? err : new Error('텍스트 레코드 조회 실패');
         setError(error);
@@ -87,7 +96,7 @@ export function useGiwaId(): UseGiwaIdReturn {
         setIsLoading(false);
       }
     },
-    [giwaIdManager]
+    []
   );
 
   const setTextRecord = useCallback(
@@ -95,7 +104,7 @@ export function useGiwaId(): UseGiwaIdReturn {
       setIsLoading(true);
       setError(null);
       try {
-        const result = await giwaIdManager.setTextRecord(giwaId, key, value);
+        const result = await giwaIdManagerRef.current.setTextRecord(giwaId, key, value);
         return result.hash;
       } catch (err) {
         const error = err instanceof Error ? err : new Error('텍스트 레코드 설정 실패');
@@ -105,7 +114,7 @@ export function useGiwaId(): UseGiwaIdReturn {
         setIsLoading(false);
       }
     },
-    [giwaIdManager]
+    []
   );
 
   const isAvailable = useCallback(
@@ -113,7 +122,7 @@ export function useGiwaId(): UseGiwaIdReturn {
       setIsLoading(true);
       setError(null);
       try {
-        return await giwaIdManager.isAvailable(giwaId);
+        return await giwaIdManagerRef.current.isAvailable(giwaId);
       } catch (err) {
         const error = err instanceof Error ? err : new Error('GIWA ID 가용성 확인 실패');
         setError(error);
@@ -122,10 +131,11 @@ export function useGiwaId(): UseGiwaIdReturn {
         setIsLoading(false);
       }
     },
-    [giwaIdManager]
+    []
   );
 
-  return {
+  // 반환 객체 메모이제이션
+  return useMemo(() => ({
     resolveAddress,
     resolveName,
     getGiwaId,
@@ -134,5 +144,14 @@ export function useGiwaId(): UseGiwaIdReturn {
     isAvailable,
     isLoading,
     error,
-  };
+  }), [
+    resolveAddress,
+    resolveName,
+    getGiwaId,
+    getTextRecord,
+    setTextRecord,
+    isAvailable,
+    isLoading,
+    error,
+  ]);
 }

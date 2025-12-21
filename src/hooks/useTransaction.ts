@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useGiwaContext } from '../providers/GiwaProvider';
+import { useState, useCallback, useMemo, useRef } from 'react';
+import { useGiwaManagers } from '../providers/GiwaProvider';
 import { parseEther, type Address, type Hash } from 'viem';
 import type { TransactionReceipt } from '../types';
 
@@ -19,16 +19,25 @@ export interface UseTransactionReturn {
 
 /**
  * Hook for sending transactions
+ *
+ * 최적화:
+ * - useGiwaManagers만 사용 (wallet 상태 불필요)
+ * - useRef로 client 참조 안정화
+ * - 반환 객체 useMemo로 메모이제이션
  */
 export function useTransaction(): UseTransactionReturn {
-  const { client } = useGiwaContext();
+  const { client } = useGiwaManagers();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [lastTxHash, setLastTxHash] = useState<Hash | null>(null);
 
+  // client를 ref로 저장하여 안정적인 참조 유지
+  const clientRef = useRef(client);
+  clientRef.current = client;
+
   const sendTransaction = useCallback(
     async (params: SendTransactionParams): Promise<Hash> => {
-      const walletClient = client.getWalletClient();
+      const walletClient = clientRef.current.getWalletClient();
       if (!walletClient) {
         throw new Error('지갑이 연결되지 않았습니다.');
       }
@@ -53,12 +62,12 @@ export function useTransaction(): UseTransactionReturn {
         setIsLoading(false);
       }
     },
-    [client]
+    []
   );
 
   const waitForReceipt = useCallback(
     async (hash: Hash): Promise<TransactionReceipt> => {
-      const publicClient = client.getPublicClient();
+      const publicClient = clientRef.current.getPublicClient();
 
       try {
         const receipt = await publicClient.waitForTransactionReceipt({ hash });
@@ -75,14 +84,15 @@ export function useTransaction(): UseTransactionReturn {
         throw error;
       }
     },
-    [client]
+    []
   );
 
-  return {
+  // 반환 객체 메모이제이션
+  return useMemo(() => ({
     sendTransaction,
     waitForReceipt,
     isLoading,
     error,
     lastTxHash,
-  };
+  }), [sendTransaction, waitForReceipt, isLoading, error, lastTxHash]);
 }

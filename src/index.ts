@@ -18,7 +18,19 @@ export { GiwaIdManager } from './core/GiwaIdManager';
 export { DojangManager } from './core/DojangManager';
 
 // Providers
-export { GiwaProvider, useGiwaContext, GiwaContext } from './providers/GiwaProvider';
+export {
+  GiwaProvider,
+  useGiwaContext,
+  // 최적화된 개별 Context hooks (리렌더링 최소화)
+  useGiwaManagers,
+  useGiwaWalletContext,
+  useGiwaState,
+  // Context exports (advanced usage)
+  ManagerContext,
+  WalletContext,
+  StateContext,
+  GiwaContext,
+} from './providers/GiwaProvider';
 export type { GiwaProviderProps } from './providers/GiwaProvider';
 
 // Hooks
