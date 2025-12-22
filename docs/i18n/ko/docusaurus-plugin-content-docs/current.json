@@ -1,0 +1,18 @@
+{
+  "sidebar.tutorialSidebar.category.시작하기": {
+    "message": "시작하기",
+    "description": "The label for category 시작하기 in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.가이드": {
+    "message": "가이드",
+    "description": "The label for category 가이드 in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.API 레퍼런스": {
+    "message": "API 레퍼런스",
+    "description": "The label for category API 레퍼런스 in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.테스트": {
+    "message": "테스트",
+    "description": "The label for category 테스트 in sidebar tutorialSidebar"
+  }
+}

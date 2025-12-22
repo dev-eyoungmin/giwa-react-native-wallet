@@ -95,6 +95,7 @@ const config = {
             title: '더 보기',
             items: [
               { label: 'GIWA Chain', href: 'https://giwa.io' },
+              { label: 'GIWA 공식 문서', href: 'https://docs.giwa.io' },
               { label: 'npm', href: 'https://www.npmjs.com/package/@giwa/react-native-wallet' },
             ],
           },
