@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
+import Translate, { translate } from '@docusaurus/Translate';
 import styles from './index.module.css';
 
 function HomepageHeader() {
@@ -17,11 +18,11 @@ function HomepageHeader() {
             className="button button--secondary button--lg"
             to="/docs"
           >
-            시작하기
+            <Translate id="homepage.getStarted">Getting Started</Translate>
           </Link>
           <Link
             className="button button--outline button--lg"
-            to="https://github.com/your-username/giwa-react-native-sdk"
+            to="https://github.com/devym-37/giwa-react-native-wallet"
             style={{ marginLeft: '1rem' }}
           >
             GitHub
@@ -32,40 +33,66 @@ function HomepageHeader() {
   );
 }
 
-const features = [
-  {
-    title: '간편한 설치',
-    emoji: '📦',
-    description: 'Expo와 React Native CLI 모두 지원. 한 줄로 설치하고 바로 사용하세요.',
-  },
-  {
-    title: '안전한 지갑',
-    emoji: '🔐',
-    description: 'iOS Keychain, Android Keystore를 활용한 OS 레벨 보안 저장소.',
-  },
-  {
-    title: '빠른 트랜잭션',
-    emoji: '⚡',
-    description: 'Flashblocks로 ~200ms 내 트랜잭션 사전 확인.',
-  },
-  {
-    title: 'GIWA ID',
-    emoji: '🏷️',
-    description: 'ENS 기반 네이밍 서비스. alice.giwa.id로 간편하게.',
-  },
-  {
-    title: 'L1↔L2 브릿지',
-    emoji: '🌉',
-    description: '이더리움과 GIWA Chain 간 자산 이동.',
-  },
-  {
-    title: 'TypeScript',
-    emoji: '💎',
-    description: '완벽한 타입 지원으로 안전한 개발 경험.',
-  },
-];
+interface FeatureItem {
+  title: string;
+  emoji: string;
+  description: string;
+}
 
-function Feature({ title, emoji, description }) {
+function useFeatures(): FeatureItem[] {
+  return [
+    {
+      title: translate({ id: 'homepage.feature.easyInstall.title', message: 'Easy Installation' }),
+      emoji: '📦',
+      description: translate({
+        id: 'homepage.feature.easyInstall.description',
+        message: 'Supports both Expo and React Native CLI. Install with a single line and start using immediately.'
+      }),
+    },
+    {
+      title: translate({ id: 'homepage.feature.secureWallet.title', message: 'Secure Wallet' }),
+      emoji: '🔐',
+      description: translate({
+        id: 'homepage.feature.secureWallet.description',
+        message: 'OS-level secure storage using iOS Keychain and Android Keystore.'
+      }),
+    },
+    {
+      title: translate({ id: 'homepage.feature.fastTx.title', message: 'Fast Transactions' }),
+      emoji: '⚡',
+      description: translate({
+        id: 'homepage.feature.fastTx.description',
+        message: 'Pre-confirmation within ~200ms using Flashblocks.'
+      }),
+    },
+    {
+      title: translate({ id: 'homepage.feature.giwaId.title', message: 'GIWA ID' }),
+      emoji: '🏷️',
+      description: translate({
+        id: 'homepage.feature.giwaId.description',
+        message: 'ENS-based naming service. Simply use alice.giwa.id.'
+      }),
+    },
+    {
+      title: translate({ id: 'homepage.feature.bridge.title', message: 'L1↔L2 Bridge' }),
+      emoji: '🌉',
+      description: translate({
+        id: 'homepage.feature.bridge.description',
+        message: 'Asset transfer between Ethereum and GIWA Chain.'
+      }),
+    },
+    {
+      title: translate({ id: 'homepage.feature.typescript.title', message: 'TypeScript' }),
+      emoji: '💎',
+      description: translate({
+        id: 'homepage.feature.typescript.description',
+        message: 'Safe development experience with complete type support.'
+      }),
+    },
+  ];
+}
+
+function Feature({ title, emoji, description }: FeatureItem) {
   return (
     <div className={clsx('col col--4')}>
       <div className="feature-card" style={{ height: '100%', marginBottom: '1rem' }}>
@@ -78,6 +105,7 @@ function Feature({ title, emoji, description }) {
 }
 
 function HomepageFeatures() {
+  const features = useFeatures();
   return (
     <section className={styles.features}>
       <div className="container">
@@ -95,7 +123,9 @@ function QuickStart() {
   return (
     <section className={styles.quickStart}>
       <div className="container">
-        <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>빠른 시작</h2>
+        <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <Translate id="homepage.quickStart.title">Quick Start</Translate>
+        </h2>
         <div className="row">
           <div className="col col--6">
             <h3>Expo</h3>
@@ -112,7 +142,9 @@ function QuickStart() {
         </div>
 
         <div style={{ marginTop: '2rem' }}>
-          <h3>기본 사용법</h3>
+          <h3>
+            <Translate id="homepage.quickStart.basicUsage">Basic Usage</Translate>
+          </h3>
           <pre>
             <code>{`import { GiwaProvider, useGiwaWallet } from '@giwa/react-native-wallet';
 
@@ -128,9 +160,9 @@ function WalletScreen() {
   const { wallet, createWallet } = useGiwaWallet();
 
   return wallet ? (
-    <Text>주소: {wallet.address}</Text>
+    <Text>${translate({ id: 'homepage.quickStart.address', message: 'Address' })}: {wallet.address}</Text>
   ) : (
-    <Button title="지갑 생성" onPress={createWallet} />
+    <Button title="${translate({ id: 'homepage.quickStart.createWallet', message: 'Create Wallet' })}" onPress={createWallet} />
   );
 }`}</code>
           </pre>

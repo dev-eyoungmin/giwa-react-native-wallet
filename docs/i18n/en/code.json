@@ -1,0 +1,70 @@
+{
+  "homepage.getStarted": {
+    "message": "Getting Started",
+    "description": "The get started button text on homepage"
+  },
+  "homepage.feature.easyInstall.title": {
+    "message": "Easy Installation",
+    "description": "Title of the easy install feature"
+  },
+  "homepage.feature.easyInstall.description": {
+    "message": "Supports both Expo and React Native CLI. Install with a single line and start using immediately.",
+    "description": "Description of the easy install feature"
+  },
+  "homepage.feature.secureWallet.title": {
+    "message": "Secure Wallet",
+    "description": "Title of the secure wallet feature"
+  },
+  "homepage.feature.secureWallet.description": {
+    "message": "OS-level secure storage using iOS Keychain and Android Keystore.",
+    "description": "Description of the secure wallet feature"
+  },
+  "homepage.feature.fastTx.title": {
+    "message": "Fast Transactions",
+    "description": "Title of the fast transactions feature"
+  },
+  "homepage.feature.fastTx.description": {
+    "message": "Pre-confirmation within ~200ms using Flashblocks.",
+    "description": "Description of the fast transactions feature"
+  },
+  "homepage.feature.giwaId.title": {
+    "message": "GIWA ID",
+    "description": "Title of the GIWA ID feature"
+  },
+  "homepage.feature.giwaId.description": {
+    "message": "ENS-based naming service. Simply use alice.giwa.id.",
+    "description": "Description of the GIWA ID feature"
+  },
+  "homepage.feature.bridge.title": {
+    "message": "L1↔L2 Bridge",
+    "description": "Title of the bridge feature"
+  },
+  "homepage.feature.bridge.description": {
+    "message": "Asset transfer between Ethereum and GIWA Chain.",
+    "description": "Description of the bridge feature"
+  },
+  "homepage.feature.typescript.title": {
+    "message": "TypeScript",
+    "description": "Title of the TypeScript feature"
+  },
+  "homepage.feature.typescript.description": {
+    "message": "Safe development experience with complete type support.",
+    "description": "Description of the TypeScript feature"
+  },
+  "homepage.quickStart.title": {
+    "message": "Quick Start",
+    "description": "Title of the quick start section"
+  },
+  "homepage.quickStart.basicUsage": {
+    "message": "Basic Usage",
+    "description": "Basic usage section title"
+  },
+  "homepage.quickStart.address": {
+    "message": "Address",
+    "description": "Address label in code example"
+  },
+  "homepage.quickStart.createWallet": {
+    "message": "Create Wallet",
+    "description": "Create wallet button text in code example"
+  }
+}
