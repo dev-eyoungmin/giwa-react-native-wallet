@@ -9,7 +9,18 @@ import {
   type Transport,
 } from 'viem';
 import { getNetwork, GIWA_NETWORKS } from '../constants/networks';
-import type { NetworkType, GiwaConfig } from '../types';
+import {
+  getNetworkStatus,
+  getFeatureAvailability,
+  logNetworkWarnings,
+} from '../utils/networkValidator';
+import type {
+  NetworkType,
+  GiwaConfig,
+  NetworkStatus,
+  FeatureName,
+  FeatureAvailability,
+} from '../types';
 
 /**
  * Custom GIWA Chain definition for viem
@@ -43,11 +54,18 @@ export class GiwaClient {
   private chain: Chain;
   private network: NetworkType;
   private rpcUrl: string;
+  private networkStatus: NetworkStatus;
 
   constructor(config: GiwaConfig = {}) {
     this.network = config.network || 'testnet';
     this.chain = createGiwaChain(this.network);
     this.rpcUrl = config.customRpcUrl || GIWA_NETWORKS[this.network].rpcUrl;
+
+    // 네트워크 상태 검증 및 경고 출력
+    this.networkStatus = getNetworkStatus(this.network);
+    if (this.networkStatus.hasWarnings) {
+      logNetworkWarnings(this.network);
+    }
 
     this.publicClient = createPublicClient({
       chain: this.chain,
@@ -140,5 +158,29 @@ export class GiwaClient {
    */
   getChain(): Chain {
     return this.chain;
+  }
+
+  /**
+   * Get network status including feature availability
+   */
+  getNetworkStatus(): NetworkStatus {
+    return this.networkStatus;
+  }
+
+  /**
+   * Check if a specific feature is available
+   */
+  isFeatureAvailable(feature: FeatureName): boolean {
+    return this.networkStatus.features[feature]?.status === 'available';
+  }
+
+  /**
+   * Get feature availability info
+   */
+  getFeatureInfo(feature: FeatureName): FeatureAvailability {
+    return (
+      this.networkStatus.features[feature] ||
+      getFeatureAvailability(this.network, feature)
+    );
   }
 }

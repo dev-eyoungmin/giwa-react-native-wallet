@@ -43,6 +43,22 @@ export class GiwaTransactionError extends GiwaError {
   }
 }
 
+export class GiwaFeatureUnavailableError extends GiwaError {
+  public readonly feature: string;
+  public readonly network: string;
+
+  constructor(feature: string, network: string, reason?: string) {
+    const message = reason
+      ? `Feature "${feature}" is not available on ${network}: ${reason}`
+      : `Feature "${feature}" is not available on ${network}`;
+    super(message, 'FEATURE_UNAVAILABLE');
+    this.name = 'GiwaFeatureUnavailableError';
+    this.feature = feature;
+    this.network = network;
+    Object.setPrototypeOf(this, GiwaFeatureUnavailableError.prototype);
+  }
+}
+
 // Error codes
 export const ErrorCodes = {
   // Security
@@ -69,6 +85,11 @@ export const ErrorCodes = {
   // Bridge
   BRIDGE_DEPOSIT_FAILED: 'BRIDGE_DEPOSIT_FAILED',
   BRIDGE_WITHDRAW_FAILED: 'BRIDGE_WITHDRAW_FAILED',
+
+  // Network
+  FEATURE_UNAVAILABLE: 'FEATURE_UNAVAILABLE',
+  NETWORK_NOT_READY: 'NETWORK_NOT_READY',
+  TBD_CONTRACT: 'TBD_CONTRACT',
 } as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
@@ -144,6 +165,11 @@ export const ErrorMessages = {
   // General
   INITIALIZATION_FAILED: 'Initialization failed.',
   UNKNOWN_ERROR: 'Unknown error occurred.',
+
+  // Network/Feature
+  FEATURE_UNAVAILABLE: 'This feature is not available on the current network.',
+  NETWORK_NOT_READY: 'The selected network is not ready for use.',
+  TBD_CONTRACT: 'Contract address is not yet deployed (TBD).',
 } as const;
 
 export type ErrorMessage = (typeof ErrorMessages)[keyof typeof ErrorMessages];

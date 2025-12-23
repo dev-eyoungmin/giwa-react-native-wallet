@@ -7,7 +7,17 @@
  */
 
 // Network
-export type { NetworkType, GiwaNetwork } from './network';
+export type {
+  NetworkType,
+  GiwaNetwork,
+  FeatureName,
+  FeatureStatus,
+  NetworkReadiness,
+  FeatureAvailability,
+  NetworkWarningCode,
+  NetworkWarning,
+  NetworkStatus,
+} from './network';
 
 // Wallet
 export type {

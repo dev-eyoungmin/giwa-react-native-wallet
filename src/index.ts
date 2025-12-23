@@ -45,6 +45,8 @@ export { useFlashblocks } from './hooks/useFlashblocks';
 export { useGiwaId } from './hooks/useGiwaId';
 export { useDojang } from './hooks/useDojang';
 export { useFaucet } from './hooks/useFaucet';
+export { useNetworkInfo } from './hooks/useNetworkInfo';
+export type { UseNetworkInfoReturn } from './hooks/useNetworkInfo';
 
 // Hooks - Shared (for custom hook development)
 export { useAsyncAction, useAsyncActions } from './hooks/shared/useAsyncAction';
@@ -74,6 +76,7 @@ export {
   GiwaNetworkError,
   GiwaWalletError,
   GiwaTransactionError,
+  GiwaFeatureUnavailableError,
   ErrorCodes,
   ErrorMessages,
   toError,
@@ -83,3 +86,13 @@ export type { ErrorCode, ErrorMessage } from './utils/errors';
 
 // Utils - Environment
 export { detectEnvironment, ensureSecureStorageAvailable } from './utils/secureStorageValidator';
+
+// Utils - Network Validator (for advanced usage)
+export {
+  getNetworkStatus,
+  getFeatureAvailability,
+  getAllFeatureAvailabilities,
+  getNetworkWarnings,
+  isTbdAddress,
+  logNetworkWarnings,
+} from './utils/networkValidator';
