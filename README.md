@@ -180,6 +180,7 @@ function GiwaIdScreen() {
 | `useGiwaId` | GIWA ID (ENS) resolution |
 | `useDojang` | Attestation verification |
 | `useFaucet` | Testnet faucet |
+| `useNetworkInfo` | Network status and feature availability |
 
 ### Configuration
 
@@ -192,6 +193,59 @@ function GiwaIdScreen() {
     enableFlashblocks: true, // Enable fast confirmations
   }}
 >
+```
+
+## Network Selection
+
+### Check Network Status and Feature Availability
+
+```tsx
+import { useNetworkInfo } from '@giwa/react-native-wallet';
+
+function NetworkStatus() {
+  const {
+    network,
+    isTestnet,
+    isReady,
+    hasWarnings,
+    warnings,
+    isFeatureAvailable,
+    unavailableFeatures,
+  } = useNetworkInfo();
+
+  return (
+    <View>
+      <Text>Network: {network}</Text>
+      <Text>Testnet: {isTestnet ? 'Yes' : 'No'}</Text>
+      <Text>Ready: {isReady ? 'Yes' : 'No'}</Text>
+
+      {hasWarnings && (
+        <View>
+          <Text>Warnings:</Text>
+          {warnings.map((w, i) => <Text key={i}>- {w}</Text>)}
+        </View>
+      )}
+
+      {/* Check specific feature availability */}
+      {!isFeatureAvailable('giwaId') && (
+        <Text>GIWA ID is not available on this network</Text>
+      )}
+    </View>
+  );
+}
+```
+
+### Network Warnings
+
+When using mainnet with TBD (not yet deployed) contracts, the SDK will log warnings:
+
+```
+[GIWA SDK] Network "mainnet" has 4 warning(s):
+  1. [WARNING] Mainnet is not fully ready. 4 feature(s) unavailable.
+  2. [WARNING] bridge: L1 Bridge contract is TBD
+  3. [WARNING] giwaId: ENS Registry/Resolver contracts are TBD
+  4. [WARNING] dojang: EAS/Schema Registry contracts are TBD
+[GIWA SDK] Consider using "testnet" for development and testing.
 ```
 
 ## Network Information

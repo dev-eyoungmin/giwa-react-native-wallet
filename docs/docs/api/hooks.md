@@ -356,6 +356,82 @@ interface FaucetResult {
 
 ---
 
+## useNetworkInfo
+
+네트워크 상태 및 기능 가용성 확인 Hook
+
+```tsx
+import { useNetworkInfo } from '@giwa/react-native-wallet';
+
+const {
+  network,              // 'testnet' | 'mainnet'
+  networkConfig,        // GiwaNetwork
+  status,               // NetworkStatus
+  isTestnet,            // boolean
+  isReady,              // boolean
+  hasWarnings,          // boolean
+  warnings,             // string[]
+  isFeatureAvailable,   // (feature: FeatureName) => boolean
+  getFeatureInfo,       // (feature: FeatureName) => FeatureAvailability
+  unavailableFeatures,  // FeatureName[]
+  chainId,              // number
+  rpcUrl,               // string
+  explorerUrl,          // string
+} = useNetworkInfo();
+```
+
+### 사용 예시
+
+```tsx
+function NetworkStatus() {
+  const { network, isReady, hasWarnings, warnings, isFeatureAvailable } = useNetworkInfo();
+
+  return (
+    <View>
+      <Text>Network: {network}</Text>
+      <Text>Ready: {isReady ? 'Yes' : 'No'}</Text>
+
+      {hasWarnings && (
+        <View>
+          <Text>Warnings:</Text>
+          {warnings.map((w, i) => <Text key={i}>- {w}</Text>)}
+        </View>
+      )}
+
+      {!isFeatureAvailable('giwaId') && (
+        <Text>GIWA ID is not available</Text>
+      )}
+    </View>
+  );
+}
+```
+
+### 타입
+
+```tsx
+type FeatureName = 'bridge' | 'giwaId' | 'dojang' | 'faucet' | 'flashblocks' | 'tokens';
+
+type FeatureStatus = 'available' | 'unavailable' | 'partial';
+
+interface FeatureAvailability {
+  name: FeatureName;
+  status: FeatureStatus;
+  reason?: string;
+  contractAddress?: string;
+}
+
+interface NetworkStatus {
+  network: 'testnet' | 'mainnet';
+  readiness: 'ready' | 'partial' | 'not_ready';
+  isTestnet: boolean;
+  hasWarnings: boolean;
+  warnings: NetworkWarning[];
+  features: Record<FeatureName, FeatureAvailability>;
+}
+```
+
+---
+
 ## 공통 타입
 
 ### GiwaError
