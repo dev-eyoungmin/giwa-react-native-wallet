@@ -21,9 +21,9 @@ export interface UseTokensReturn {
 /**
  * Hook for ERC-20 token operations
  *
- * 클린 코드 적용:
- * - useAsyncActions로 중복 상태 관리 로직 제거
- * - ErrorMessages 상수 사용
+ * Clean code principles:
+ * - Removed duplicate state management logic with useAsyncActions
+ * - Using ErrorMessages constants
  */
 export function useTokens(): UseTokensReturn {
   const { tokenManager } = useGiwaManagers();

@@ -1,5 +1,5 @@
 /**
- * 브릿지 관련 타입 정의
+ * Bridge type definitions
  */
 import type { Address, Hash } from 'viem';
 

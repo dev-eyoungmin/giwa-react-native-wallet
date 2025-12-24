@@ -1,5 +1,5 @@
 /**
- * 에러 관련 타입 정의
+ * Error type definitions
  */
 
 export interface GiwaErrorDetails {

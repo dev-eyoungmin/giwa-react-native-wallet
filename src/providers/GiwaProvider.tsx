@@ -19,10 +19,10 @@ import type { GiwaConfig, GiwaWallet, NetworkType } from '../types';
 import type { Environment } from '../utils/secureStorageValidator';
 
 // ============================================================================
-// Context 분리: Manager, Wallet, State로 분리하여 불필요한 리렌더링 방지
+// Context Separation: Split into Manager, Wallet, State to prevent unnecessary re-renders
 // ============================================================================
 
-// Manager Context - 거의 변경되지 않는 매니저 인스턴스들
+// Manager Context - rarely changing manager instances
 interface ManagerContextState {
   client: GiwaClient;
   walletManager: WalletManager;
@@ -35,13 +35,13 @@ interface ManagerContextState {
   network: NetworkType;
 }
 
-// Wallet Context - wallet 상태만 (자주 변경됨)
+// Wallet Context - wallet state only (frequently changed)
 interface WalletContextState {
   wallet: GiwaWallet | null;
   setWallet: (wallet: GiwaWallet | null) => void;
 }
 
-// State Context - 로딩/에러 상태 (자주 변경됨)
+// State Context - loading/error state (frequently changed)
 interface StateContextState {
   isInitialized: boolean;
   isLoading: boolean;
@@ -49,12 +49,12 @@ interface StateContextState {
   environment: Environment | null;
 }
 
-// 분리된 Context 생성
+// Create separated Contexts
 const ManagerContext = createContext<ManagerContextState | undefined>(undefined);
 const WalletContext = createContext<WalletContextState | undefined>(undefined);
 const StateContext = createContext<StateContextState | undefined>(undefined);
 
-// 레거시 호환을 위한 통합 Context 타입
+// Combined Context type for legacy compatibility
 interface GiwaContextState extends ManagerContextState, WalletContextState, StateContextState {}
 
 // Provider props
@@ -67,10 +67,10 @@ export interface GiwaProviderProps {
 /**
  * GIWA Provider - wraps application with GIWA SDK context
  *
- * 최적화:
- * - Context를 Manager, Wallet, State로 분리하여 불필요한 리렌더링 방지
- * - 매니저가 변경되어도 wallet 상태만 사용하는 컴포넌트는 리렌더링 안됨
- * - 로딩 상태가 변경되어도 매니저만 사용하는 컴포넌트는 리렌더링 안됨
+ * Optimization:
+ * - Context split into Manager, Wallet, State to prevent unnecessary re-renders
+ * - Components using only wallet state won't re-render when managers change
+ * - Components using only managers won't re-render when loading state changes
  *
  * Usage:
  * ```tsx
@@ -93,7 +93,7 @@ export function GiwaProvider({
   const [environment, setEnvironment] = useState<Environment | null>(null);
   const [walletManager, setWalletManager] = useState<WalletManager | null>(null);
 
-  // config 값들을 안정적인 참조로 메모이제이션
+  // Memoize config values for stable references
   const networkConfig = config.network;
   const customRpcUrl = config.customRpcUrl;
   const enableFlashblocks = config.enableFlashblocks;
@@ -134,7 +134,7 @@ export function GiwaProvider({
 
         if (env === 'unsupported') {
           throw new Error(
-            '보안 저장소를 찾을 수 없습니다. expo-secure-store 또는 react-native-keychain을 설치해주세요.'
+            'Secure storage not found. Please install expo-secure-store or react-native-keychain.'
           );
         }
 
@@ -166,7 +166,7 @@ export function GiwaProvider({
         }
       } catch (err) {
         if (mounted) {
-          setError(err instanceof Error ? err : new Error('초기화 실패'));
+          setError(err instanceof Error ? err : new Error('Initialization failed'));
         }
       } finally {
         if (mounted) {
@@ -199,7 +199,7 @@ export function GiwaProvider({
     [client, walletManager]
   );
 
-  // Manager Context value (거의 변경되지 않음)
+  // Manager Context value (rarely changes)
   const managerContextValue = useMemo<ManagerContextState | null>(() => {
     if (!walletManager) {
       return null;
@@ -228,13 +228,13 @@ export function GiwaProvider({
     networkConfig,
   ]);
 
-  // Wallet Context value (wallet 변경 시만 업데이트)
+  // Wallet Context value (updates only when wallet changes)
   const walletContextValue = useMemo<WalletContextState>(() => ({
     wallet,
     setWallet,
   }), [wallet, setWallet]);
 
-  // State Context value (로딩/에러 상태 변경 시만 업데이트)
+  // State Context value (updates only when loading/error state changes)
   const stateContextValue = useMemo<StateContextState>(() => ({
     isInitialized,
     isLoading,
@@ -268,12 +268,12 @@ export function GiwaProvider({
 }
 
 // ============================================================================
-// 최적화된 개별 Context Hooks
+// Optimized Individual Context Hooks
 // ============================================================================
 
 /**
- * Hook to access only manager instances (거의 리렌더링 안됨)
- * wallet 상태가 필요 없을 때 사용
+ * Hook to access only manager instances (rarely re-renders)
+ * Use when wallet state is not needed
  */
 export function useGiwaManagers(): ManagerContextState {
   const context = useContext(ManagerContext);
@@ -284,7 +284,7 @@ export function useGiwaManagers(): ManagerContextState {
 }
 
 /**
- * Hook to access only wallet state (wallet 변경 시만 리렌더링)
+ * Hook to access only wallet state (re-renders only when wallet changes)
  */
 export function useGiwaWalletContext(): WalletContextState {
   const context = useContext(WalletContext);
@@ -295,7 +295,7 @@ export function useGiwaWalletContext(): WalletContextState {
 }
 
 /**
- * Hook to access only loading/error state (상태 변경 시만 리렌더링)
+ * Hook to access only loading/error state (re-renders only when state changes)
  */
 export function useGiwaState(): StateContextState {
   const context = useContext(StateContext);
@@ -306,16 +306,16 @@ export function useGiwaState(): StateContextState {
 }
 
 /**
- * Hook to access full GIWA context (레거시 호환)
- * 주의: 모든 상태 변경에 리렌더링됨
- * 가능하면 useGiwaManagers, useGiwaWalletContext, useGiwaState를 개별 사용 권장
+ * Hook to access full GIWA context (legacy compatible)
+ * Warning: Re-renders on all state changes
+ * Prefer using useGiwaManagers, useGiwaWalletContext, useGiwaState individually when possible
  */
 export function useGiwaContext(): GiwaContextState {
   const managers = useGiwaManagers();
   const walletContext = useGiwaWalletContext();
   const state = useGiwaState();
 
-  // 통합 객체 메모이제이션
+  // Memoize combined object
   return useMemo(() => ({
     ...managers,
     ...walletContext,

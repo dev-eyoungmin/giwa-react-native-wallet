@@ -1,9 +1,9 @@
 /**
- * 타입 정의 통합 export
+ * Unified type exports
  *
- * 클린 아키텍처 원칙:
- * - 도메인별 타입 분리로 응집도 향상
- * - 단일 진입점 유지로 사용 편의성 확보
+ * Clean architecture principles:
+ * - Domain-specific type separation for improved cohesion
+ * - Single entry point for ease of use
  */
 
 // Network

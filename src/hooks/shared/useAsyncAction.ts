@@ -1,11 +1,11 @@
 import { useState, useCallback, useRef } from 'react';
 
 /**
- * 비동기 액션의 공통 상태를 관리하는 훅
+ * Hook for managing common async action state
  *
- * 클린 코드 원칙:
- * - DRY (Don't Repeat Yourself): 모든 훅에서 반복되는 isLoading/error 패턴 추상화
- * - SRP (Single Responsibility): 비동기 상태 관리만 담당
+ * Clean code principles:
+ * - DRY (Don't Repeat Yourself): Abstract repeated isLoading/error pattern from all hooks
+ * - SRP (Single Responsibility): Only handles async state management
  *
  * @example
  * const { execute, isLoading, error } = useAsyncAction(
@@ -32,7 +32,7 @@ export function useAsyncAction<TResult, TArgs extends unknown[]>(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  // action을 ref로 저장하여 의존성에서 제외
+  // Store action in ref to exclude from dependencies
   const actionRef = useRef(action);
   actionRef.current = action;
 
@@ -66,7 +66,7 @@ export function useAsyncAction<TResult, TArgs extends unknown[]>(
 }
 
 /**
- * 여러 비동기 액션을 그룹으로 관리하는 훅
+ * Hook for managing multiple async actions as a group
  *
  * @example
  * const actions = useAsyncActions({
@@ -88,7 +88,7 @@ export function useAsyncActions<
   const actionsRef = useRef(actions);
   actionsRef.current = actions;
 
-  // 각 액션에 대해 개별 상태 관리
+  // Manage individual state for each action
   const [states, setStates] = useState<Record<string, AsyncActionState>>(() =>
     Object.keys(actions).reduce(
       (acc, key) => ({ ...acc, [key]: { isLoading: false, error: null } }),
@@ -98,7 +98,7 @@ export function useAsyncActions<
 
   const executors = useRef<Record<string, (...args: unknown[]) => Promise<unknown>>>({});
 
-  // 각 액션에 대한 executor 생성
+  // Create executor for each action
   Object.keys(actions).forEach((key) => {
     if (!executors.current[key]) {
       executors.current[key] = async (...args: unknown[]) => {

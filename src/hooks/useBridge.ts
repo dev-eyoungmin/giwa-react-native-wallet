@@ -17,9 +17,9 @@ export interface UseBridgeReturn {
 /**
  * Hook for L1↔L2 bridge operations
  *
- * 클린 코드 적용:
- * - useAsyncActions로 중복 상태 관리 로직 제거
- * - ErrorMessages 상수 사용으로 매직 스트링 제거
+ * Clean code principles:
+ * - Removed duplicate state management logic with useAsyncActions
+ * - Eliminated magic strings with ErrorMessages constants
  */
 export function useBridge(): UseBridgeReturn {
   const { bridgeManager } = useGiwaManagers();
@@ -27,7 +27,7 @@ export function useBridge(): UseBridgeReturn {
   const bridgeManagerRef = useRef(bridgeManager);
   bridgeManagerRef.current = bridgeManager;
 
-  // useAsyncActions로 비동기 액션 상태 관리
+  // Manage async action state with useAsyncActions
   const actions = useAsyncActions({
     withdrawETH: async (amount: string, to?: Address) => {
       const result = await bridgeManagerRef.current.withdrawETH(amount, to);
@@ -39,7 +39,7 @@ export function useBridge(): UseBridgeReturn {
     },
   });
 
-  // 동기 메서드들
+  // Synchronous methods
   const getPendingTransactions = useCallback((): BridgeTransaction[] => {
     return bridgeManagerRef.current.getPendingTransactions();
   }, []);
@@ -55,7 +55,7 @@ export function useBridge(): UseBridgeReturn {
     return bridgeManagerRef.current.getEstimatedWithdrawalTime();
   }, []);
 
-  // 통합 로딩/에러 상태
+  // Combined loading/error state
   const isLoading = actions.withdrawETH.isLoading || actions.withdrawToken.isLoading;
   const error = actions.withdrawETH.error || actions.withdrawToken.error;
 

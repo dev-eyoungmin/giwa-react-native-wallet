@@ -1,5 +1,5 @@
 /**
- * 네트워크 관련 타입 정의
+ * Network type definitions
  */
 
 export type NetworkType = 'mainnet' | 'testnet';
@@ -17,7 +17,7 @@ export interface GiwaNetwork {
 }
 
 /**
- * SDK에서 제공하는 기능 이름
+ * Feature names provided by SDK
  */
 export type FeatureName =
   | 'bridge'
@@ -28,17 +28,17 @@ export type FeatureName =
   | 'tokens';
 
 /**
- * 기능 상태
+ * Feature status
  */
 export type FeatureStatus = 'available' | 'unavailable' | 'partial';
 
 /**
- * 네트워크 준비 상태
+ * Network readiness state
  */
 export type NetworkReadiness = 'ready' | 'partial' | 'not_ready';
 
 /**
- * 개별 기능 가용성 정보
+ * Individual feature availability info
  */
 export interface FeatureAvailability {
   name: FeatureName;
@@ -48,7 +48,7 @@ export interface FeatureAvailability {
 }
 
 /**
- * 네트워크 경고 코드
+ * Network warning code
  */
 export type NetworkWarningCode =
   | 'TBD_CONTRACT'
@@ -56,7 +56,7 @@ export type NetworkWarningCode =
   | 'FEATURE_UNAVAILABLE';
 
 /**
- * 네트워크 경고 정보
+ * Network warning info
  */
 export interface NetworkWarning {
   code: NetworkWarningCode;
@@ -66,7 +66,7 @@ export interface NetworkWarning {
 }
 
 /**
- * 전체 네트워크 상태 정보
+ * Full network status info
  */
 export interface NetworkStatus {
   network: NetworkType;

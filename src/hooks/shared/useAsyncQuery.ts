@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 /**
- * 데이터 조회용 비동기 훅 (자동 fetch + refetch 지원)
+ * Async hook for data fetching (auto fetch + refetch support)
  *
- * 클린 코드 원칙:
- * - DRY: useBalance 등에서 반복되는 fetch/refetch 패턴 추상화
- * - SRP: 데이터 조회 상태 관리만 담당
+ * Clean code principles:
+ * - DRY: Abstract repeated fetch/refetch pattern from useBalance etc.
+ * - SRP: Only handles data fetching state management
  *
  * @example
  * const { data, isLoading, error, refetch } = useAsyncQuery(
@@ -14,15 +14,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
  * );
  */
 export interface UseAsyncQueryOptions<T> {
-  /** 쿼리 활성화 여부 (기본값: true) */
+  /** Whether query is enabled (default: true) */
   enabled?: boolean;
-  /** 초기 데이터 */
+  /** Initial data */
   initialData?: T;
-  /** 자동 refetch 간격 (ms) */
+  /** Auto refetch interval (ms) */
   refetchInterval?: number;
-  /** 성공 콜백 */
+  /** Success callback */
   onSuccess?: (data: T) => void;
-  /** 에러 콜백 */
+  /** Error callback */
   onError?: (error: Error) => void;
 }
 
@@ -50,7 +50,7 @@ export function useAsyncQuery<T>(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  // queryFn을 ref로 저장하여 의존성에서 제외
+  // Store queryFn in ref to exclude from dependencies
   const queryFnRef = useRef(queryFn);
   queryFnRef.current = queryFn;
 
@@ -79,7 +79,7 @@ export function useAsyncQuery<T>(
     }
   }, [enabled]);
 
-  // 초기 fetch
+  // Initial fetch
   useEffect(() => {
     fetch();
   }, [fetch]);

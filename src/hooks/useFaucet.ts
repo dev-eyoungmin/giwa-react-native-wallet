@@ -29,13 +29,13 @@ export function useFaucet(): UseFaucetReturn {
     async (address?: Address): Promise<void> => {
       const targetAddress = address || walletAddressRef.current;
       if (!targetAddress) {
-        throw new Error('지갑 주소가 필요합니다.');
+        throw new Error('Wallet address is required.');
       }
 
       // Check if on testnet
       const network = clientRef.current.getNetwork();
       if (network !== 'testnet') {
-        throw new Error('Faucet은 테스트넷에서만 사용할 수 있습니다.');
+        throw new Error('Faucet is only available on testnet.');
       }
 
       setIsLoading(true);
@@ -54,7 +54,7 @@ export function useFaucet(): UseFaucetReturn {
         // Note: Actual faucet request implementation depends on the faucet API
         // Some faucets are web-based, others have API endpoints
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('Faucet 요청 실패');
+        const error = err instanceof Error ? err : new Error('Faucet request failed');
         setError(error);
         throw error;
       } finally {

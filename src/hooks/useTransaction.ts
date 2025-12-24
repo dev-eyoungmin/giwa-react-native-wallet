@@ -20,10 +20,10 @@ export interface UseTransactionReturn {
 /**
  * Hook for sending transactions
  *
- * 최적화:
- * - useGiwaManagers만 사용 (wallet 상태 불필요)
- * - useRef로 client 참조 안정화
- * - 반환 객체 useMemo로 메모이제이션
+ * Optimizations:
+ * - Only use useGiwaManagers (wallet state not needed)
+ * - Stabilize client reference with useRef
+ * - Return object memoized with useMemo
  */
 export function useTransaction(): UseTransactionReturn {
   const { client } = useGiwaManagers();
@@ -31,7 +31,7 @@ export function useTransaction(): UseTransactionReturn {
   const [error, setError] = useState<Error | null>(null);
   const [lastTxHash, setLastTxHash] = useState<Hash | null>(null);
 
-  // client를 ref로 저장하여 안정적인 참조 유지
+  // Store client in ref to maintain stable reference
   const clientRef = useRef(client);
   clientRef.current = client;
 
@@ -39,7 +39,7 @@ export function useTransaction(): UseTransactionReturn {
     async (params: SendTransactionParams): Promise<Hash> => {
       const walletClient = clientRef.current.getWalletClient();
       if (!walletClient) {
-        throw new Error('지갑이 연결되지 않았습니다.');
+        throw new Error('Wallet is not connected.');
       }
 
       setIsLoading(true);
@@ -55,7 +55,7 @@ export function useTransaction(): UseTransactionReturn {
         setLastTxHash(hash);
         return hash;
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('트랜잭션 전송 실패');
+        const error = err instanceof Error ? err : new Error('Failed to send transaction');
         setError(error);
         throw error;
       } finally {
@@ -79,7 +79,7 @@ export function useTransaction(): UseTransactionReturn {
           gasUsed: receipt.gasUsed,
         };
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('트랜잭션 확인 실패');
+        const error = err instanceof Error ? err : new Error('Failed to confirm transaction');
         setError(error);
         throw error;
       }
@@ -87,7 +87,7 @@ export function useTransaction(): UseTransactionReturn {
     []
   );
 
-  // 반환 객체 메모이제이션
+  // Memoize return object
   return useMemo(() => ({
     sendTransaction,
     waitForReceipt,

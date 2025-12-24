@@ -21,20 +21,20 @@ export interface UseFlashblocksReturn {
 /**
  * Hook for Flashblocks (~200ms preconfirmation) operations
  *
- * 최적화:
- * - useGiwaManagers만 사용 (wallet 상태 불필요)
- * - useRef로 flashblocksManager 참조 안정화
- * - isEnabled를 useMemo로 캐싱
- * - 반환 객체 useMemo로 메모이제이션
+ * Optimizations:
+ * - Only use useGiwaManagers (wallet state not needed)
+ * - Stabilize flashblocksManager reference with useRef
+ * - Cache isEnabled with useMemo
+ * - Return object memoized with useMemo
  */
 export function useFlashblocks(): UseFlashblocksReturn {
   const { flashblocksManager } = useGiwaManagers();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  // isEnabled 상태를 React 상태로 관리하여 변경 시 리렌더링
+  // Manage isEnabled state in React to trigger re-render on change
   const [enabledState, setEnabledState] = useState(() => flashblocksManager.isEnabled());
 
-  // flashblocksManager를 ref로 저장
+  // Store flashblocksManager in ref
   const flashblocksManagerRef = useRef(flashblocksManager);
   flashblocksManagerRef.current = flashblocksManager;
 
@@ -58,7 +58,7 @@ export function useFlashblocks(): UseFlashblocksReturn {
       try {
         return await flashblocksManagerRef.current.sendTransaction(request);
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('Flashblocks 트랜잭션 실패');
+        const error = err instanceof Error ? err : new Error('Flashblocks transaction failed');
         setError(error);
         throw error;
       } finally {
@@ -90,7 +90,7 @@ export function useFlashblocks(): UseFlashblocksReturn {
     return flashblocksManagerRef.current.getAverageLatency();
   }, []);
 
-  // 반환 객체 메모이제이션
+  // Memoize return object
   return useMemo(() => ({
     isEnabled: enabledState,
     setEnabled,

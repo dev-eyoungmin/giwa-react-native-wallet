@@ -1,5 +1,5 @@
 /**
- * SDK 설정 관련 타입 정의
+ * SDK configuration type definitions
  */
 import type { NetworkType } from './network';
 

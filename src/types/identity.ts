@@ -1,5 +1,5 @@
 /**
- * 신원/인증 관련 타입 정의 (GIWA ID, Dojang)
+ * Identity/Authentication type definitions (GIWA ID, Dojang)
  */
 import type { Address, Hex } from 'viem';
 
@@ -11,7 +11,7 @@ export interface GiwaId {
   records?: Record<string, string>;
 }
 
-// Dojang (EAS 기반 증명)
+// Dojang (EAS-based attestation)
 export type AttestationType =
   | 'verified_address'
   | 'balance_root'

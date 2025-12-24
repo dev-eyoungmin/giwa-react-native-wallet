@@ -18,8 +18,8 @@ export interface UseGiwaIdReturn {
 /**
  * Hook for GIWA ID (ENS-based naming) operations
  *
- * 클린 코드 적용:
- * - useAsyncActions로 중복 상태 관리 로직 제거
+ * Clean code principles:
+ * - Removed duplicate state management logic with useAsyncActions
  */
 export function useGiwaId(): UseGiwaIdReturn {
   const { giwaIdManager } = useGiwaManagers();

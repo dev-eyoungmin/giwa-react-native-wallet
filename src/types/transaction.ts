@@ -1,5 +1,5 @@
 /**
- * 트랜잭션 관련 타입 정의
+ * Transaction type definitions
  */
 import type { Address, Hash, Hex } from 'viem';
 

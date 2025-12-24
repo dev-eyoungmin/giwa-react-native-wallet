@@ -16,8 +16,8 @@ export interface UseDojangReturn {
 /**
  * Hook for Dojang (EAS-based attestation) operations
  *
- * 클린 코드 적용:
- * - useAsyncActions로 중복 상태 관리 로직 제거
+ * Clean code principles:
+ * - Removed duplicate state management logic with useAsyncActions
  */
 export function useDojang(): UseDojangReturn {
   const { dojangManager } = useGiwaManagers();
