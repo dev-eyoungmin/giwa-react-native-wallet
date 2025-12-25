@@ -23,6 +23,16 @@ import type {
 } from '../types';
 
 /**
+ * Resolved endpoints after applying custom overrides
+ */
+export interface ResolvedEndpoints {
+  rpcUrl: string;
+  flashblocksRpcUrl: string;
+  flashblocksWsUrl: string;
+  explorerUrl: string;
+}
+
+/**
  * Custom GIWA Chain definition for viem
  */
 function createGiwaChain(network: NetworkType): Chain {
@@ -53,15 +63,23 @@ export class GiwaClient {
   private walletClient: WalletClient<Transport, Chain, Account> | null = null;
   private chain: Chain;
   private network: NetworkType;
-  private rpcUrl: string;
+  private endpoints: ResolvedEndpoints;
   private networkStatus: NetworkStatus;
 
   constructor(config: GiwaConfig = {}) {
     this.network = config.network || 'testnet';
     this.chain = createGiwaChain(this.network);
-    this.rpcUrl = config.customRpcUrl || GIWA_NETWORKS[this.network].rpcUrl;
 
-    // 네트워크 상태 검증 및 경고 출력
+    // Resolve endpoints with custom overrides
+    const networkConfig = GIWA_NETWORKS[this.network];
+    this.endpoints = {
+      rpcUrl: config.endpoints?.rpcUrl || config.customRpcUrl || networkConfig.rpcUrl,
+      flashblocksRpcUrl: config.endpoints?.flashblocksRpcUrl || networkConfig.flashblocksRpcUrl,
+      flashblocksWsUrl: config.endpoints?.flashblocksWsUrl || networkConfig.flashblocksWsUrl,
+      explorerUrl: config.endpoints?.explorerUrl || networkConfig.explorerUrl,
+    };
+
+    // Network status validation and warning output
     this.networkStatus = getNetworkStatus(this.network);
     if (this.networkStatus.hasWarnings) {
       logNetworkWarnings(this.network);
@@ -69,7 +87,7 @@ export class GiwaClient {
 
     this.publicClient = createPublicClient({
       chain: this.chain,
-      transport: http(this.rpcUrl),
+      transport: http(this.endpoints.rpcUrl),
     });
   }
 
@@ -95,7 +113,7 @@ export class GiwaClient {
     this.walletClient = createWalletClient({
       account,
       chain: this.chain,
-      transport: http(this.rpcUrl),
+      transport: http(this.endpoints.rpcUrl),
     });
   }
 
@@ -124,7 +142,35 @@ export class GiwaClient {
    * Get RPC URL
    */
   getRpcUrl(): string {
-    return this.rpcUrl;
+    return this.endpoints.rpcUrl;
+  }
+
+  /**
+   * Get all resolved endpoints
+   */
+  getEndpoints(): ResolvedEndpoints {
+    return { ...this.endpoints };
+  }
+
+  /**
+   * Get Flashblocks RPC URL
+   */
+  getFlashblocksRpcUrl(): string {
+    return this.endpoints.flashblocksRpcUrl;
+  }
+
+  /**
+   * Get Flashblocks WebSocket URL
+   */
+  getFlashblocksWsUrl(): string {
+    return this.endpoints.flashblocksWsUrl;
+  }
+
+  /**
+   * Get Explorer URL
+   */
+  getExplorerUrl(): string {
+    return this.endpoints.explorerUrl;
   }
 
   /**

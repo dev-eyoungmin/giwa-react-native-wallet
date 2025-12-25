@@ -8,6 +8,10 @@ export interface GiwaNetwork {
   id: number;
   name: string;
   rpcUrl: string;
+  /** Flashblocks RPC endpoint for faster block confirmations */
+  flashblocksRpcUrl: string;
+  /** Flashblocks WebSocket endpoint for real-time subscriptions */
+  flashblocksWsUrl: string;
   explorerUrl: string;
   currency: {
     name: string;

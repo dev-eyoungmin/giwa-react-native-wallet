@@ -10,6 +10,7 @@ export { CONTRACT_ADDRESSES, getContractAddresses, DOJANG_SCHEMAS } from './cons
 
 // Core
 export { GiwaClient } from './core/GiwaClient';
+export type { ResolvedEndpoints } from './core/GiwaClient';
 export { WalletManager } from './core/WalletManager';
 export { TokenManager } from './core/TokenManager';
 export { BridgeManager } from './core/BridgeManager';

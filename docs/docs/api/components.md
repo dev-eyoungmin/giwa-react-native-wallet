@@ -28,11 +28,25 @@ import { GiwaProvider } from '@giwa/react-native-wallet';
 ### GiwaConfig
 
 ```tsx
-interface GiwaConfig {
-  /** 네트워크 선택 */
-  network: 'testnet' | 'mainnet';
+interface CustomEndpoints {
+  /** 커스텀 RPC URL */
+  rpcUrl?: string;
+  /** Flashblocks RPC URL */
+  flashblocksRpcUrl?: string;
+  /** Flashblocks WebSocket URL */
+  flashblocksWsUrl?: string;
+  /** 블록 탐색기 URL */
+  explorerUrl?: string;
+}
 
-  /** 커스텀 RPC URL (선택) */
+interface GiwaConfig {
+  /** 네트워크 선택 (기본값: 'testnet') */
+  network?: 'testnet' | 'mainnet';
+
+  /** 커스텀 엔드포인트 설정 */
+  endpoints?: CustomEndpoints;
+
+  /** @deprecated endpoints.rpcUrl 사용 권장 */
   customRpcUrl?: string;
 
   /** 앱 시작 시 저장된 지갑 자동 로드 */
@@ -49,7 +63,7 @@ interface GiwaConfig {
 ### 사용 예시
 
 ```tsx
-// 기본 설정
+// 기본 설정 (testnet)
 <GiwaProvider config={{ network: 'testnet' }}>
   <App />
 </GiwaProvider>
@@ -57,7 +71,7 @@ interface GiwaConfig {
 // 전체 설정
 <GiwaProvider
   config={{
-    network: 'mainnet',
+    network: 'testnet',
     autoConnect: true,
     enableFlashblocks: true,
   }}
@@ -65,11 +79,16 @@ interface GiwaConfig {
   <App />
 </GiwaProvider>
 
-// 커스텀 RPC
+// 커스텀 엔드포인트
 <GiwaProvider
   config={{
-    network: 'mainnet',
-    customRpcUrl: 'https://my-rpc.example.com',
+    network: 'testnet',
+    endpoints: {
+      rpcUrl: 'https://my-rpc.example.com',
+      flashblocksRpcUrl: 'https://my-flashblocks.example.com',
+      flashblocksWsUrl: 'wss://my-flashblocks.example.com',
+      explorerUrl: 'https://my-explorer.example.com',
+    },
   }}
 >
   <App />

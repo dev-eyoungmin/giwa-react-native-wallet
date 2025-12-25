@@ -52,7 +52,7 @@ export type {
 } from './identity';
 
 // Config
-export type { GiwaConfig } from './config';
+export type { GiwaConfig, CustomEndpoints } from './config';
 
 // Error
 export type { GiwaErrorDetails } from './error';

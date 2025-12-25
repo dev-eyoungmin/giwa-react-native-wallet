@@ -188,11 +188,39 @@ function GiwaIdScreen() {
 <GiwaProvider
   config={{
     network: 'testnet', // 'testnet' | 'mainnet'
-    customRpcUrl: 'https://...', // Optional custom RPC
     autoConnect: true, // Auto-load wallet on startup
     enableFlashblocks: true, // Enable fast confirmations
   }}
 >
+```
+
+### Custom Endpoints
+
+You can override default network endpoints:
+
+```tsx
+<GiwaProvider
+  config={{
+    network: 'testnet',
+    endpoints: {
+      rpcUrl: 'https://my-custom-rpc.example.com',
+      flashblocksRpcUrl: 'https://my-flashblocks-rpc.example.com',
+      flashblocksWsUrl: 'wss://my-flashblocks-ws.example.com',
+      explorerUrl: 'https://my-explorer.example.com',
+    },
+  }}
+>
+```
+
+Access endpoints at runtime:
+
+```tsx
+import { useNetworkInfo } from '@giwa/react-native-wallet';
+
+function MyComponent() {
+  const { rpcUrl, flashblocksRpcUrl, flashblocksWsUrl, explorerUrl } = useNetworkInfo();
+  // Use the resolved endpoints
+}
 ```
 
 ## Network Selection
@@ -250,10 +278,29 @@ When using mainnet with TBD (not yet deployed) contracts, the SDK will log warni
 
 ## Network Information
 
-| Network | Chain ID | RPC URL |
-|---------|----------|---------|
-| Testnet | 91342 | https://sepolia-rpc.giwa.io/ |
-| Mainnet | 91341 | https://rpc.giwa.io/ |
+### Testnet (GIWA Sepolia)
+
+| Property | Value |
+|----------|-------|
+| Chain ID | 91342 |
+| RPC URL | `https://sepolia-rpc.giwa.io` |
+| Flashblocks RPC | `https://sepolia-rpc-flashblocks.giwa.io` |
+| Flashblocks WebSocket | `wss://sepolia-rpc-flashblocks.giwa.io` |
+| Block Explorer | `https://sepolia-explorer.giwa.io` |
+| Currency | ETH |
+
+### Mainnet (Coming Soon)
+
+| Property | Value |
+|----------|-------|
+| Chain ID | 91341 (TBD) |
+| RPC URL | `https://rpc.giwa.io` |
+| Flashblocks RPC | `https://rpc-flashblocks.giwa.io` |
+| Flashblocks WebSocket | `wss://rpc-flashblocks.giwa.io` |
+| Block Explorer | `https://explorer.giwa.io` |
+| Currency | ETH |
+
+> **Note**: Mainnet contracts are not yet deployed. Use `testnet` for development.
 
 ## Security
 

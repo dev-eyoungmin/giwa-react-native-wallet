@@ -382,11 +382,30 @@ const ErrorCodes = {
 ## 설정
 
 ```tsx
+// 커스텀 엔드포인트 설정
+interface CustomEndpoints {
+  /** 커스텀 RPC URL */
+  rpcUrl?: string;
+  /** Flashblocks RPC URL */
+  flashblocksRpcUrl?: string;
+  /** Flashblocks WebSocket URL */
+  flashblocksWsUrl?: string;
+  /** 블록 탐색기 URL */
+  explorerUrl?: string;
+}
+
 interface GiwaConfig {
-  network: NetworkType;
+  /** 네트워크 타입 (기본값: 'testnet') */
+  network?: NetworkType;
+  /** @deprecated endpoints.rpcUrl 사용 권장 */
   customRpcUrl?: string;
+  /** 커스텀 엔드포인트 설정 */
+  endpoints?: CustomEndpoints;
+  /** 앱 시작 시 지갑 자동 연결 */
   autoConnect?: boolean;
+  /** Flashblocks 활성화 */
   enableFlashblocks?: boolean;
+  /** 환경 강제 지정 */
   forceEnvironment?: 'expo' | 'react-native';
 }
 
@@ -395,6 +414,23 @@ interface GiwaProviderProps {
   children: React.ReactNode;
   adapterFactory?: AdapterFactory;
 }
+```
+
+### 커스텀 엔드포인트 사용 예시
+
+```tsx
+<GiwaProvider
+  config={{
+    network: 'testnet',
+    endpoints: {
+      rpcUrl: 'https://my-custom-rpc.example.com',
+      flashblocksRpcUrl: 'https://my-flashblocks-rpc.example.com',
+      flashblocksWsUrl: 'wss://my-flashblocks-ws.example.com',
+    },
+  }}
+>
+  <App />
+</GiwaProvider>
 ```
 
 ## 유틸리티 타입

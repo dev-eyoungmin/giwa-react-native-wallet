@@ -34,6 +34,10 @@ export interface UseNetworkInfoReturn {
   chainId: number;
   /** RPC URL */
   rpcUrl: string;
+  /** Flashblocks RPC URL for faster confirmations */
+  flashblocksRpcUrl: string;
+  /** Flashblocks WebSocket URL for real-time subscriptions */
+  flashblocksWsUrl: string;
   /** Explorer URL */
   explorerUrl: string;
 }
@@ -98,6 +102,8 @@ export function useNetworkInfo(): UseNetworkInfoReturn {
       unavailableFeatures,
       chainId: networkConfig.id,
       rpcUrl: networkConfig.rpcUrl,
+      flashblocksRpcUrl: networkConfig.flashblocksRpcUrl,
+      flashblocksWsUrl: networkConfig.flashblocksWsUrl,
       explorerUrl: networkConfig.explorerUrl,
     };
   }, [client, network]);

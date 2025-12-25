@@ -51,9 +51,24 @@ export default function RootLayout() {
 <GiwaProvider
   config={{
     network: 'testnet',        // 'testnet' | 'mainnet'
-    customRpcUrl: 'https://...', // 커스텀 RPC (선택)
     autoConnect: true,         // 앱 시작 시 자동 연결
     enableFlashblocks: true,   // Flashblocks 활성화
+  }}
+>
+```
+
+### 커스텀 엔드포인트 (선택)
+
+```tsx
+<GiwaProvider
+  config={{
+    network: 'testnet',
+    endpoints: {
+      rpcUrl: 'https://my-custom-rpc.example.com',
+      flashblocksRpcUrl: 'https://my-flashblocks-rpc.example.com',
+      flashblocksWsUrl: 'wss://my-flashblocks-ws.example.com',
+      explorerUrl: 'https://my-explorer.example.com',
+    },
   }}
 >
 ```

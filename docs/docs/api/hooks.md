@@ -376,6 +376,8 @@ const {
   unavailableFeatures,  // FeatureName[]
   chainId,              // number
   rpcUrl,               // string
+  flashblocksRpcUrl,    // string - Flashblocks RPC endpoint
+  flashblocksWsUrl,     // string - Flashblocks WebSocket endpoint
   explorerUrl,          // string
 } = useNetworkInfo();
 ```
