@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useGiwaManagers } from '../providers/GiwaProvider';
+import { useGiwaManagers, useGiwaState } from '../providers/GiwaProvider';
 import { GIWA_NETWORKS } from '../constants/networks';
 import type {
   NetworkType,
@@ -13,9 +13,9 @@ export interface UseNetworkInfoReturn {
   /** Current network type ('testnet' | 'mainnet') */
   network: NetworkType;
   /** Full network configuration */
-  networkConfig: GiwaNetwork;
+  networkConfig: GiwaNetwork | null;
   /** Overall network status including readiness and warnings */
-  status: NetworkStatus;
+  status: NetworkStatus | null;
   /** Whether this is testnet */
   isTestnet: boolean;
   /** Whether the network is fully ready (all features available) */
@@ -27,7 +27,7 @@ export interface UseNetworkInfoReturn {
   /** Check if a specific feature is available */
   isFeatureAvailable: (feature: FeatureName) => boolean;
   /** Get detailed feature info */
-  getFeatureInfo: (feature: FeatureName) => FeatureAvailability;
+  getFeatureInfo: (feature: FeatureName) => FeatureAvailability | null;
   /** Get all unavailable features */
   unavailableFeatures: FeatureName[];
   /** Chain ID */
@@ -40,6 +40,8 @@ export interface UseNetworkInfoReturn {
   flashblocksWsUrl: string;
   /** Explorer URL */
   explorerUrl: string;
+  /** Whether SDK is still initializing */
+  isInitializing: boolean;
 }
 
 /**
@@ -78,9 +80,34 @@ export interface UseNetworkInfoReturn {
  * ```
  */
 export function useNetworkInfo(): UseNetworkInfoReturn {
-  const { client, network } = useGiwaManagers();
+  const managers = useGiwaManagers();
+  const { isLoading } = useGiwaState();
 
   return useMemo(() => {
+    // Return loading state if managers not ready
+    // Use isLoading from GiwaState to determine initialization status
+    if (!managers) {
+      return {
+        network: 'testnet' as NetworkType,
+        networkConfig: null,
+        status: null,
+        isTestnet: true,
+        isReady: false,
+        hasWarnings: false,
+        warnings: [],
+        isFeatureAvailable: () => false,
+        getFeatureInfo: () => null,
+        unavailableFeatures: [],
+        chainId: 0,
+        rpcUrl: '',
+        flashblocksRpcUrl: '',
+        flashblocksWsUrl: '',
+        explorerUrl: '',
+        isInitializing: isLoading,
+      };
+    }
+
+    const { client, network } = managers;
     const networkConfig = GIWA_NETWORKS[network];
     const status = client.getNetworkStatus();
 
@@ -105,6 +132,7 @@ export function useNetworkInfo(): UseNetworkInfoReturn {
       flashblocksRpcUrl: networkConfig.flashblocksRpcUrl,
       flashblocksWsUrl: networkConfig.flashblocksWsUrl,
       explorerUrl: networkConfig.explorerUrl,
+      isInitializing: false,
     };
-  }, [client, network]);
+  }, [managers, isLoading]);
 }

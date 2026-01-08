@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
-import { useGiwaManagers } from '../providers/GiwaProvider';
+import { useGiwaManagers, useGiwaState } from '../providers/GiwaProvider';
 import { parseEther, type Address, type Hash } from 'viem';
 import type { TransactionReceipt } from '../types';
 
@@ -13,6 +13,7 @@ export interface UseTransactionReturn {
   sendTransaction: (params: SendTransactionParams) => Promise<Hash>;
   waitForReceipt: (hash: Hash) => Promise<TransactionReceipt>;
   isLoading: boolean;
+  isInitializing: boolean;
   error: Error | null;
   lastTxHash: Hash | null;
 }
@@ -24,12 +25,16 @@ export interface UseTransactionReturn {
  * - Only use useGiwaManagers (wallet state not needed)
  * - Stabilize client reference with useRef
  * - Return object memoized with useMemo
+ * - Returns isInitializing=true during SDK initialization
  */
 export function useTransaction(): UseTransactionReturn {
-  const { client } = useGiwaManagers();
+  const managers = useGiwaManagers();
+  const { isLoading: sdkLoading } = useGiwaState();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [lastTxHash, setLastTxHash] = useState<Hash | null>(null);
+
+  const client = managers?.client ?? null;
 
   // Store client in ref to maintain stable reference
   const clientRef = useRef(client);
@@ -37,6 +42,10 @@ export function useTransaction(): UseTransactionReturn {
 
   const sendTransaction = useCallback(
     async (params: SendTransactionParams): Promise<Hash> => {
+      if (!clientRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+
       const walletClient = clientRef.current.getWalletClient();
       if (!walletClient) {
         throw new Error('Wallet is not connected.');
@@ -67,6 +76,10 @@ export function useTransaction(): UseTransactionReturn {
 
   const waitForReceipt = useCallback(
     async (hash: Hash): Promise<TransactionReceipt> => {
+      if (!clientRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+
       const publicClient = clientRef.current.getPublicClient();
 
       try {
@@ -92,7 +105,8 @@ export function useTransaction(): UseTransactionReturn {
     sendTransaction,
     waitForReceipt,
     isLoading,
+    isInitializing: sdkLoading,
     error,
     lastTxHash,
-  }), [sendTransaction, waitForReceipt, isLoading, error, lastTxHash]);
+  }), [sendTransaction, waitForReceipt, isLoading, sdkLoading, error, lastTxHash]);
 }

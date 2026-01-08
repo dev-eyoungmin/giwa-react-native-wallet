@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
-import { useGiwaManagers, useGiwaWalletContext } from '../providers/GiwaProvider';
+import { Linking, Platform } from 'react-native';
+import { useGiwaManagers, useGiwaWalletContext, useGiwaState } from '../providers/GiwaProvider';
 import type { Address } from 'viem';
 
 // GIWA Testnet Faucet URL
@@ -8,13 +9,17 @@ const FAUCET_URL = 'https://faucet.giwa.io';
 export interface UseFaucetReturn {
   requestFaucet: (address?: Address) => Promise<void>;
   getFaucetUrl: () => string;
+  isInitializing: boolean;
   isLoading: boolean;
   error: Error | null;
 }
 
 
 export function useFaucet(): UseFaucetReturn {
-  const { client } = useGiwaManagers();
+  const managers = useGiwaManagers();
+  const { isLoading: sdkLoading } = useGiwaState();
+  const client = managers?.client ?? null;
+
   const { wallet } = useGiwaWalletContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -27,6 +32,10 @@ export function useFaucet(): UseFaucetReturn {
 
   const requestFaucet = useCallback(
     async (address?: Address): Promise<void> => {
+      if (!clientRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+
       const targetAddress = address || walletAddressRef.current;
       if (!targetAddress) {
         throw new Error('Wallet address is required.');
@@ -42,17 +51,23 @@ export function useFaucet(): UseFaucetReturn {
       setError(null);
 
       try {
-        // Open faucet URL in browser
-        // In React Native, you'd use Linking.openURL
-        // For now, just return the action
         const url = `${FAUCET_URL}?address=${targetAddress}`;
 
-        // This would need platform-specific implementation
-        // Linking.openURL(url);
-        console.log(`Faucet URL: ${url}`);
-
-        // Note: Actual faucet request implementation depends on the faucet API
-        // Some faucets are web-based, others have API endpoints
+        // Platform-specific implementation
+        if (Platform.OS === 'web') {
+          // Web platform
+          if (typeof window !== 'undefined') {
+            window.open(url, '_blank');
+          }
+        } else {
+          // React Native (iOS/Android)
+          const supported = await Linking.canOpenURL(url);
+          if (supported) {
+            await Linking.openURL(url);
+          } else {
+            throw new Error(`Cannot open faucet URL: ${url}`);
+          }
+        }
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Faucet request failed');
         setError(error);
@@ -71,7 +86,8 @@ export function useFaucet(): UseFaucetReturn {
   return useMemo(() => ({
     requestFaucet,
     getFaucetUrl,
+    isInitializing: sdkLoading,
     isLoading,
     error,
-  }), [requestFaucet, getFaucetUrl, isLoading, error]);
+  }), [requestFaucet, getFaucetUrl, sdkLoading, isLoading, error]);
 }

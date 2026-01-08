@@ -1,11 +1,13 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useGiwaManagers, useGiwaWalletContext } from '../providers/GiwaProvider';
+import { useGiwaManagers, useGiwaWalletContext, useGiwaState } from '../providers/GiwaProvider';
 import type { GiwaWallet, WalletCreationResult, SecureStorageOptions } from '../types';
 import type { Hex } from 'viem';
 
 export interface UseGiwaWalletReturn {
   wallet: GiwaWallet | null;
   isLoading: boolean;
+  /** Indicates SDK is still initializing */
+  isInitializing: boolean;
   error: Error | null;
   /** Derived state for wallet !== null (no separate state management needed) */
   hasWallet: boolean;
@@ -25,18 +27,25 @@ export interface UseGiwaWalletReturn {
  * - Separate usage of useGiwaManagers, useGiwaWalletContext to prevent unnecessary re-renders
  * - Changed hasWallet to derived state (removed separate useState)
  * - Return object memoized with useMemo
+ * - Returns isInitializing=true during SDK initialization phase
  */
 export function useGiwaWallet(): UseGiwaWalletReturn {
-  const { walletManager } = useGiwaManagers();
+  const managers = useGiwaManagers();
   const { wallet, setWallet } = useGiwaWalletContext();
+  const { isLoading: sdkLoading, error: sdkError } = useGiwaState();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+
+  const walletManager = managers?.walletManager ?? null;
 
   // Compute hasWallet as derived state (no separate state management needed)
   const hasWallet = wallet !== null;
 
   const createWallet = useCallback(
     async (options?: SecureStorageOptions): Promise<WalletCreationResult> => {
+      if (!walletManager) {
+        throw new Error('SDK is still initializing');
+      }
       setIsLoading(true);
       setError(null);
       try {
@@ -59,6 +68,9 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
       mnemonic: string,
       options?: SecureStorageOptions
     ): Promise<GiwaWallet> => {
+      if (!walletManager) {
+        throw new Error('SDK is still initializing');
+      }
       setIsLoading(true);
       setError(null);
       try {
@@ -81,6 +93,9 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
       privateKey: Hex,
       options?: SecureStorageOptions
     ): Promise<GiwaWallet> => {
+      if (!walletManager) {
+        throw new Error('SDK is still initializing');
+      }
       setIsLoading(true);
       setError(null);
       try {
@@ -103,6 +118,9 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
 
   const loadWallet = useCallback(
     async (options?: SecureStorageOptions): Promise<GiwaWallet | null> => {
+      if (!walletManager) {
+        throw new Error('SDK is still initializing');
+      }
       setIsLoading(true);
       setError(null);
       try {
@@ -123,6 +141,9 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
   );
 
   const deleteWallet = useCallback(async (): Promise<void> => {
+    if (!walletManager) {
+      throw new Error('SDK is still initializing');
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -139,6 +160,9 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
 
   const exportMnemonic = useCallback(
     async (options?: SecureStorageOptions): Promise<string | null> => {
+      if (!walletManager) {
+        throw new Error('SDK is still initializing');
+      }
       setIsLoading(true);
       setError(null);
       try {
@@ -156,6 +180,9 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
 
   const exportPrivateKey = useCallback(
     async (options?: SecureStorageOptions): Promise<Hex | null> => {
+      if (!walletManager) {
+        throw new Error('SDK is still initializing');
+      }
       setIsLoading(true);
       setError(null);
       try {
@@ -175,7 +202,8 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
   return useMemo(() => ({
     wallet,
     isLoading,
-    error,
+    isInitializing: sdkLoading,
+    error: error || sdkError,
     hasWallet,
     createWallet,
     recoverWallet,
@@ -187,7 +215,9 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
   }), [
     wallet,
     isLoading,
+    sdkLoading,
     error,
+    sdkError,
     hasWallet,
     createWallet,
     recoverWallet,

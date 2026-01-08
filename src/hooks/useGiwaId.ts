@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { useGiwaManagers } from '../providers/GiwaProvider';
+import { useGiwaManagers, useGiwaState } from '../providers/GiwaProvider';
 import { useAsyncActions } from './shared/useAsyncAction';
 import type { Address, Hash } from 'viem';
 import type { GiwaId } from '../types';
@@ -11,6 +11,7 @@ export interface UseGiwaIdReturn {
   getTextRecord: (giwaId: string, key: string) => Promise<string | null>;
   setTextRecord: (giwaId: string, key: string, value: string) => Promise<Hash>;
   isAvailable: (giwaId: string) => Promise<boolean>;
+  isInitializing: boolean;
   isLoading: boolean;
   error: Error | null;
 }
@@ -22,21 +23,51 @@ export interface UseGiwaIdReturn {
  * - Removed duplicate state management logic with useAsyncActions
  */
 export function useGiwaId(): UseGiwaIdReturn {
-  const { giwaIdManager } = useGiwaManagers();
+  const managers = useGiwaManagers();
+  const { isLoading: sdkLoading } = useGiwaState();
+  const giwaIdManager = managers?.giwaIdManager ?? null;
 
   const giwaIdManagerRef = useRef(giwaIdManager);
   giwaIdManagerRef.current = giwaIdManager;
 
   const actions = useAsyncActions({
-    resolveAddress: (giwaId: string) => giwaIdManagerRef.current.resolveAddress(giwaId),
-    resolveName: (address: Address) => giwaIdManagerRef.current.resolveName(address),
-    getGiwaId: (giwaId: string) => giwaIdManagerRef.current.getGiwaId(giwaId),
-    getTextRecord: (giwaId: string, key: string) => giwaIdManagerRef.current.getTextRecord(giwaId, key),
+    resolveAddress: (giwaId: string) => {
+      if (!giwaIdManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+      return giwaIdManagerRef.current.resolveAddress(giwaId);
+    },
+    resolveName: (address: Address) => {
+      if (!giwaIdManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+      return giwaIdManagerRef.current.resolveName(address);
+    },
+    getGiwaId: (giwaId: string) => {
+      if (!giwaIdManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+      return giwaIdManagerRef.current.getGiwaId(giwaId);
+    },
+    getTextRecord: (giwaId: string, key: string) => {
+      if (!giwaIdManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+      return giwaIdManagerRef.current.getTextRecord(giwaId, key);
+    },
     setTextRecord: async (giwaId: string, key: string, value: string) => {
+      if (!giwaIdManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
       const result = await giwaIdManagerRef.current.setTextRecord(giwaId, key, value);
       return result.hash;
     },
-    isAvailable: (giwaId: string) => giwaIdManagerRef.current.isAvailable(giwaId),
+    isAvailable: (giwaId: string) => {
+      if (!giwaIdManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+      return giwaIdManagerRef.current.isAvailable(giwaId);
+    },
   });
 
   const isLoading =
@@ -62,6 +93,7 @@ export function useGiwaId(): UseGiwaIdReturn {
     getTextRecord: actions.getTextRecord.execute,
     setTextRecord: actions.setTextRecord.execute,
     isAvailable: actions.isAvailable.execute,
+    isInitializing: sdkLoading,
     isLoading,
     error,
   }), [
@@ -71,6 +103,7 @@ export function useGiwaId(): UseGiwaIdReturn {
     actions.getTextRecord.execute,
     actions.setTextRecord.execute,
     actions.isAvailable.execute,
+    sdkLoading,
     isLoading,
     error,
   ]);

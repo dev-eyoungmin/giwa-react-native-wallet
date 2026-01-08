@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { useGiwaManagers } from '../providers/GiwaProvider';
+import { useGiwaManagers, useGiwaState } from '../providers/GiwaProvider';
 import { useAsyncActions } from './shared/useAsyncAction';
 import type { Address, Hex } from 'viem';
 import type { Attestation } from '../types';
@@ -9,6 +9,7 @@ export interface UseDojangReturn {
   isAttestationValid: (uid: Hex) => Promise<boolean>;
   hasVerifiedAddress: (address: Address) => Promise<boolean>;
   getVerifiedBalance: (uid: Hex) => Promise<{ balance: bigint; timestamp: bigint } | null>;
+  isInitializing: boolean;
   isLoading: boolean;
   error: Error | null;
 }
@@ -20,16 +21,38 @@ export interface UseDojangReturn {
  * - Removed duplicate state management logic with useAsyncActions
  */
 export function useDojang(): UseDojangReturn {
-  const { dojangManager } = useGiwaManagers();
+  const managers = useGiwaManagers();
+  const { isLoading: sdkLoading } = useGiwaState();
+  const dojangManager = managers?.dojangManager ?? null;
 
   const dojangManagerRef = useRef(dojangManager);
   dojangManagerRef.current = dojangManager;
 
   const actions = useAsyncActions({
-    getAttestation: (uid: Hex) => dojangManagerRef.current.getAttestation(uid),
-    isAttestationValid: (uid: Hex) => dojangManagerRef.current.isAttestationValid(uid),
-    hasVerifiedAddress: (address: Address) => dojangManagerRef.current.hasVerifiedAddress(address),
-    getVerifiedBalance: (uid: Hex) => dojangManagerRef.current.getVerifiedBalance(uid),
+    getAttestation: (uid: Hex) => {
+      if (!dojangManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+      return dojangManagerRef.current.getAttestation(uid);
+    },
+    isAttestationValid: (uid: Hex) => {
+      if (!dojangManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+      return dojangManagerRef.current.isAttestationValid(uid);
+    },
+    hasVerifiedAddress: (address: Address) => {
+      if (!dojangManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+      return dojangManagerRef.current.hasVerifiedAddress(address);
+    },
+    getVerifiedBalance: (uid: Hex) => {
+      if (!dojangManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+      return dojangManagerRef.current.getVerifiedBalance(uid);
+    },
   });
 
   const isLoading =
@@ -49,6 +72,7 @@ export function useDojang(): UseDojangReturn {
     isAttestationValid: actions.isAttestationValid.execute,
     hasVerifiedAddress: actions.hasVerifiedAddress.execute,
     getVerifiedBalance: actions.getVerifiedBalance.execute,
+    isInitializing: sdkLoading,
     isLoading,
     error,
   }), [
@@ -56,6 +80,7 @@ export function useDojang(): UseDojangReturn {
     actions.isAttestationValid.execute,
     actions.hasVerifiedAddress.execute,
     actions.getVerifiedBalance.execute,
+    sdkLoading,
     isLoading,
     error,
   ]);
