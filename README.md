@@ -401,7 +401,7 @@ describe('useGiwaWallet', () => {
 
     await expect(
       result.current.recoverWallet('invalid mnemonic phrase')
-    ).rejects.toThrow('유효하지 않은 복구 구문입니다');
+    ).rejects.toThrow('Invalid recovery phrase.');
   });
 });
 ```
