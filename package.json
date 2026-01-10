@@ -22,7 +22,9 @@
     "lint": "eslint src --ext .ts,.tsx",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "keywords": [
     "giwa",
@@ -34,22 +36,25 @@
     "blockchain",
     "web3"
   ],
-  "author": "",
+  "author": "Youngmin Lee <miniyoung37@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/user/giwa-react-native-sdk"
+    "url": "https://github.com/dev-eyoungmin/giwa-react-native-wallet"
   },
   "dependencies": {
-    "viem": "^2.21.0",
-    "@scure/bip39": "^1.3.0"
+    "@scure/bip39": "^1.3.0",
+    "viem": "^2.21.0"
   },
   "peerDependencies": {
+    "expo": ">=53.0.0",
+    "expo-constants": ">=16.0.0",
+    "expo-local-authentication": ">=14.0.0",
+    "expo-secure-store": ">=15.0.0",
     "react": ">=19.0.0",
     "react-native": ">=0.77.0",
-    "expo": ">=53.0.0",
-    "expo-secure-store": ">=15.0.0",
-    "react-native-keychain": ">=9.2.0"
+    "react-native-keychain": ">=9.2.0",
+    "react-native-get-random-values": ">=1.11.0"
   },
   "peerDependenciesMeta": {
     "expo": {
@@ -58,18 +63,27 @@
     "expo-secure-store": {
       "optional": true
     },
+    "expo-local-authentication": {
+      "optional": true
+    },
+    "expo-constants": {
+      "optional": true
+    },
     "react-native-keychain": {
       "optional": true
     }
   },
   "devDependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-native": "^0.73.0",
-    "typescript": "^5.3.0",
-    "tsup": "^8.0.0",
-    "eslint": "^8.56.0",
+    "@types/react": "~19.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0"
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.56.0",
+    "react": "^19.0.0",
+    "react-native": "^0.77.0",
+    "react-native-get-random-values": "^1.11.0",
+    "react-native-keychain": "^10.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0"
   },
   "engines": {
     "node": ">=18.0.0"

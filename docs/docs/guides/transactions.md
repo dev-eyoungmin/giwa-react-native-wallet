@@ -2,9 +2,9 @@
 sidebar_position: 2
 ---
 
-# 트랜잭션
+# Transactions
 
-ETH 전송 및 트랜잭션 처리 방법을 설명합니다.
+This guide explains how to send ETH and process transactions.
 
 ## useTransaction Hook
 
@@ -13,40 +13,40 @@ import { useTransaction } from '@giwa/react-native-wallet';
 
 function TransactionScreen() {
   const {
-    sendTransaction,   // 트랜잭션 전송
-    waitForReceipt,    // 영수증 대기
-    estimateGas,       // 가스 추정
-    getTransaction,    // 트랜잭션 조회
-    isLoading,         // 로딩 상태
-    error,             // 에러 정보
+    sendTransaction,   // Send transaction
+    waitForReceipt,    // Wait for receipt
+    estimateGas,       // Estimate gas
+    getTransaction,    // Get transaction
+    isLoading,         // Loading state
+    error,             // Error information
   } = useTransaction();
 
   // ...
 }
 ```
 
-## 기본 ETH 전송
+## Basic ETH Transfer
 
 ```tsx
 const handleSend = async () => {
   try {
     const hash = await sendTransaction({
       to: '0x1234...5678',
-      value: '0.1', // ETH 단위
+      value: '0.1', // ETH unit
     });
 
-    console.log('트랜잭션 해시:', hash);
+    console.log('Transaction hash:', hash);
 
-    // 영수증 대기 (블록 확인)
+    // Wait for receipt (block confirmation)
     const receipt = await waitForReceipt(hash);
-    console.log('확인된 블록:', receipt.blockNumber);
+    console.log('Confirmed block:', receipt.blockNumber);
   } catch (error) {
-    console.error('전송 실패:', error.message);
+    console.error('Transfer failed:', error.message);
   }
 };
 ```
 
-## 가스 추정
+## Gas Estimation
 
 ```tsx
 const handleEstimate = async () => {
@@ -55,59 +55,59 @@ const handleEstimate = async () => {
     value: '0.1',
   });
 
-  console.log('예상 가스:', gas.gasLimit.toString());
-  console.log('가스 가격:', gas.gasPrice.toString());
-  console.log('예상 수수료:', gas.estimatedFee); // ETH 단위
+  console.log('Estimated gas:', gas.gasLimit.toString());
+  console.log('Gas price:', gas.gasPrice.toString());
+  console.log('Estimated fee:', gas.estimatedFee); // ETH unit
 };
 ```
 
-## 고급 트랜잭션 옵션
+## Advanced Transaction Options
 
 ```tsx
 const hash = await sendTransaction({
   to: '0x1234...5678',
   value: '0.1',
-  // 선택적 옵션
+  // Optional options
   gasLimit: 21000n,
   gasPrice: 1000000000n, // 1 Gwei
   nonce: 5,
-  data: '0x...', // 컨트랙트 호출 데이터
+  data: '0x...', // Contract call data
 });
 ```
 
-## 트랜잭션 상태 조회
+## Check Transaction Status
 
 ```tsx
 const checkStatus = async (hash: string) => {
   const tx = await getTransaction(hash);
 
   if (!tx) {
-    console.log('트랜잭션을 찾을 수 없습니다');
+    console.log('Transaction not found');
     return;
   }
 
   if (tx.blockNumber) {
-    console.log('확인됨 - 블록:', tx.blockNumber);
+    console.log('Confirmed - Block:', tx.blockNumber);
   } else {
-    console.log('대기 중...');
+    console.log('Pending...');
   }
 };
 ```
 
-## 트랜잭션 확인 대기
+## Wait for Transaction Confirmation
 
 ```tsx
-// 기본 대기 (1 확인)
+// Default wait (1 confirmation)
 const receipt = await waitForReceipt(hash);
 
-// 여러 확인 대기
+// Wait for multiple confirmations
 const receipt = await waitForReceipt(hash, {
-  confirmations: 3, // 3블록 확인 대기
-  timeout: 60000,   // 60초 타임아웃
+  confirmations: 3, // Wait for 3 block confirmations
+  timeout: 60000,   // 60 second timeout
 });
 ```
 
-## 에러 처리
+## Error Handling
 
 ```tsx
 import { GiwaTransactionError, ErrorCodes } from '@giwa/react-native-wallet';
@@ -118,25 +118,25 @@ try {
   if (error instanceof GiwaTransactionError) {
     switch (error.code) {
       case ErrorCodes.INSUFFICIENT_FUNDS:
-        Alert.alert('잔액 부족', '전송할 잔액이 부족합니다');
+        Alert.alert('Insufficient Balance', 'Not enough balance to send');
         break;
       case ErrorCodes.INVALID_ADDRESS:
-        Alert.alert('주소 오류', '유효하지 않은 주소입니다');
+        Alert.alert('Address Error', 'Invalid address');
         break;
       case ErrorCodes.NONCE_TOO_LOW:
-        Alert.alert('오류', '트랜잭션 nonce가 너무 낮습니다');
+        Alert.alert('Error', 'Transaction nonce is too low');
         break;
       case ErrorCodes.GAS_TOO_LOW:
-        Alert.alert('가스 부족', '가스 한도가 너무 낮습니다');
+        Alert.alert('Insufficient Gas', 'Gas limit is too low');
         break;
       default:
-        Alert.alert('전송 실패', error.message);
+        Alert.alert('Transfer Failed', error.message);
     }
   }
 }
 ```
 
-## 전체 예제: 전송 화면
+## Complete Example: Send Screen
 
 ```tsx
 import { useState } from 'react';
@@ -156,15 +156,15 @@ export function SendScreen() {
 
     try {
       const gas = await estimateGas({ to, value: amount });
-      Alert.alert('예상 수수료', `${gas.estimatedFee} ETH`);
+      Alert.alert('Estimated Fee', `${gas.estimatedFee} ETH`);
     } catch (error) {
-      Alert.alert('오류', error.message);
+      Alert.alert('Error', error.message);
     }
   };
 
   const handleSend = async () => {
     if (!to || !amount) {
-      Alert.alert('입력 필요', '주소와 금액을 입력하세요');
+      Alert.alert('Input Required', 'Please enter address and amount');
       return;
     }
 
@@ -172,21 +172,21 @@ export function SendScreen() {
       const hash = await sendTransaction({ to, value: amount });
       setTxHash(hash);
 
-      Alert.alert('전송 중', `해시: ${hash.slice(0, 20)}...`);
+      Alert.alert('Sending', `Hash: ${hash.slice(0, 20)}...`);
 
       const receipt = await waitForReceipt(hash);
-      Alert.alert('완료', `블록 ${receipt.blockNumber}에서 확인됨`);
+      Alert.alert('Complete', `Confirmed at block ${receipt.blockNumber}`);
     } catch (error) {
-      Alert.alert('전송 실패', error.message);
+      Alert.alert('Transfer Failed', error.message);
     }
   };
 
   return (
     <View style={{ padding: 20 }}>
-      <Text style={{ marginBottom: 10 }}>잔액: {formattedBalance} ETH</Text>
+      <Text style={{ marginBottom: 10 }}>Balance: {formattedBalance} ETH</Text>
 
       <TextInput
-        placeholder="받는 주소 (0x...)"
+        placeholder="Recipient address (0x...)"
         value={to}
         onChangeText={setTo}
         autoCapitalize="none"
@@ -200,7 +200,7 @@ export function SendScreen() {
       />
 
       <TextInput
-        placeholder="금액 (ETH)"
+        placeholder="Amount (ETH)"
         value={amount}
         onChangeText={setAmount}
         keyboardType="decimal-pad"
@@ -213,11 +213,11 @@ export function SendScreen() {
         }}
       />
 
-      <Button title="수수료 확인" onPress={handleEstimate} disabled={isLoading} />
+      <Button title="Check Fee" onPress={handleEstimate} disabled={isLoading} />
 
       <View style={{ marginTop: 10 }}>
         <Button
-          title={isLoading ? '전송 중...' : '전송'}
+          title={isLoading ? 'Sending...' : 'Send'}
           onPress={handleSend}
           disabled={isLoading || !to || !amount}
         />
@@ -225,7 +225,7 @@ export function SendScreen() {
 
       {txHash && (
         <Text style={{ marginTop: 20, fontFamily: 'monospace', fontSize: 12 }}>
-          최근 TX: {txHash}
+          Recent TX: {txHash}
         </Text>
       )}
     </View>
@@ -233,8 +233,8 @@ export function SendScreen() {
 }
 ```
 
-## 다음 단계
+## Next Steps
 
-- [토큰](/docs/guides/tokens) - ERC-20 토큰 전송
-- [Flashblocks](/docs/guides/flashblocks) - 빠른 트랜잭션 확인
-- [브릿지](/docs/guides/bridge) - L1↔L2 자산 이동
+- [Tokens](/docs/guides/tokens) - ERC-20 token transfers
+- [Flashblocks](/docs/guides/flashblocks) - Fast transaction confirmation
+- [Bridge](/docs/guides/bridge) - L1↔L2 asset transfers

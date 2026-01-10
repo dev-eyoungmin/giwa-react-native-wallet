@@ -2,24 +2,24 @@
 sidebar_position: 1
 ---
 
-# 테스트 설정
+# Test Setup
 
-GIWA SDK를 사용하는 앱의 테스트 환경 설정 방법입니다.
+How to set up a test environment for apps using GIWA SDK.
 
-## 의존성 설치
+## Install Dependencies
 
 ```bash
-# Jest 및 React Native Testing Library
+# Jest and React Native Testing Library
 npm install --save-dev jest @testing-library/react-native @testing-library/react-hooks
 
-# TypeScript 지원
+# TypeScript support
 npm install --save-dev @types/jest ts-jest
 
-# React Test Renderer (선택)
+# React Test Renderer (optional)
 npm install --save-dev react-test-renderer
 ```
 
-## Jest 설정
+## Jest Configuration
 
 ```javascript
 // jest.config.js
@@ -44,7 +44,7 @@ module.exports = {
 };
 ```
 
-## Mock 설정
+## Mock Setup
 
 ### expo-secure-store Mock
 
@@ -129,7 +129,7 @@ jest.mock('viem', () => {
 });
 ```
 
-## 테스트 래퍼
+## Test Wrapper
 
 ```typescript
 // test-utils.tsx
@@ -148,7 +148,7 @@ const customRender = (
   options?: Omit<RenderOptions, 'wrapper'>
 ) => render(ui, { wrapper: TestWrapper, ...options });
 
-// Hook 테스트용 래퍼
+// Hook test wrapper
 const hookWrapper = ({ children }: { children: React.ReactNode }) => (
   <GiwaProvider config={{ network: 'testnet' }}>
     {children}
@@ -159,7 +159,7 @@ export * from '@testing-library/react-native';
 export { customRender as render, hookWrapper };
 ```
 
-## 전체 jest.setup.js
+## Complete jest.setup.js
 
 ```typescript
 // jest.setup.js
@@ -185,21 +185,21 @@ jest.mock('react-native-keychain', () => ({
   BIOMETRY_TYPE: { FACE_ID: 'FaceID', TOUCH_ID: 'TouchID' },
 }));
 
-// 전역 설정
+// Global configuration
 global.fetch = jest.fn();
 
-// 콘솔 경고 무시 (선택)
+// Ignore console warnings (optional)
 const originalWarn = console.warn;
 console.warn = (...args) => {
   if (args[0]?.includes('deprecated')) return;
   originalWarn(...args);
 };
 
-// 타이머 mock
+// Timer mock
 jest.useFakeTimers();
 ```
 
-## 다음 단계
+## Next Steps
 
-- [유닛 테스트](/docs/testing/unit-tests) - Hook 테스트 작성
-- [통합 테스트](/docs/testing/integration-tests) - 전체 플로우 테스트
+- [Unit Tests](/docs/testing/unit-tests) - Writing hook tests
+- [Integration Tests](/docs/testing/integration-tests) - Full flow testing

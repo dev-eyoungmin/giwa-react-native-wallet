@@ -2,11 +2,11 @@
 sidebar_position: 3
 ---
 
-# 통합 테스트
+# Integration Tests
 
-여러 Hook을 조합한 전체 플로우의 통합 테스트 작성 방법입니다.
+How to write integration tests for full flows combining multiple hooks.
 
-## 지갑 생성 → 잔액 조회 플로우
+## Wallet Creation → Balance Query Flow
 
 ```typescript
 // __tests__/integration/walletFlow.test.ts
@@ -26,7 +26,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 
 describe('Wallet Creation Flow', () => {
   it('should create wallet and fetch balance', async () => {
-    // 1. 지갑 생성
+    // 1. Create wallet
     const { result: walletResult } = renderHook(() => useGiwaWallet(), {
       wrapper,
     });
@@ -40,7 +40,7 @@ describe('Wallet Creation Flow', () => {
 
     expect(walletResult.current.wallet).not.toBeNull();
 
-    // 2. 잔액 조회
+    // 2. Query balance
     const { result: balanceResult } = renderHook(
       () => useBalance(walletAddress),
       { wrapper }
@@ -56,7 +56,7 @@ describe('Wallet Creation Flow', () => {
 });
 ```
 
-## 지갑 복구 → 트랜잭션 전송 플로우
+## Wallet Recovery → Transaction Send Flow
 
 ```typescript
 // __tests__/integration/transactionFlow.test.ts
@@ -72,7 +72,7 @@ describe('Transaction Flow', () => {
     'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 
   it('should recover wallet and send transaction', async () => {
-    // 1. 지갑 복구
+    // 1. Recover wallet
     const { result: walletResult } = renderHook(() => useGiwaWallet(), {
       wrapper,
     });
@@ -84,7 +84,7 @@ describe('Transaction Flow', () => {
     expect(walletResult.current.wallet).not.toBeNull();
     const senderAddress = walletResult.current.wallet!.address;
 
-    // 2. 잔액 확인
+    // 2. Check balance
     const { result: balanceResult } = renderHook(
       () => useBalance(senderAddress),
       { wrapper }
@@ -94,7 +94,7 @@ describe('Transaction Flow', () => {
       expect(balanceResult.current.isLoading).toBe(false);
     });
 
-    // 3. 트랜잭션 전송 (잔액이 있는 경우)
+    // 3. Send transaction (if balance exists)
     if (balanceResult.current.balance! > BigInt(0)) {
       const { result: txResult } = renderHook(() => useTransaction(), {
         wrapper,
@@ -113,7 +113,7 @@ describe('Transaction Flow', () => {
 });
 ```
 
-## 토큰 전송 플로우
+## Token Transfer Flow
 
 ```typescript
 // __tests__/integration/tokenFlow.test.ts
@@ -125,7 +125,7 @@ const RECIPIENT = '0x0000000000000000000000000000000000000001';
 
 describe('Token Flow', () => {
   it('should get token info and balance', async () => {
-    // 1. 지갑 생성
+    // 1. Create wallet
     const { result: walletResult } = renderHook(() => useGiwaWallet(), {
       wrapper,
     });
@@ -134,7 +134,7 @@ describe('Token Flow', () => {
       await walletResult.current.createWallet();
     });
 
-    // 2. 토큰 정보 조회
+    // 2. Get token information
     const { result: tokenResult } = renderHook(() => useTokens(), { wrapper });
 
     await act(async () => {
@@ -144,7 +144,7 @@ describe('Token Flow', () => {
       expect(info.decimals).toBeGreaterThan(0);
     });
 
-    // 3. 토큰 잔액 조회
+    // 3. Get token balance
     await act(async () => {
       const balance = await tokenResult.current.getBalance(MOCK_TOKEN);
 
@@ -188,7 +188,7 @@ describe('Token Flow', () => {
 });
 ```
 
-## GIWA ID 플로우
+## GIWA ID Flow
 
 ```typescript
 // __tests__/integration/giwaIdFlow.test.ts
@@ -207,16 +207,16 @@ describe('GIWA ID Flow', () => {
 
     const { result: giwaIdResult } = renderHook(() => useGiwaId(), { wrapper });
 
-    // 이름 → 주소 조회
+    // Resolve name to address
     await act(async () => {
       const address = await giwaIdResult.current.resolveAddress('test.giwa.id');
-      // null이거나 주소 형식
+      // Either null or address format
       if (address) {
         expect(address).toMatch(/^0x[a-fA-F0-9]{40}$/);
       }
     });
 
-    // 이름 사용 가능 여부
+    // Check name availability
     await act(async () => {
       const available = await giwaIdResult.current.isNameAvailable(
         'random-test-name-12345'
@@ -227,7 +227,7 @@ describe('GIWA ID Flow', () => {
 });
 ```
 
-## Flashblocks 플로우
+## Flashblocks Flow
 
 ```typescript
 // __tests__/integration/flashblocksFlow.test.ts
@@ -249,7 +249,7 @@ describe('Flashblocks Flow', () => {
       wrapper,
     });
 
-    // Flashblocks 사용 가능 여부 확인
+    // Check Flashblocks availability
     if (flashResult.current.isAvailable) {
       await act(async () => {
         const { preconfirmation, result } =
@@ -258,11 +258,11 @@ describe('Flashblocks Flow', () => {
             value: parseEther('0.001'),
           });
 
-        // 사전 확인 검증
+        // Verify preconfirmation
         expect(preconfirmation.txHash).toMatch(/^0x[a-fA-F0-9]{64}$/);
         expect(preconfirmation.latencyMs).toBeLessThan(1000);
 
-        // 블록 확인 대기
+        // Wait for block confirmation
         const receipt = await result.wait();
         expect(receipt.status).toBe('success');
       });
@@ -281,7 +281,7 @@ describe('Flashblocks Flow', () => {
 });
 ```
 
-## 전체 지갑 플로우 테스트
+## Full Wallet Flow Test
 
 ```typescript
 // __tests__/integration/fullFlow.test.ts
@@ -296,7 +296,7 @@ import {
 
 describe('Full Wallet Flow', () => {
   it('should complete entire wallet lifecycle', async () => {
-    // === 1. 지갑 생성 ===
+    // === 1. Create wallet ===
     const { result: walletResult } = renderHook(() => useGiwaWallet(), {
       wrapper,
     });
@@ -313,7 +313,7 @@ describe('Full Wallet Flow', () => {
     expect(walletAddress).toMatch(/^0x[a-fA-F0-9]{40}$/);
     expect(mnemonic.split(' ')).toHaveLength(12);
 
-    // === 2. 잔액 조회 ===
+    // === 2. Query balance ===
     const { result: balanceResult } = renderHook(
       () => useBalance(walletAddress),
       { wrapper }
@@ -323,7 +323,7 @@ describe('Full Wallet Flow', () => {
       expect(balanceResult.current.isLoading).toBe(false);
     });
 
-    // === 3. Faucet 요청 (테스트넷) ===
+    // === 3. Request faucet (testnet) ===
     const { result: faucetResult } = renderHook(() => useFaucet(), { wrapper });
 
     await act(async () => {
@@ -331,30 +331,30 @@ describe('Full Wallet Flow', () => {
         const result = await faucetResult.current.requestFaucet();
         expect(result.txHash).toMatch(/^0x[a-fA-F0-9]{64}$/);
       } catch (error) {
-        // Faucet 제한일 수 있음
+        // May be rate limited
         console.log('Faucet rate limited');
       }
     });
 
-    // === 4. 지갑 연결 해제 ===
+    // === 4. Disconnect wallet ===
     await act(async () => {
       await walletResult.current.disconnect();
     });
 
     expect(walletResult.current.wallet).toBeNull();
 
-    // === 5. 지갑 복구 ===
+    // === 5. Recover wallet ===
     await act(async () => {
       const recovered = await walletResult.current.recoverWallet(mnemonic);
       expect(recovered.address.toLowerCase()).toBe(walletAddress.toLowerCase());
     });
 
-    // === 6. 최종 상태 확인 ===
+    // === 6. Verify final state ===
     expect(walletResult.current.wallet?.isConnected).toBe(true);
   });
 });
 ```
 
-## 다음 단계
+## Next Steps
 
-- [E2E 테스트](/docs/testing/e2e-tests) - Detox를 사용한 E2E 테스트
+- [E2E Tests](/docs/testing/e2e-tests) - E2E testing with Detox

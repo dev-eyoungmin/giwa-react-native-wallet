@@ -2,23 +2,23 @@
 sidebar_position: 7
 ---
 
-# Dojang (증명)
+# Dojang (Attestations)
 
-EAS(Ethereum Attestation Service) 기반 Dojang 증명 서비스를 설명합니다.
+This guide explains the Dojang attestation service based on EAS (Ethereum Attestation Service).
 
-## Dojang이란?
+## What is Dojang?
 
-Dojang(도장)은 GIWA Chain의 증명(attestation) 서비스입니다. 신원 확인, 자격 증명, 업적 인증 등을 블록체인에 기록하고 검증할 수 있습니다.
+Dojang is GIWA Chain's attestation service. It allows you to record and verify identity verification, credential proofs, achievement certifications, and more on the blockchain.
 
 ```
 ┌─────────────────────────────────────────┐
-│           Dojang (증명)                  │
+│           Dojang (Attestations)         │
 ├─────────────────────────────────────────┤
-│  - KYC 인증 (신원 확인)                   │
-│  - 학력/자격 증명                         │
-│  - 프로젝트 참여 증명                     │
-│  - NFT 소유 증명                          │
-│  - DAO 멤버십 증명                        │
+│  - KYC Verification (Identity)          │
+│  - Education/Credential Proofs          │
+│  - Project Participation Proofs         │
+│  - NFT Ownership Proofs                 │
+│  - DAO Membership Proofs                │
 └─────────────────────────────────────────┘
 ```
 
@@ -29,11 +29,11 @@ import { useDojang } from '@giwa/react-native-wallet';
 
 function DojangScreen() {
   const {
-    getAttestation,      // 증명 조회
-    getAttestations,     // 증명 목록 조회
-    verifyAttestation,   // 증명 검증
-    createAttestation,   // 증명 생성 (인증된 발급자만)
-    revokeAttestation,   // 증명 취소
+    getAttestation,      // Get attestation
+    getAttestations,     // Get attestation list
+    verifyAttestation,   // Verify attestation
+    createAttestation,   // Create attestation (authorized issuers only)
+    revokeAttestation,   // Revoke attestation
     isLoading,
   } = useDojang();
 
@@ -41,31 +41,31 @@ function DojangScreen() {
 }
 ```
 
-## 증명 조회
+## Get Attestation
 
-### 단일 증명 조회
+### Get Single Attestation
 
 ```tsx
 const handleGetAttestation = async () => {
-  const attestationId = '0x...'; // 증명 ID
+  const attestationId = '0x...'; // Attestation ID
 
   try {
     const attestation = await getAttestation(attestationId);
 
-    console.log('발급자:', attestation.attester);
-    console.log('수신자:', attestation.recipient);
-    console.log('스키마:', attestation.schema);
-    console.log('데이터:', attestation.data);
-    console.log('발급일:', attestation.time);
-    console.log('만료일:', attestation.expirationTime);
-    console.log('취소됨:', attestation.revoked);
+    console.log('Issuer:', attestation.attester);
+    console.log('Recipient:', attestation.recipient);
+    console.log('Schema:', attestation.schema);
+    console.log('Data:', attestation.data);
+    console.log('Issued:', attestation.time);
+    console.log('Expiration:', attestation.expirationTime);
+    console.log('Revoked:', attestation.revoked);
   } catch (error) {
-    console.error('조회 실패:', error.message);
+    console.error('Lookup failed:', error.message);
   }
 };
 ```
 
-### 사용자의 모든 증명 조회
+### Get All User Attestations
 
 ```tsx
 const handleGetMyAttestations = async () => {
@@ -75,7 +75,7 @@ const handleGetMyAttestations = async () => {
     recipient: address,
   });
 
-  console.log(`총 ${attestations.length}개의 증명`);
+  console.log(`Total ${attestations.length} attestations`);
 
   attestations.forEach((att) => {
     console.log(`- ${att.schema.name}: ${att.data.value}`);
@@ -83,7 +83,7 @@ const handleGetMyAttestations = async () => {
 };
 ```
 
-### 스키마별 증명 조회
+### Get Attestations by Schema
 
 ```tsx
 import { DOJANG_SCHEMAS } from '@giwa/react-native-wallet';
@@ -98,11 +98,11 @@ const handleGetKycAttestations = async () => {
     (att) => !att.revoked && att.data.verified === true
   );
 
-  console.log('KYC 인증됨:', kycVerified);
+  console.log('KYC Verified:', kycVerified);
 };
 ```
 
-## 증명 검증
+## Verify Attestation
 
 ```tsx
 const handleVerify = async () => {
@@ -112,20 +112,20 @@ const handleVerify = async () => {
     const isValid = await verifyAttestation(attestationId);
 
     if (isValid) {
-      console.log('유효한 증명입니다');
+      console.log('Valid attestation');
     } else {
-      console.log('유효하지 않거나 취소된 증명입니다');
+      console.log('Invalid or revoked attestation');
     }
   } catch (error) {
-    console.error('검증 실패:', error.message);
+    console.error('Verification failed:', error.message);
   }
 };
 ```
 
-## 증명 생성 (발급자용)
+## Create Attestation (For Issuers)
 
-:::info 권한 필요
-증명 생성은 인증된 발급자(attester)만 가능합니다. 일반 사용자는 증명을 생성할 수 없습니다.
+:::info Permission Required
+Creating attestations is only available to authorized attesters. Regular users cannot create attestations.
 :::
 
 ```tsx
@@ -133,37 +133,37 @@ const handleCreateAttestation = async () => {
   try {
     const result = await createAttestation({
       schemaId: DOJANG_SCHEMAS.MEMBERSHIP,
-      recipient: '0x...', // 수신자 주소
+      recipient: '0x...', // Recipient address
       data: {
         organization: 'GIWA DAO',
         role: 'Member',
         joinedAt: Date.now(),
       },
-      expirationTime: 0, // 0 = 만료 없음
+      expirationTime: 0, // 0 = No expiration
       revocable: true,
     });
 
-    console.log('증명 생성됨:', result.attestationId);
+    console.log('Attestation created:', result.attestationId);
   } catch (error) {
-    Alert.alert('생성 실패', error.message);
+    Alert.alert('Creation Failed', error.message);
   }
 };
 ```
 
-## 기본 스키마 목록
+## Available Schemas
 
 ```tsx
 import { DOJANG_SCHEMAS } from '@giwa/react-native-wallet';
 
-// 사용 가능한 스키마
-DOJANG_SCHEMAS.KYC           // 신원 확인
-DOJANG_SCHEMAS.MEMBERSHIP    // 멤버십
-DOJANG_SCHEMAS.ACHIEVEMENT   // 업적
-DOJANG_SCHEMAS.CREDENTIAL    // 자격증
-DOJANG_SCHEMAS.VERIFICATION  // 일반 검증
+// Available schemas
+DOJANG_SCHEMAS.KYC           // Identity Verification
+DOJANG_SCHEMAS.MEMBERSHIP    // Membership
+DOJANG_SCHEMAS.ACHIEVEMENT   // Achievement
+DOJANG_SCHEMAS.CREDENTIAL    // Credential
+DOJANG_SCHEMAS.VERIFICATION  // General Verification
 ```
 
-## 전체 예제: 증명 화면
+## Complete Example: Attestation Screen
 
 ```tsx
 import { useState, useEffect } from 'react';
@@ -177,7 +177,7 @@ export function DojangScreen() {
   const [attestations, setAttestations] = useState([]);
   const [selectedAttestation, setSelectedAttestation] = useState(null);
 
-  // 내 증명 목록 로드
+  // Load my attestations
   useEffect(() => {
     if (wallet?.address) {
       loadAttestations();
@@ -191,37 +191,37 @@ export function DojangScreen() {
     setAttestations(atts);
   };
 
-  // 증명 검증
+  // Verify attestation
   const handleVerify = async (attestationId: string) => {
     const isValid = await verifyAttestation(attestationId);
     Alert.alert(
-      '검증 결과',
-      isValid ? '✓ 유효한 증명입니다' : '✗ 유효하지 않은 증명입니다'
+      'Verification Result',
+      isValid ? 'Valid attestation' : 'Invalid attestation'
     );
   };
 
-  // 스키마 이름 변환
+  // Convert schema name
   const getSchemaName = (schemaId: string) => {
     switch (schemaId) {
       case DOJANG_SCHEMAS.KYC:
-        return '🪪 신원 확인';
+        return 'Identity Verification';
       case DOJANG_SCHEMAS.MEMBERSHIP:
-        return '🎫 멤버십';
+        return 'Membership';
       case DOJANG_SCHEMAS.ACHIEVEMENT:
-        return '🏆 업적';
+        return 'Achievement';
       case DOJANG_SCHEMAS.CREDENTIAL:
-        return '📜 자격증';
+        return 'Credential';
       default:
-        return '📋 일반 증명';
+        return 'General Attestation';
     }
   };
 
   return (
     <View style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontSize: 20, marginBottom: 20 }}>🔏 내 Dojang 증명</Text>
+      <Text style={{ fontSize: 20, marginBottom: 20 }}>My Dojang Attestations</Text>
 
       {attestations.length === 0 ? (
-        <Text style={{ color: '#888' }}>등록된 증명이 없습니다</Text>
+        <Text style={{ color: '#888' }}>No registered attestations</Text>
       ) : (
         <FlatList
           data={attestations}
@@ -241,12 +241,12 @@ export function DojangScreen() {
                   {getSchemaName(item.schemaId)}
                 </Text>
                 {item.revoked && (
-                  <Text style={{ color: 'red' }}>취소됨</Text>
+                  <Text style={{ color: 'red' }}>Revoked</Text>
                 )}
               </View>
 
               <Text style={{ color: '#666', marginTop: 5 }}>
-                발급자: {item.attester.slice(0, 10)}...
+                Issuer: {item.attester.slice(0, 10)}...
               </Text>
 
               <Text style={{ color: '#888', fontSize: 12, marginTop: 5 }}>
@@ -257,7 +257,7 @@ export function DojangScreen() {
         />
       )}
 
-      {/* 선택된 증명 상세 */}
+      {/* Selected attestation details */}
       {selectedAttestation && (
         <View
           style={{
@@ -276,14 +276,14 @@ export function DojangScreen() {
           }}
         >
           <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
-            증명 상세
+            Attestation Details
           </Text>
 
           <Text>ID: {selectedAttestation.id.slice(0, 20)}...</Text>
-          <Text>스키마: {getSchemaName(selectedAttestation.schemaId)}</Text>
-          <Text>발급자: {selectedAttestation.attester}</Text>
+          <Text>Schema: {getSchemaName(selectedAttestation.schemaId)}</Text>
+          <Text>Issuer: {selectedAttestation.attester}</Text>
           <Text>
-            발급일: {new Date(selectedAttestation.time * 1000).toLocaleString()}
+            Issued: {new Date(selectedAttestation.time * 1000).toLocaleString()}
           </Text>
 
           <View style={{ flexDirection: 'row', marginTop: 15 }}>
@@ -297,7 +297,7 @@ export function DojangScreen() {
               }}
               onPress={() => handleVerify(selectedAttestation.id)}
             >
-              <Text style={{ color: 'white', textAlign: 'center' }}>검증</Text>
+              <Text style={{ color: 'white', textAlign: 'center' }}>Verify</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -309,7 +309,7 @@ export function DojangScreen() {
               }}
               onPress={() => setSelectedAttestation(null)}
             >
-              <Text style={{ textAlign: 'center' }}>닫기</Text>
+              <Text style={{ textAlign: 'center' }}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -319,9 +319,9 @@ export function DojangScreen() {
 }
 ```
 
-## 증명 유형별 사용 예
+## Usage Examples by Attestation Type
 
-### KYC 인증 확인
+### KYC Verification Check
 
 ```tsx
 const isKycVerified = async (address: string) => {
@@ -336,7 +336,7 @@ const isKycVerified = async (address: string) => {
 };
 ```
 
-### DAO 멤버십 확인
+### DAO Membership Check
 
 ```tsx
 const isDaoMember = async (address: string, daoId: string) => {
@@ -351,7 +351,7 @@ const isDaoMember = async (address: string, daoId: string) => {
 };
 ```
 
-## 다음 단계
+## Next Steps
 
-- [보안](/docs/guides/security) - 보안 모범 사례
-- [GIWA ID](/docs/guides/giwa-id) - 네이밍 서비스
+- [Security](/docs/guides/security) - Security best practices
+- [GIWA ID](/docs/guides/giwa-id) - Naming service

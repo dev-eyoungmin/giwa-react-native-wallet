@@ -1,5 +1,5 @@
 /**
- * Flashblocks 관련 타입 정의
+ * Flashblocks type definitions
  */
 import type { Hash } from 'viem';
 

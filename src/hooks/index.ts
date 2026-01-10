@@ -8,6 +8,8 @@ export { useFlashblocks } from './useFlashblocks';
 export { useGiwaId } from './useGiwaId';
 export { useDojang } from './useDojang';
 export { useFaucet } from './useFaucet';
+export { useNetworkInfo } from './useNetworkInfo';
+export type { UseNetworkInfoReturn } from './useNetworkInfo';
 
 // Shared hooks (for custom hook development)
 export { useAsyncAction, useAsyncActions } from './shared/useAsyncAction';

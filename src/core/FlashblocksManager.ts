@@ -45,7 +45,7 @@ export class FlashblocksManager {
   }> {
     const walletClient = this.client.getWalletClient();
     if (!walletClient) {
-      throw new GiwaTransactionError('지갑이 연결되지 않았습니다.');
+      throw new GiwaTransactionError('Wallet is not connected.');
     }
 
     const publicClient = this.client.getPublicClient();

@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
-import { useGiwaManagers, useGiwaWalletContext } from '../providers/GiwaProvider';
+import { useGiwaManagers, useGiwaWalletContext, useGiwaState } from '../providers/GiwaProvider';
 import { useAsyncActions } from './shared/useAsyncAction';
 import { ErrorMessages } from '../utils/errors';
 import type { Address, Hash } from 'viem';
@@ -15,21 +15,25 @@ export interface UseTokensReturn {
   removeCustomToken: (tokenAddress: Address) => void;
   customTokens: Token[];
   isLoading: boolean;
+  isInitializing: boolean;
   error: Error | null;
 }
 
 /**
  * Hook for ERC-20 token operations
  *
- * 클린 코드 적용:
- * - useAsyncActions로 중복 상태 관리 로직 제거
- * - ErrorMessages 상수 사용
+ * Clean code principles:
+ * - Removed duplicate state management logic with useAsyncActions
+ * - Using ErrorMessages constants
+ * - Returns isInitializing=true during SDK initialization
  */
 export function useTokens(): UseTokensReturn {
-  const { tokenManager } = useGiwaManagers();
+  const managers = useGiwaManagers();
   const { wallet } = useGiwaWalletContext();
+  const { isLoading: sdkLoading } = useGiwaState();
   const [customTokens, setCustomTokens] = useState<Token[]>([]);
 
+  const tokenManager = managers?.tokenManager ?? null;
   const tokenManagerRef = useRef(tokenManager);
   tokenManagerRef.current = tokenManager;
 
@@ -37,8 +41,16 @@ export function useTokens(): UseTokensReturn {
   walletAddressRef.current = wallet?.address;
 
   const actions = useAsyncActions({
-    getToken: (tokenAddress: Address) => tokenManagerRef.current.getToken(tokenAddress),
+    getToken: (tokenAddress: Address) => {
+      if (!tokenManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+      return tokenManagerRef.current.getToken(tokenAddress);
+    },
     getBalance: (tokenAddress: Address, walletAddress?: Address) => {
+      if (!tokenManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
       const address = walletAddress || walletAddressRef.current;
       if (!address) {
         throw new Error(ErrorMessages.WALLET_ADDRESS_REQUIRED);
@@ -46,23 +58,35 @@ export function useTokens(): UseTokensReturn {
       return tokenManagerRef.current.getBalance(tokenAddress, address);
     },
     transfer: async (tokenAddress: Address, to: Address, amount: string) => {
+      if (!tokenManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
       const result = await tokenManagerRef.current.transfer(tokenAddress, to, amount);
       return result.hash;
     },
     approve: async (tokenAddress: Address, spender: Address, amount: string) => {
+      if (!tokenManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
       const result = await tokenManagerRef.current.approve(tokenAddress, spender, amount);
       return result.hash;
     },
-    getAllowance: (tokenAddress: Address, owner: Address, spender: Address) =>
-      tokenManagerRef.current.getAllowance(tokenAddress, owner, spender),
+    getAllowance: (tokenAddress: Address, owner: Address, spender: Address) => {
+      if (!tokenManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+      return tokenManagerRef.current.getAllowance(tokenAddress, owner, spender);
+    },
   });
 
   const addCustomToken = useCallback((token: Token): void => {
+    if (!tokenManagerRef.current) return;
     tokenManagerRef.current.addCustomToken(token);
     setCustomTokens(tokenManagerRef.current.getCustomTokens());
   }, []);
 
   const removeCustomToken = useCallback((tokenAddress: Address): void => {
+    if (!tokenManagerRef.current) return;
     tokenManagerRef.current.removeCustomToken(tokenAddress);
     setCustomTokens(tokenManagerRef.current.getCustomTokens());
   }, []);
@@ -91,6 +115,7 @@ export function useTokens(): UseTokensReturn {
     removeCustomToken,
     customTokens,
     isLoading,
+    isInitializing: sdkLoading,
     error,
   }), [
     actions.getToken.execute,
@@ -102,6 +127,7 @@ export function useTokens(): UseTokensReturn {
     removeCustomToken,
     customTokens,
     isLoading,
+    sdkLoading,
     error,
   ]);
 }

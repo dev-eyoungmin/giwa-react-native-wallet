@@ -4,15 +4,15 @@ sidebar_position: 5
 
 # Flashblocks
 
-~200ms 빠른 트랜잭션 사전 확인(preconfirmation) 기능을 설명합니다.
+This guide explains the ~200ms fast transaction preconfirmation feature.
 
-## Flashblocks란?
+## What is Flashblocks?
 
-Flashblocks는 GIWA Chain의 고유 기능으로, 트랜잭션이 블록에 포함되기 전에 ~200ms 내에 사전 확인을 제공합니다. 이를 통해 사용자는 거의 즉각적인 트랜잭션 피드백을 받을 수 있습니다.
+Flashblocks is a unique feature of GIWA Chain that provides preconfirmation within ~200ms before a transaction is included in a block. This allows users to receive nearly instant transaction feedback.
 
 ```
-일반 트랜잭션:    TX → 블록 확인 (2-12초)
-Flashblocks:     TX → 사전 확인 (200ms) → 블록 확인 (2-12초)
+Regular Transaction:    TX → Block Confirmation (2-12 seconds)
+Flashblocks:           TX → Preconfirmation (200ms) → Block Confirmation (2-12 seconds)
 ```
 
 ## useFlashblocks Hook
@@ -22,9 +22,9 @@ import { useFlashblocks } from '@giwa/react-native-wallet';
 
 function FastTransactionScreen() {
   const {
-    sendTransaction,     // Flashblocks 트랜잭션 전송
-    getAverageLatency,   // 평균 지연 시간
-    isAvailable,         // Flashblocks 사용 가능 여부
+    sendTransaction,     // Send Flashblocks transaction
+    getAverageLatency,   // Average latency
+    isAvailable,         // Flashblocks availability
     isLoading,
   } = useFlashblocks();
 
@@ -32,62 +32,62 @@ function FastTransactionScreen() {
 }
 ```
 
-## Flashblocks 트랜잭션 전송
+## Send Flashblocks Transaction
 
 ```tsx
 const handleFastSend = async () => {
   try {
     const { preconfirmation, result } = await sendTransaction({
       to: '0x...',
-      value: BigInt('100000000000000000'), // 0.1 ETH (wei 단위)
+      value: BigInt('100000000000000000'), // 0.1 ETH (in wei)
     });
 
-    // 1. 사전 확인 (즉시, ~200ms)
-    console.log('사전 확인됨!');
-    console.log('시간:', preconfirmation.preconfirmedAt);
-    console.log('지연:', preconfirmation.latencyMs, 'ms');
+    // 1. Preconfirmation (instant, ~200ms)
+    console.log('Preconfirmed!');
+    console.log('Time:', preconfirmation.preconfirmedAt);
+    console.log('Latency:', preconfirmation.latencyMs, 'ms');
 
-    // UI 업데이트 - 사용자에게 즉시 피드백
+    // UI update - instant feedback to user
     showSuccessAnimation();
 
-    // 2. 블록 확인 (배경에서 대기)
+    // 2. Block confirmation (wait in background)
     const receipt = await result.wait();
-    console.log('블록 확인됨:', receipt.blockNumber);
+    console.log('Block confirmed:', receipt.blockNumber);
 
   } catch (error) {
-    console.error('전송 실패:', error.message);
+    console.error('Transfer failed:', error.message);
   }
 };
 ```
 
-## 사전 확인 데이터
+## Preconfirmation Data
 
 ```tsx
 interface Preconfirmation {
-  txHash: string;           // 트랜잭션 해시
-  preconfirmedAt: number;   // 사전 확인 타임스탬프
-  latencyMs: number;        // 지연 시간 (밀리초)
-  sequencerSignature: string; // 시퀀서 서명
+  txHash: string;           // Transaction hash
+  preconfirmedAt: number;   // Preconfirmation timestamp
+  latencyMs: number;        // Latency in milliseconds
+  sequencerSignature: string; // Sequencer signature
 }
 ```
 
-## 평균 지연 시간 확인
+## Check Average Latency
 
 ```tsx
 const displayLatency = () => {
   const latency = getAverageLatency();
-  console.log('평균 Flashblocks 지연:', latency, 'ms');
+  console.log('Average Flashblocks latency:', latency, 'ms');
 };
 ```
 
-## Flashblocks 사용 가능 여부 확인
+## Check Flashblocks Availability
 
 ```tsx
 const checkAvailability = () => {
   if (!isAvailable) {
     Alert.alert(
-      '사용 불가',
-      'Flashblocks는 현재 네트워크에서 사용할 수 없습니다'
+      'Unavailable',
+      'Flashblocks is not available on the current network'
     );
     return false;
   }
@@ -95,7 +95,7 @@ const checkAvailability = () => {
 };
 ```
 
-## 전체 예제: 빠른 전송 화면
+## Complete Example: Fast Send Screen
 
 ```tsx
 import { useState } from 'react';
@@ -126,17 +126,17 @@ export function FlashblocksScreen() {
         value,
       });
 
-      // 사전 확인됨 - 즉시 UI 업데이트
+      // Preconfirmed - instant UI update
       setStatus('preconfirmed');
       setLatency(preconfirmation.latencyMs);
 
-      // 블록 확인 대기
+      // Wait for block confirmation
       await result.wait();
       setStatus('confirmed');
 
-      Alert.alert('완료', `${preconfirmation.latencyMs}ms 만에 사전 확인됨!`);
+      Alert.alert('Complete', `Preconfirmed in ${preconfirmation.latencyMs}ms!`);
     } catch (error) {
-      Alert.alert('오류', error.message);
+      Alert.alert('Error', error.message);
       setStatus('idle');
     }
   };
@@ -144,25 +144,25 @@ export function FlashblocksScreen() {
   if (!isAvailable) {
     return (
       <View style={{ padding: 20 }}>
-        <Text>Flashblocks는 이 네트워크에서 사용할 수 없습니다</Text>
+        <Text>Flashblocks is not available on this network</Text>
       </View>
     );
   }
 
   return (
     <View style={{ padding: 20 }}>
-      <Text style={{ fontSize: 20, marginBottom: 10 }}>⚡ Flashblocks</Text>
+      <Text style={{ fontSize: 20, marginBottom: 10 }}>Flashblocks</Text>
       <Text style={{ color: '#666', marginBottom: 20 }}>
-        ~200ms 초고속 트랜잭션 확인
+        ~200ms ultra-fast transaction confirmation
       </Text>
 
-      <Text style={{ marginBottom: 10 }}>잔액: {formattedBalance} ETH</Text>
+      <Text style={{ marginBottom: 10 }}>Balance: {formattedBalance} ETH</Text>
       <Text style={{ marginBottom: 20, color: '#888' }}>
-        평균 지연: {getAverageLatency()}ms
+        Average latency: {getAverageLatency()}ms
       </Text>
 
       <TextInput
-        placeholder="받는 주소"
+        placeholder="Recipient address"
         value={to}
         onChangeText={setTo}
         style={{
@@ -175,7 +175,7 @@ export function FlashblocksScreen() {
       />
 
       <TextInput
-        placeholder="금액 (ETH)"
+        placeholder="Amount (ETH)"
         value={amount}
         onChangeText={setAmount}
         keyboardType="decimal-pad"
@@ -188,7 +188,7 @@ export function FlashblocksScreen() {
         }}
       />
 
-      {/* 상태 표시 */}
+      {/* Status display */}
       {status !== 'idle' && (
         <View
           style={{
@@ -199,14 +199,14 @@ export function FlashblocksScreen() {
           }}
         >
           <Text style={{ fontWeight: 'bold' }}>
-            {status === 'preconfirmed' ? '⚡ 사전 확인됨!' : '✅ 블록 확인됨!'}
+            {status === 'preconfirmed' ? 'Preconfirmed!' : 'Block Confirmed!'}
           </Text>
-          {latency && <Text>지연: {latency}ms</Text>}
+          {latency && <Text>Latency: {latency}ms</Text>}
         </View>
       )}
 
       <Button
-        title={isLoading ? '전송 중...' : '⚡ 빠른 전송'}
+        title={isLoading ? 'Sending...' : 'Fast Send'}
         onPress={handleSend}
         disabled={isLoading || !to || !amount}
       />
@@ -215,29 +215,29 @@ export function FlashblocksScreen() {
 }
 ```
 
-## 일반 트랜잭션과 비교
+## Comparison with Regular Transactions
 
-| 항목 | 일반 트랜잭션 | Flashblocks |
-|------|--------------|-------------|
-| 초기 피드백 | 2-12초 (블록 확인) | ~200ms (사전 확인) |
-| 최종 확인 | 2-12초 | 2-12초 (동일) |
-| 보안 | 블록 확인 | 시퀀서 서명 + 블록 확인 |
-| 사용 사례 | 일반 전송 | UX가 중요한 앱 |
+| Item | Regular Transaction | Flashblocks |
+|------|---------------------|-------------|
+| Initial Feedback | 2-12 seconds (block confirmation) | ~200ms (preconfirmation) |
+| Final Confirmation | 2-12 seconds | 2-12 seconds (same) |
+| Security | Block confirmation | Sequencer signature + Block confirmation |
+| Use Cases | General transfers | UX-critical apps |
 
-## 사용 사례
+## Use Cases
 
-1. **결제 앱**: 즉각적인 결제 확인 UI
-2. **게임**: 빠른 인게임 트랜잭션
-3. **DEX**: 빠른 스왑 피드백
-4. **NFT 민팅**: 즉각적인 민팅 확인
+1. **Payment Apps**: Instant payment confirmation UI
+2. **Games**: Fast in-game transactions
+3. **DEX**: Quick swap feedback
+4. **NFT Minting**: Instant minting confirmation
 
-## 주의사항
+## Important Notes
 
-:::warning 사전 확인의 의미
-사전 확인(preconfirmation)은 시퀀서가 트랜잭션을 수락했다는 약속입니다. 최종적인 블록 확인이 필요한 중요한 작업(큰 금액 전송 등)에서는 반드시 블록 확인을 기다리세요.
+:::warning Meaning of Preconfirmation
+Preconfirmation is a promise from the sequencer that it has accepted the transaction. For critical operations requiring final confirmation (such as large amount transfers), always wait for block confirmation.
 :::
 
-## 다음 단계
+## Next Steps
 
-- [트랜잭션](/docs/guides/transactions) - 일반 트랜잭션
-- [GIWA ID](/docs/guides/giwa-id) - ENS 기반 네이밍
+- [Transactions](/docs/guides/transactions) - Regular transactions
+- [GIWA ID](/docs/guides/giwa-id) - ENS-based naming

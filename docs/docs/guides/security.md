@@ -2,77 +2,78 @@
 sidebar_position: 8
 ---
 
-# 보안
+# Security
 
-GIWA SDK 사용 시 보안 모범 사례를 설명합니다.
+Best practices for security when using GIWA SDK.
 
-## 보안 아키텍처
+## Security Architecture
 
 ```
 ┌─────────────────────────────────────────┐
-│              앱 레이어                   │
-│  - 니모닉 표시 후 즉시 폐기               │
-│  - 개인키 메모리 최소 시간 유지            │
-│  - 민감 데이터 로깅 금지                  │
+│              App Layer                  │
+│  - Discard mnemonic immediately after   │
+│    displaying                           │
+│  - Minimize private key time in memory  │
+│  - Never log sensitive data             │
 ├─────────────────────────────────────────┤
-│         GIWA SDK 레이어                  │
-│  - 입력 검증                             │
-│  - 에러 메시지 민감 정보 제외              │
+│           GIWA SDK Layer                │
+│  - Input validation                     │
+│  - Exclude sensitive info from errors   │
 ├─────────────────────────────────────────┤
-│       네이티브 보안 저장소                 │
+│       Native Secure Storage             │
 │  iOS: Keychain (Secure Enclave)         │
 │  Android: Keystore (Hardware-backed)    │
 ├─────────────────────────────────────────┤
-│            OS 레벨 암호화                 │
+│          OS-Level Encryption            │
 └─────────────────────────────────────────┘
 ```
 
-## 개인키 관리
+## Private Key Management
 
-### 안전한 지갑 생성
+### Safe Wallet Creation
 
 ```tsx
 const handleCreateWallet = async () => {
   try {
     const { wallet, mnemonic } = await createWallet();
 
-    // ✅ 니모닉을 사용자에게 보여주고 백업 확인
+    // Show mnemonic to user and confirm backup
     const confirmed = await showMnemonicBackupScreen(mnemonic);
 
     if (!confirmed) {
-      // 사용자가 백업을 확인하지 않으면 경고
+      // Warn user if backup not confirmed
       Alert.alert(
-        '경고',
-        '복구 구문을 백업하지 않으면 지갑을 복구할 수 없습니다'
+        'Warning',
+        'You cannot recover your wallet without backing up your recovery phrase'
       );
     }
 
-    // ✅ 니모닉은 이후 앱에서 접근 불가
-    // SDK는 니모닉을 저장하지 않음
+    // Mnemonic is no longer accessible in the app after this
+    // SDK does not store the mnemonic
 
   } catch (error) {
-    // ❌ 에러 메시지에 민감 정보 포함하지 않기
-    Alert.alert('오류', '지갑 생성에 실패했습니다');
+    // Do not include sensitive information in error messages
+    Alert.alert('Error', 'Failed to create wallet');
   }
 };
 ```
 
-### 개인키 내보내기 시 주의사항
+### Private Key Export Precautions
 
 ```tsx
 const handleExportPrivateKey = async () => {
-  // ✅ 1. 사용자에게 위험성 경고
+  // 1. Warn user about risks
   const confirmed = await new Promise((resolve) => {
     Alert.alert(
-      '⚠️ 경고',
-      '개인키를 노출하면 자산을 잃을 수 있습니다.\n\n' +
-      '개인키를 절대로:\n' +
-      '- 스크린샷으로 저장하지 마세요\n' +
-      '- 다른 사람과 공유하지 마세요\n' +
-      '- 클라우드에 저장하지 마세요',
+      'Warning',
+      'Exposing your private key can result in loss of assets.\n\n' +
+      'Never:\n' +
+      '- Take screenshots of your private key\n' +
+      '- Share it with anyone\n' +
+      '- Store it in the cloud',
       [
-        { text: '취소', onPress: () => resolve(false) },
-        { text: '이해했습니다', onPress: () => resolve(true) },
+        { text: 'Cancel', onPress: () => resolve(false) },
+        { text: 'I Understand', onPress: () => resolve(true) },
       ]
     );
   });
@@ -80,24 +81,24 @@ const handleExportPrivateKey = async () => {
   if (!confirmed) return;
 
   try {
-    // ✅ 2. 생체 인증 (자동으로 요청됨)
+    // 2. Biometric authentication (automatically requested)
     const privateKey = await exportPrivateKey();
 
-    // ✅ 3. 일정 시간 후 자동으로 숨기기
+    // 3. Auto-hide after a set time
     showPrivateKeyModal(privateKey, {
-      autoHideAfter: 60000, // 60초 후 자동 숨김
-      disableScreenshot: true, // 스크린샷 방지 (Android)
+      autoHideAfter: 60000, // Auto-hide after 60 seconds
+      disableScreenshot: true, // Prevent screenshots (Android)
     });
 
   } catch (error) {
     if (error.code === 'BIOMETRIC_FAILED') {
-      Alert.alert('인증 실패', '생체 인증에 실패했습니다');
+      Alert.alert('Authentication Failed', 'Biometric authentication failed');
     }
   }
 };
 ```
 
-## 생체 인증 활용
+## Biometric Authentication
 
 ```tsx
 import { useBiometricAuth } from '@giwa/react-native-wallet';
@@ -107,53 +108,53 @@ function SecureAction() {
 
   const handleSensitiveAction = async () => {
     if (!isAvailable) {
-      // 생체 인증 불가 시 PIN 등 대체 인증
+      // Use alternative authentication like PIN when biometrics unavailable
       const pinValid = await verifyPin();
       if (!pinValid) return;
     } else {
-      // 생체 인증
+      // Biometric authentication
       const success = await authenticate({
-        promptMessage: '트랜잭션을 승인하려면 인증하세요',
+        promptMessage: 'Authenticate to approve transaction',
       });
       if (!success) return;
     }
 
-    // 민감한 작업 실행
+    // Execute sensitive action
     await performSensitiveAction();
   };
 }
 ```
 
-## 트랜잭션 보안
+## Transaction Security
 
-### 주소 검증
+### Address Validation
 
 ```tsx
 import { GiwaError, ErrorCodes } from '@giwa/react-native-wallet';
 
 const validateAndSend = async (to: string, amount: string) => {
-  // ✅ 1. 주소 형식 검증
+  // 1. Validate address format
   if (!/^0x[a-fA-F0-9]{40}$/.test(to)) {
-    throw new GiwaError('유효하지 않은 주소 형식입니다', ErrorCodes.INVALID_ADDRESS);
+    throw new GiwaError('Invalid address format', ErrorCodes.INVALID_ADDRESS);
   }
 
-  // ✅ 2. 자신에게 전송 방지
+  // 2. Prevent sending to self
   if (to.toLowerCase() === wallet.address.toLowerCase()) {
-    Alert.alert('경고', '자신에게 전송하시겠습니까?');
+    Alert.alert('Warning', 'Are you sure you want to send to yourself?');
   }
 
-  // ✅ 3. 금액 검증
+  // 3. Validate amount
   const amountWei = parseEther(amount);
   if (amountWei <= 0n) {
-    throw new GiwaError('금액은 0보다 커야 합니다');
+    throw new GiwaError('Amount must be greater than 0');
   }
 
-  // ✅ 4. 잔액 확인
+  // 4. Check balance
   if (amountWei > balance) {
-    throw new GiwaError('잔액이 부족합니다', ErrorCodes.INSUFFICIENT_FUNDS);
+    throw new GiwaError('Insufficient balance', ErrorCodes.INSUFFICIENT_FUNDS);
   }
 
-  // ✅ 5. 큰 금액 전송 시 추가 확인
+  // 5. Additional confirmation for large amounts
   const threshold = parseEther('1'); // 1 ETH
   if (amountWei >= threshold) {
     const confirmed = await confirmLargeTransaction(amount);
@@ -164,17 +165,17 @@ const validateAndSend = async (to: string, amount: string) => {
 };
 ```
 
-### 트랜잭션 시뮬레이션
+### Transaction Simulation
 
 ```tsx
 const safeSendTransaction = async (tx) => {
-  // ✅ 전송 전 시뮬레이션
+  // Simulate before sending
   try {
     await estimateGas(tx);
   } catch (error) {
     Alert.alert(
-      '트랜잭션 실패 예상',
-      '이 트랜잭션은 실패할 것으로 예상됩니다. 계속하시겠습니까?'
+      'Transaction Expected to Fail',
+      'This transaction is expected to fail. Do you want to continue?'
     );
     return;
   }
@@ -183,31 +184,31 @@ const safeSendTransaction = async (tx) => {
 };
 ```
 
-## 피싱 방지
+## Phishing Prevention
 
-### RPC URL 검증
+### RPC URL Validation
 
 ```tsx
-// SDK 내부에서 자동 검증
+// Automatically validated internally by SDK
 const ALLOWED_RPC_DOMAINS = [
   'giwa.io',
   'sepolia-rpc.giwa.io',
   'rpc.giwa.io',
 ];
 
-// 커스텀 RPC 사용 시 경고
+// Warning displayed when using custom RPC
 <GiwaProvider
   config={{
     network: 'mainnet',
-    customRpcUrl: 'https://custom-rpc.example.com', // 경고 표시됨
+    customRpcUrl: 'https://custom-rpc.example.com', // Warning shown
   }}
 >
 ```
 
-### 컨트랙트 상호작용 검증
+### Contract Interaction Validation
 
 ```tsx
-// 알려진 컨트랙트 주소 확인
+// Verify known contract addresses
 import { CONTRACT_ADDRESSES, getContractAddresses } from '@giwa/react-native-wallet';
 
 const isOfficialContract = (address: string) => {
@@ -215,15 +216,15 @@ const isOfficialContract = (address: string) => {
   return Object.values(contracts).includes(address.toLowerCase());
 };
 
-// 토큰 승인 전 확인
+// Confirm before token approval
 const safeApprove = async (tokenAddress: string, spender: string, amount: string) => {
   if (!isOfficialContract(spender)) {
     const confirmed = await Alert.alert(
-      '⚠️ 알 수 없는 컨트랙트',
-      `${spender}는 공식 GIWA 컨트랙트가 아닙니다.\n계속하시겠습니까?`,
+      'Unknown Contract',
+      `${spender} is not an official GIWA contract.\nDo you want to continue?`,
       [
-        { text: '취소', style: 'cancel' },
-        { text: '계속', style: 'destructive' },
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Continue', style: 'destructive' },
       ]
     );
     if (!confirmed) return;
@@ -233,34 +234,97 @@ const safeApprove = async (tokenAddress: string, spender: string, amount: string
 };
 ```
 
-## 로깅 및 디버깅
+## Built-in SDK Security Features
 
-### 안전한 로깅
+### Rate Limiting
+
+Prevents brute force attacks on sensitive operations.
 
 ```tsx
-// ❌ 잘못된 예
-console.log('개인키:', privateKey);
-console.log('니모닉:', mnemonic);
+// Mnemonic/private key export limits
+const { exportMnemonic, exportPrivateKey } = useGiwaWallet();
 
-// ✅ 올바른 예
-console.log('지갑 생성 완료');
-console.log('주소:', wallet.address); // 주소는 공개 정보
-
-// ✅ 개발 환경에서만 로깅
-if (__DEV__) {
-  console.log('디버그 정보:', safeData);
+// Limited to 3 calls per minute
+// 5-minute cooldown when exceeded
+try {
+  const mnemonic = await exportMnemonic();
+} catch (error) {
+  if (error.code === 'RATE_LIMIT_EXCEEDED') {
+    // "Rate limit exceeded. Please wait 300 seconds."
+    Alert.alert('Please try again later', error.message);
+  }
 }
 ```
 
-### 에러 리포팅
+| Operation | Limit | Cooldown |
+|-----------|-------|----------|
+| `exportMnemonic` | 3/min | 5 min |
+| `exportPrivateKey` | 3/min | 5 min |
+
+### Memory Security
+
+Sensitive account data is automatically cleared from memory after 5 minutes of inactivity.
 
 ```tsx
-// ❌ 잘못된 예 - 민감 정보 포함
+// SDK internal behavior:
+// 1. Wallet loaded -> Account data loaded to memory
+// 2. No getAccount() calls for 5 minutes
+// 3. Automatically calls clearSensitiveMemory()
+// 4. Auto-reloads on next operation
+
+// No special handling required in user code
+```
+
+### Security Audit Logging
+
+SDK automatically logs security-related events.
+
+```tsx
+// Event types logged:
+// - WALLET_CREATED, WALLET_RECOVERED, WALLET_DELETED
+// - MNEMONIC_EXPORT_ATTEMPT, PRIVATE_KEY_EXPORT_ATTEMPT
+// - RATE_LIMIT_TRIGGERED, SECURITY_VIOLATION
+// - BIOMETRIC_AUTH_ATTEMPT/SUCCESS/FAILED
+
+// Sensitive data is automatically masked
+// Example: 0x1234...5678 (address), [REDACTED] (private key)
+```
+
+:::note Development Environment
+In `__DEV__` mode, Security Audit logs are output to the console.
+In production, you can integrate with external logging systems.
+:::
+
+---
+
+## Logging and Debugging
+
+### Safe Logging
+
+```tsx
+// Bad example
+console.log('Private key:', privateKey);
+console.log('Mnemonic:', mnemonic);
+
+// Good example
+console.log('Wallet creation complete');
+console.log('Address:', wallet.address); // Address is public information
+
+// Log only in development environment
+if (__DEV__) {
+  console.log('Debug info:', safeData);
+}
+```
+
+### Error Reporting
+
+```tsx
+// Bad example - includes sensitive information
 Sentry.captureException(error, {
   extra: { privateKey, mnemonic },
 });
 
-// ✅ 올바른 예 - 민감 정보 제외
+// Good example - excludes sensitive information
 Sentry.captureException(error, {
   extra: {
     walletAddress: wallet.address,
@@ -270,9 +334,9 @@ Sentry.captureException(error, {
 });
 ```
 
-## 앱 보안 설정
+## App Security Settings
 
-### Android 보안
+### Android Security
 
 ```java
 // android/app/src/main/java/.../MainActivity.java
@@ -280,7 +344,7 @@ Sentry.captureException(error, {
 protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    // 스크린샷 방지
+    // Prevent screenshots
     getWindow().setFlags(
         WindowManager.LayoutParams.FLAG_SECURE,
         WindowManager.LayoutParams.FLAG_SECURE
@@ -288,12 +352,12 @@ protected void onCreate(Bundle savedInstanceState) {
 }
 ```
 
-### iOS 보안
+### iOS Security
 
 ```swift
 // ios/YourApp/AppDelegate.swift
 func applicationWillResignActive(_ application: UIApplication) {
-    // 앱 전환 시 화면 가리기
+    // Cover screen when app switches
     let blurEffect = UIBlurEffect(style: .light)
     let blurView = UIVisualEffectView(effect: blurEffect)
     blurView.frame = window?.frame ?? CGRect.zero
@@ -302,35 +366,35 @@ func applicationWillResignActive(_ application: UIApplication) {
 }
 
 func applicationDidBecomeActive(_ application: UIApplication) {
-    // 블러 제거
+    // Remove blur
     window?.viewWithTag(999)?.removeFromSuperview()
 }
 ```
 
-## 보안 체크리스트
+## Security Checklist
 
-### 개발 시
+### During Development
 
-- [ ] 개인키/니모닉 로깅 금지
-- [ ] 하드코딩된 키 없음
-- [ ] 에러 메시지에 민감 정보 없음
-- [ ] 모든 입력값 검증
+- [ ] No logging of private keys/mnemonics
+- [ ] No hardcoded keys
+- [ ] No sensitive information in error messages
+- [ ] Validate all input values
 
-### 릴리스 전
+### Before Release
 
-- [ ] 디버그 로그 제거
-- [ ] ProGuard/R8 난독화 적용
-- [ ] SSL Pinning 설정
-- [ ] 스크린샷 방지 활성화
+- [ ] Remove debug logs
+- [ ] Apply ProGuard/R8 obfuscation
+- [ ] Configure SSL Pinning
+- [ ] Enable screenshot prevention
 
-### 사용자 교육
+### User Education
 
-- [ ] 니모닉 백업 강조
-- [ ] 개인키 공유 경고
-- [ ] 피싱 사이트 주의
-- [ ] 큰 금액 전송 시 주소 확인
+- [ ] Emphasize mnemonic backup
+- [ ] Warn about private key sharing
+- [ ] Alert about phishing sites
+- [ ] Verify address for large transfers
 
-## 다음 단계
+## Next Steps
 
-- [API 레퍼런스](/docs/api/hooks) - 모든 Hook API
-- [지갑 관리](/docs/guides/wallet-management) - 지갑 기능
+- [API Reference](/docs/api/hooks) - All Hook APIs
+- [Wallet Management](/docs/guides/wallet-management) - Wallet features

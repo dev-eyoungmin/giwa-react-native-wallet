@@ -2,11 +2,11 @@
 sidebar_position: 2
 ---
 
-# 유닛 테스트
+# Unit Tests
 
-GIWA SDK Hook들의 유닛 테스트 작성 방법입니다.
+How to write unit tests for GIWA SDK Hooks.
 
-## useGiwaWallet 테스트
+## useGiwaWallet Tests
 
 ```typescript
 // __tests__/hooks/useGiwaWallet.test.ts
@@ -28,14 +28,14 @@ describe('useGiwaWallet', () => {
       await act(async () => {
         const { wallet, mnemonic } = await result.current.createWallet();
 
-        // 주소 형식 검증
+        // Verify address format
         expect(wallet.address).toMatch(/^0x[a-fA-F0-9]{40}$/);
 
-        // 니모닉 12단어 검증
+        // Verify 12-word mnemonic
         expect(mnemonic.split(' ')).toHaveLength(12);
       });
 
-      // 지갑 연결 상태 확인
+      // Verify wallet connection state
       expect(result.current.wallet).not.toBeNull();
       expect(result.current.wallet?.isConnected).toBe(true);
     });
@@ -51,7 +51,7 @@ describe('useGiwaWallet', () => {
         return result.current.createWallet();
       });
 
-      // 로딩 상태 확인
+      // Verify loading state
       await waitFor(() => {
         expect(result.current.isLoading).toBe(true);
       });
@@ -105,14 +105,14 @@ describe('useGiwaWallet', () => {
         wrapper: hookWrapper,
       });
 
-      // 먼저 지갑 생성
+      // First create wallet
       await act(async () => {
         await result.current.createWallet();
       });
 
       expect(result.current.wallet).not.toBeNull();
 
-      // 연결 해제
+      // Disconnect
       await act(async () => {
         await result.current.disconnect();
       });
@@ -123,7 +123,7 @@ describe('useGiwaWallet', () => {
 });
 ```
 
-## useBalance 테스트
+## useBalance Tests
 
 ```typescript
 // __tests__/hooks/useBalance.test.ts
@@ -131,7 +131,7 @@ import { renderHook, waitFor } from '@testing-library/react-hooks';
 import { useBalance } from '@giwa/react-native-wallet';
 import { hookWrapper } from '../test-utils';
 
-// Mock 설정
+// Mock setup
 const mockGetBalance = jest.fn();
 jest.mock('viem', () => ({
   ...jest.requireActual('viem'),
@@ -202,7 +202,7 @@ describe('useBalance', () => {
 
     expect(mockGetBalance).toHaveBeenCalledTimes(1);
 
-    // 잔액 변경
+    // Change balance
     mockGetBalance.mockResolvedValue(BigInt('2000000000000000000'));
 
     await result.current.refetch();
@@ -231,7 +231,7 @@ describe('useBalance', () => {
 });
 ```
 
-## useTransaction 테스트
+## useTransaction Tests
 
 ```typescript
 // __tests__/hooks/useTransaction.test.ts
@@ -295,7 +295,7 @@ describe('useTransaction', () => {
 });
 ```
 
-## useTokens 테스트
+## useTokens Tests
 
 ```typescript
 // __tests__/hooks/useTokens.test.ts
@@ -357,26 +357,26 @@ describe('useTokens', () => {
 });
 ```
 
-## 테스트 실행
+## Running Tests
 
 ```bash
-# 모든 테스트 실행
+# Run all tests
 npm test
 
-# 특정 파일 테스트
+# Test specific file
 npm test -- useGiwaWallet.test.ts
 
-# 커버리지 포함
+# With coverage
 npm test -- --coverage
 
-# Watch 모드
+# Watch mode
 npm test -- --watch
 
-# 특정 테스트만 실행
+# Run specific test only
 npm test -- --testNamePattern="should create a new wallet"
 ```
 
-## 다음 단계
+## Next Steps
 
-- [통합 테스트](/docs/testing/integration-tests) - 전체 플로우 테스트
-- [E2E 테스트](/docs/testing/e2e-tests) - Detox 테스트
+- [Integration Tests](/docs/testing/integration-tests) - Full flow testing
+- [E2E Tests](/docs/testing/e2e-tests) - Detox testing

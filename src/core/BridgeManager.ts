@@ -1,12 +1,16 @@
 import {
   type Address,
   type Hash,
-  parseEther,
 } from 'viem';
 import type { GiwaClient } from './GiwaClient';
 import type { BridgeTransaction, TransactionResult } from '../types';
-import { getContractAddresses } from '../constants/contracts';
 import { GiwaTransactionError } from '../utils/errors';
+import {
+  validateBridgeAmount,
+  validateAndChecksumAddress,
+  validateTokenAddress,
+  validateWeiAmount,
+} from '../utils/validation';
 
 // L2 Standard Bridge ABI (simplified)
 const L2_STANDARD_BRIDGE_ABI = [
@@ -60,23 +64,29 @@ export class BridgeManager {
     amount: string,
     to?: Address
   ): Promise<TransactionResult> {
+    // Validate amount with bridge-specific limits
+    const amountInWei = validateBridgeAmount(amount, 'ETH');
+
+    // Validate recipient if provided
+    const validatedRecipient = to
+      ? validateAndChecksumAddress(to, 'recipient')
+      : undefined;
+
     const walletClient = this.client.getWalletClient();
     if (!walletClient) {
-      throw new GiwaTransactionError('지갑이 연결되지 않았습니다.');
+      throw new GiwaTransactionError('Wallet is not connected.');
     }
 
-    const network = this.client.getNetwork();
-    const contracts = getContractAddresses(network);
-    const amountInWei = parseEther(amount);
+    const contracts = this.client.getContractAddresses();
 
     let hash: Hash;
 
-    if (to) {
+    if (validatedRecipient) {
       hash = await walletClient.writeContract({
         address: contracts.l2StandardBridge,
         abi: L2_STANDARD_BRIDGE_ABI,
         functionName: 'withdrawTo',
-        args: [ETH_ADDRESS, to, amountInWei, 200000, '0x'],
+        args: [ETH_ADDRESS, validatedRecipient, amountInWei, 200000, '0x'],
         value: amountInWei,
       });
     } else {
@@ -131,29 +141,37 @@ export class BridgeManager {
     amount: bigint,
     to?: Address
   ): Promise<TransactionResult> {
+    // Validate inputs
+    const validatedTokenAddress = validateTokenAddress(l2TokenAddress);
+    validateWeiAmount(amount, 'withdrawal amount');
+
+    // Validate recipient if provided
+    const validatedRecipient = to
+      ? validateAndChecksumAddress(to, 'recipient')
+      : undefined;
+
     const walletClient = this.client.getWalletClient();
     if (!walletClient) {
-      throw new GiwaTransactionError('지갑이 연결되지 않았습니다.');
+      throw new GiwaTransactionError('Wallet is not connected.');
     }
 
-    const network = this.client.getNetwork();
-    const contracts = getContractAddresses(network);
+    const contracts = this.client.getContractAddresses();
 
     let hash: Hash;
 
-    if (to) {
+    if (validatedRecipient) {
       hash = await walletClient.writeContract({
         address: contracts.l2StandardBridge,
         abi: L2_STANDARD_BRIDGE_ABI,
         functionName: 'withdrawTo',
-        args: [l2TokenAddress, to, amount, 200000, '0x'],
+        args: [validatedTokenAddress, validatedRecipient, amount, 200000, '0x'],
       });
     } else {
       hash = await walletClient.writeContract({
         address: contracts.l2StandardBridge,
         abi: L2_STANDARD_BRIDGE_ABI,
         functionName: 'withdraw',
-        args: [l2TokenAddress, amount, 200000, '0x'],
+        args: [validatedTokenAddress, amount, 200000, '0x'],
       });
     }
 

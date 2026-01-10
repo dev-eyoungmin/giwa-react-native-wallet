@@ -5,27 +5,27 @@ slug: /
 
 # GIWA React Native SDK
 
-GIWA Chain을 위한 React Native SDK입니다. Expo와 React Native CLI 프로젝트 모두에서 사용할 수 있습니다.
+React Native SDK for GIWA Chain. Works with both Expo and React Native CLI projects.
 
-## 주요 기능
+## Key Features
 
-- **지갑 관리**: 니모닉/개인키를 통한 지갑 생성 및 복구
-- **ETH 및 ERC-20 토큰 전송**: 간편한 토큰 전송 기능
-- **L1↔L2 브릿지**: 이더리움 메인넷과 GIWA L2 간 자산 이동
-- **Flashblocks**: ~200ms 빠른 트랜잭션 사전 확인
-- **GIWA ID**: ENS 기반 네이밍 서비스 (alice.giwa.id)
-- **Dojang**: EAS 기반 증명(attestation) 서비스
-- **보안 저장소**: iOS Keychain / Android Keystore
-- **생체 인증**: Face ID, Touch ID, 지문 인식 지원
+- **Wallet Management**: Create and recover wallets using mnemonic or private key
+- **ETH and ERC-20 Token Transfers**: Simple token transfer functionality
+- **L1↔L2 Bridge**: Asset movement between Ethereum mainnet and GIWA L2
+- **Flashblocks**: ~200ms fast transaction pre-confirmation
+- **GIWA ID**: ENS-based naming service (alice.giwa.id)
+- **Dojang**: EAS-based attestation service
+- **Secure Storage**: iOS Keychain / Android Keystore
+- **Biometric Authentication**: Face ID, Touch ID, Fingerprint support
 
-## 네트워크 정보
+## Network Information
 
-| 네트워크 | Chain ID | RPC URL |
+| Network | Chain ID | RPC URL |
 |---------|----------|---------|
 | Testnet | 91342 | https://sepolia-rpc.giwa.io/ |
 | Mainnet | 91341 | https://rpc.giwa.io/ |
 
-## 빠른 시작
+## Quick Start
 
 ```bash
 # Expo
@@ -41,7 +41,7 @@ import { GiwaProvider, useGiwaWallet } from '@giwa/react-native-wallet';
 
 export default function App() {
   return (
-    <GiwaProvider config={{ network: 'testnet' }}>
+    <GiwaProvider network="testnet">
       <WalletScreen />
     </GiwaProvider>
   );
@@ -51,23 +51,23 @@ function WalletScreen() {
   const { wallet, createWallet } = useGiwaWallet();
 
   return wallet ? (
-    <Text>주소: {wallet.address}</Text>
+    <Text>Address: {wallet.address}</Text>
   ) : (
-    <Button title="지갑 생성" onPress={createWallet} />
+    <Button title="Create Wallet" onPress={createWallet} />
   );
 }
 ```
 
-## 요구 사항
+## Requirements
 
 - React >= 19.0.0
 - React Native >= 0.77.0
-- Expo SDK >= 53 (Expo 프로젝트)
+- Expo SDK >= 53 (Expo projects)
 - expo-secure-store >= 15.0.0 (Expo)
 - react-native-keychain >= 9.2.0 (React Native CLI)
 
-## 다음 단계
+## Next Steps
 
-- [설치 가이드](/docs/getting-started/installation)로 시작하기
-- [지갑 관리](/docs/guides/wallet-management) 방법 알아보기
-- [API 레퍼런스](/docs/api/hooks)에서 모든 Hook 확인하기
+- Get started with [Installation Guide](/docs/getting-started/installation)
+- Learn about [Wallet Management](/docs/guides/wallet-management)
+- Check all Hooks in [API Reference](/docs/api/hooks)

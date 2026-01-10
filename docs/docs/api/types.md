@@ -4,9 +4,9 @@ sidebar_position: 4
 
 # Types
 
-GIWA SDK의 TypeScript 타입 정의입니다.
+TypeScript type definitions for GIWA SDK.
 
-## 네트워크
+## Network
 
 ```tsx
 type NetworkType = 'testnet' | 'mainnet';
@@ -23,7 +23,7 @@ interface NetworkInfo {
   };
 }
 
-// 네트워크 상수
+// Network Constants
 const GIWA_NETWORKS: Record<NetworkType, NetworkInfo> = {
   testnet: {
     name: 'GIWA Testnet',
@@ -50,7 +50,7 @@ const GIWA_NETWORKS: Record<NetworkType, NetworkInfo> = {
 };
 ```
 
-## 지갑
+## Wallet
 
 ```tsx
 interface WalletInfo {
@@ -64,7 +64,7 @@ interface CreateWalletResult {
 }
 ```
 
-## 트랜잭션
+## Transaction
 
 ```tsx
 interface TransactionRequest {
@@ -99,7 +99,7 @@ interface GasEstimate {
 }
 ```
 
-## 토큰
+## Token
 
 ```tsx
 interface TokenInfo {
@@ -123,7 +123,7 @@ interface AllowanceResult {
 }
 ```
 
-## 브릿지
+## Bridge
 
 ```tsx
 interface BridgeParams {
@@ -272,7 +272,7 @@ interface AttestationResult {
   txHash: string;
 }
 
-// 기본 스키마
+// Default Schemas
 const DOJANG_SCHEMAS = {
   KYC: '0x...',
   MEMBERSHIP: '0x...',
@@ -282,7 +282,7 @@ const DOJANG_SCHEMAS = {
 };
 ```
 
-## 어댑터 인터페이스
+## Adapter Interfaces
 
 ```tsx
 interface ISecureStorage {
@@ -309,15 +309,9 @@ interface BiometricOptions {
   cancelLabel?: string;
   fallbackLabel?: string;
 }
-
-interface IClipboard {
-  setString(value: string): Promise<void>;
-  getString(): Promise<string>;
-  hasString(): Promise<boolean>;
-}
 ```
 
-## 에러
+## Errors
 
 ```tsx
 class GiwaError extends Error {
@@ -333,26 +327,26 @@ class GiwaWalletError extends GiwaError {}
 class GiwaTransactionError extends GiwaError {}
 
 const ErrorCodes = {
-  // 일반
+  // General
   UNKNOWN_ERROR: 'UNKNOWN_ERROR',
   INVALID_PARAMS: 'INVALID_PARAMS',
 
-  // 보안
+  // Security
   SECURE_STORAGE_ERROR: 'SECURE_STORAGE_ERROR',
   BIOMETRIC_FAILED: 'BIOMETRIC_FAILED',
   BIOMETRIC_NOT_AVAILABLE: 'BIOMETRIC_NOT_AVAILABLE',
 
-  // 네트워크
+  // Network
   NETWORK_ERROR: 'NETWORK_ERROR',
   RPC_ERROR: 'RPC_ERROR',
   TIMEOUT: 'TIMEOUT',
 
-  // 지갑
+  // Wallet
   WALLET_NOT_FOUND: 'WALLET_NOT_FOUND',
   INVALID_MNEMONIC: 'INVALID_MNEMONIC',
   INVALID_PRIVATE_KEY: 'INVALID_PRIVATE_KEY',
 
-  // 트랜잭션
+  // Transaction
   INVALID_ADDRESS: 'INVALID_ADDRESS',
   INSUFFICIENT_FUNDS: 'INSUFFICIENT_FUNDS',
   GAS_TOO_LOW: 'GAS_TOO_LOW',
@@ -360,11 +354,11 @@ const ErrorCodes = {
   TRANSACTION_FAILED: 'TRANSACTION_FAILED',
   TRANSACTION_REVERTED: 'TRANSACTION_REVERTED',
 
-  // 토큰
+  // Token
   INVALID_TOKEN: 'INVALID_TOKEN',
   INSUFFICIENT_ALLOWANCE: 'INSUFFICIENT_ALLOWANCE',
 
-  // 브릿지
+  // Bridge
   BRIDGE_ERROR: 'BRIDGE_ERROR',
   BRIDGE_TIMEOUT: 'BRIDGE_TIMEOUT',
 
@@ -379,28 +373,217 @@ const ErrorCodes = {
 } as const;
 ```
 
-## 설정
+## Configuration
 
 ```tsx
+// Custom Endpoints Configuration
+interface CustomEndpoints {
+  /** Custom RPC URL */
+  rpcUrl?: string;
+  /** Flashblocks RPC URL */
+  flashblocksRpcUrl?: string;
+  /** Flashblocks WebSocket URL */
+  flashblocksWsUrl?: string;
+  /** Block Explorer URL */
+  explorerUrl?: string;
+}
+
 interface GiwaConfig {
-  network: NetworkType;
+  /** Network type (default: 'testnet') */
+  network?: NetworkType;
+  /** @deprecated Use endpoints.rpcUrl instead */
   customRpcUrl?: string;
+  /** Custom endpoints configuration */
+  endpoints?: CustomEndpoints;
+  /** Auto-connect wallet on app start */
   autoConnect?: boolean;
+  /** Enable Flashblocks */
   enableFlashblocks?: boolean;
+  /** Force environment type */
   forceEnvironment?: 'expo' | 'react-native';
 }
 
+// GiwaProvider Props (Recommended)
 interface GiwaProviderProps {
-  config: GiwaConfig;
+  /** Network type */
+  network?: 'testnet' | 'mainnet';
+  /** Initialization timeout (ms, default: 10000) */
+  initTimeout?: number;
+  /** Callback when error occurs */
+  onError?: (error: Error) => void;
+  /** Child components */
   children: React.ReactNode;
+  /** @deprecated Use direct props instead of config */
+  config?: GiwaConfig;
+  /** Custom adapter factory */
   adapterFactory?: AdapterFactory;
 }
 ```
 
-## 유틸리티 타입
+### GiwaProvider Usage Example
 
 ```tsx
-// Hook 반환 타입
+// Recommended (direct props)
+<GiwaProvider
+  network="testnet"
+  initTimeout={10000}
+  onError={(error) => console.error('SDK Error:', error)}
+>
+  <App />
+</GiwaProvider>
+
+// With custom endpoints
+<GiwaProvider
+  config={{
+    network: 'testnet',
+    endpoints: {
+      rpcUrl: 'https://my-custom-rpc.example.com',
+      flashblocksRpcUrl: 'https://my-flashblocks-rpc.example.com',
+      flashblocksWsUrl: 'wss://my-flashblocks-ws.example.com',
+    },
+  }}
+>
+  <App />
+</GiwaProvider>
+```
+
+## Hook Return Types
+
+```tsx
+// useGiwaWallet return type
+interface UseGiwaWalletReturn {
+  /** Connected wallet info */
+  wallet: GiwaWallet | null;
+  /** Wallet operation loading */
+  isLoading: boolean;
+  /** Whether SDK is initializing */
+  isInitializing: boolean;
+  /** Whether wallet exists (wallet !== null) */
+  hasWallet: boolean;
+  /** Error object */
+  error: Error | null;
+  /** Create new wallet */
+  createWallet: (options?: SecureStorageOptions) => Promise<WalletCreationResult>;
+  /** Recover wallet from mnemonic */
+  recoverWallet: (mnemonic: string, options?: SecureStorageOptions) => Promise<GiwaWallet>;
+  /** Import wallet from private key */
+  importFromPrivateKey: (privateKey: Hex, options?: SecureStorageOptions) => Promise<GiwaWallet>;
+  /** Load saved wallet */
+  loadWallet: (options?: SecureStorageOptions) => Promise<GiwaWallet | null>;
+  /** Delete wallet */
+  deleteWallet: () => Promise<void>;
+  /** Export mnemonic (Rate Limiting applied) */
+  exportMnemonic: (options?: SecureStorageOptions) => Promise<string | null>;
+  /** Export private key (Rate Limiting applied) */
+  exportPrivateKey: (options?: SecureStorageOptions) => Promise<Hex | null>;
+}
+
+// useBalance return type
+interface UseBalanceReturn {
+  /** Balance (bigint, default 0n) */
+  balance: bigint;
+  /** Formatted balance string (default '0') */
+  formattedBalance: string;
+  /** Loading state */
+  isLoading: boolean;
+  /** Error object */
+  error: Error | null;
+  /** Refresh balance */
+  refetch: () => Promise<void>;
+}
+
+// useNetworkInfo return type
+interface UseNetworkInfoReturn {
+  /** Current network */
+  network: 'testnet' | 'mainnet';
+  /** Network configuration */
+  networkConfig: GiwaNetwork;
+  /** Network status */
+  status: NetworkStatus;
+  /** Whether testnet */
+  isTestnet: boolean;
+  /** Whether ready */
+  isReady: boolean;
+  /** Whether has warnings */
+  hasWarnings: boolean;
+  /** Warning list */
+  warnings: string[];
+  /** Check feature availability */
+  isFeatureAvailable: (feature: FeatureName) => boolean;
+  /** Get feature details */
+  getFeatureInfo: (feature: FeatureName) => FeatureAvailability;
+  /** List of unavailable features */
+  unavailableFeatures: FeatureName[];
+  /** Chain ID */
+  chainId: number;
+  /** RPC URL */
+  rpcUrl: string;
+  /** Flashblocks RPC URL */
+  flashblocksRpcUrl: string;
+  /** Flashblocks WebSocket URL */
+  flashblocksWsUrl: string;
+  /** Block Explorer URL */
+  explorerUrl: string;
+}
+```
+
+## Security
+
+```tsx
+// Rate Limiting Configuration
+interface RateLimitConfig {
+  /** Maximum attempts allowed */
+  maxAttempts: number;
+  /** Time window (ms) */
+  windowMs: number;
+  /** Cooldown time (ms) */
+  cooldownMs: number;
+}
+
+// Default Rate Limit Settings
+const DEFAULT_RATE_LIMITS: Record<string, RateLimitConfig> = {
+  exportMnemonic: { maxAttempts: 3, windowMs: 60000, cooldownMs: 300000 },
+  exportPrivateKey: { maxAttempts: 3, windowMs: 60000, cooldownMs: 300000 },
+};
+
+// Security Event Types
+type SecurityEventType =
+  | 'WALLET_CREATED'
+  | 'WALLET_RECOVERED'
+  | 'WALLET_DELETED'
+  | 'WALLET_CONNECTED'
+  | 'WALLET_DISCONNECTED'
+  | 'MNEMONIC_EXPORT_ATTEMPT'
+  | 'PRIVATE_KEY_EXPORT_ATTEMPT'
+  | 'RATE_LIMIT_TRIGGERED'
+  | 'SECURITY_VIOLATION'
+  | 'BIOMETRIC_AUTH_ATTEMPT'
+  | 'BIOMETRIC_AUTH_SUCCESS'
+  | 'BIOMETRIC_AUTH_FAILED';
+
+// Security Event Log
+interface SecurityEvent {
+  /** Event type */
+  type: SecurityEventType;
+  /** Timestamp */
+  timestamp: string;
+  /** Wallet address hint (masked, e.g., 0x1234...5678) */
+  walletAddressHint?: string;
+  /** Additional details */
+  details?: Record<string, any>;
+}
+
+// Memory Security Configuration
+interface MemorySecurityConfig {
+  /** Sensitive data auto-cleanup time (ms) */
+  accountCleanupDelay: number;    // Default: 300000 (5 minutes)
+}
+```
+
+## Utility Types
+
+```tsx
+// Generic Hook Return Type
 type HookResult<T> = {
   data: T | undefined;
   isLoading: boolean;
@@ -408,9 +591,12 @@ type HookResult<T> = {
   refetch: () => Promise<void>;
 };
 
-// 비동기 함수 결과
+// Async Function Result
 type AsyncResult<T> = Promise<T>;
 
-// 선택적 필드
+// Optional Fields
 type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+// Hex String Type
+type Hex = `0x${string}`;
 ```

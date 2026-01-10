@@ -1,13 +1,15 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useGiwaManagers, useGiwaWalletContext } from '../providers/GiwaProvider';
+import { useGiwaManagers, useGiwaWalletContext, useGiwaState } from '../providers/GiwaProvider';
 import type { GiwaWallet, WalletCreationResult, SecureStorageOptions } from '../types';
 import type { Hex } from 'viem';
 
 export interface UseGiwaWalletReturn {
   wallet: GiwaWallet | null;
   isLoading: boolean;
+  /** Indicates SDK is still initializing */
+  isInitializing: boolean;
   error: Error | null;
-  /** wallet !== null 파생 상태 (별도 상태 관리 불필요) */
+  /** Derived state for wallet !== null (no separate state management needed) */
   hasWallet: boolean;
   createWallet: (options?: SecureStorageOptions) => Promise<WalletCreationResult>;
   recoverWallet: (mnemonic: string, options?: SecureStorageOptions) => Promise<GiwaWallet>;
@@ -21,22 +23,29 @@ export interface UseGiwaWalletReturn {
 /**
  * Hook for wallet management
  *
- * 최적화:
- * - useGiwaManagers, useGiwaWalletContext 분리 사용으로 불필요한 리렌더링 방지
- * - hasWallet을 파생 상태로 변경 (별도 useState 제거)
- * - 반환 객체 useMemo로 메모이제이션
+ * Optimizations:
+ * - Separate usage of useGiwaManagers, useGiwaWalletContext to prevent unnecessary re-renders
+ * - Changed hasWallet to derived state (removed separate useState)
+ * - Return object memoized with useMemo
+ * - Returns isInitializing=true during SDK initialization phase
  */
 export function useGiwaWallet(): UseGiwaWalletReturn {
-  const { walletManager } = useGiwaManagers();
+  const managers = useGiwaManagers();
   const { wallet, setWallet } = useGiwaWalletContext();
+  const { isLoading: sdkLoading, error: sdkError } = useGiwaState();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  // hasWallet을 파생 상태로 계산 (별도 상태 관리 불필요)
+  const walletManager = managers?.walletManager ?? null;
+
+  // Compute hasWallet as derived state (no separate state management needed)
   const hasWallet = wallet !== null;
 
   const createWallet = useCallback(
     async (options?: SecureStorageOptions): Promise<WalletCreationResult> => {
+      if (!walletManager) {
+        throw new Error('SDK is still initializing');
+      }
       setIsLoading(true);
       setError(null);
       try {
@@ -44,7 +53,7 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
         setWallet(result.wallet);
         return result;
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('지갑 생성 실패');
+        const error = err instanceof Error ? err : new Error('Failed to create wallet');
         setError(error);
         throw error;
       } finally {
@@ -59,6 +68,9 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
       mnemonic: string,
       options?: SecureStorageOptions
     ): Promise<GiwaWallet> => {
+      if (!walletManager) {
+        throw new Error('SDK is still initializing');
+      }
       setIsLoading(true);
       setError(null);
       try {
@@ -66,7 +78,7 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
         setWallet(recoveredWallet);
         return recoveredWallet;
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('지갑 복구 실패');
+        const error = err instanceof Error ? err : new Error('Failed to recover wallet');
         setError(error);
         throw error;
       } finally {
@@ -81,6 +93,9 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
       privateKey: Hex,
       options?: SecureStorageOptions
     ): Promise<GiwaWallet> => {
+      if (!walletManager) {
+        throw new Error('SDK is still initializing');
+      }
       setIsLoading(true);
       setError(null);
       try {
@@ -91,7 +106,7 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
         setWallet(importedWallet);
         return importedWallet;
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('지갑 가져오기 실패');
+        const error = err instanceof Error ? err : new Error('Failed to import wallet');
         setError(error);
         throw error;
       } finally {
@@ -103,6 +118,9 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
 
   const loadWallet = useCallback(
     async (options?: SecureStorageOptions): Promise<GiwaWallet | null> => {
+      if (!walletManager) {
+        throw new Error('SDK is still initializing');
+      }
       setIsLoading(true);
       setError(null);
       try {
@@ -112,7 +130,7 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
         }
         return loadedWallet;
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('지갑 로드 실패');
+        const error = err instanceof Error ? err : new Error('Failed to load wallet');
         setError(error);
         throw error;
       } finally {
@@ -123,13 +141,16 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
   );
 
   const deleteWallet = useCallback(async (): Promise<void> => {
+    if (!walletManager) {
+      throw new Error('SDK is still initializing');
+    }
     setIsLoading(true);
     setError(null);
     try {
       await walletManager.deleteWallet();
       setWallet(null);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('지갑 삭제 실패');
+      const error = err instanceof Error ? err : new Error('Failed to delete wallet');
       setError(error);
       throw error;
     } finally {
@@ -139,12 +160,15 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
 
   const exportMnemonic = useCallback(
     async (options?: SecureStorageOptions): Promise<string | null> => {
+      if (!walletManager) {
+        throw new Error('SDK is still initializing');
+      }
       setIsLoading(true);
       setError(null);
       try {
         return await walletManager.exportMnemonic(options);
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('복구 구문 내보내기 실패');
+        const error = err instanceof Error ? err : new Error('Failed to export mnemonic');
         setError(error);
         throw error;
       } finally {
@@ -156,12 +180,15 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
 
   const exportPrivateKey = useCallback(
     async (options?: SecureStorageOptions): Promise<Hex | null> => {
+      if (!walletManager) {
+        throw new Error('SDK is still initializing');
+      }
       setIsLoading(true);
       setError(null);
       try {
         return await walletManager.exportPrivateKey(options);
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('개인키 내보내기 실패');
+        const error = err instanceof Error ? err : new Error('Failed to export private key');
         setError(error);
         throw error;
       } finally {
@@ -171,11 +198,12 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
     [walletManager]
   );
 
-  // 반환 객체 메모이제이션으로 불필요한 리렌더링 방지
+  // Memoize return object to prevent unnecessary re-renders
   return useMemo(() => ({
     wallet,
     isLoading,
-    error,
+    isInitializing: sdkLoading,
+    error: error || sdkError,
     hasWallet,
     createWallet,
     recoverWallet,
@@ -187,7 +215,9 @@ export function useGiwaWallet(): UseGiwaWalletReturn {
   }), [
     wallet,
     isLoading,
+    sdkLoading,
     error,
+    sdkError,
     hasWallet,
     createWallet,
     recoverWallet,

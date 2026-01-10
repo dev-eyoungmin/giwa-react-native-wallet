@@ -2,53 +2,53 @@
 sidebar_position: 3
 ---
 
-# React Native CLI 설정
+# React Native CLI Setup
 
-React Native CLI 프로젝트에서 GIWA SDK를 설정하는 방법입니다.
+This guide explains how to set up the GIWA SDK in a React Native CLI project.
 
-## 설치
+## Installation
 
 ```bash
 npm install @giwa/react-native-wallet react-native-keychain
 
-# iOS 의존성 설치
+# Install iOS dependencies
 cd ios && pod install && cd ..
 ```
 
-## iOS 설정
+## iOS Setup
 
-### Info.plist 설정
+### Info.plist Configuration
 
-Face ID를 사용하려면 `ios/YourApp/Info.plist`에 추가:
+To use Face ID, add to `ios/YourApp/Info.plist`:
 
 ```xml title="ios/YourApp/Info.plist"
 <key>NSFaceIDUsageDescription</key>
-<string>지갑 접근을 위해 Face ID를 사용합니다</string>
+<string>Face ID is used for wallet access</string>
 ```
 
-### Keychain 그룹 설정 (선택)
+### Keychain Group Configuration (Optional)
 
-여러 앱 간 키체인 공유가 필요한 경우:
+If you need to share keychain between multiple apps:
 
-1. Xcode에서 프로젝트를 엽니다
-2. Signing & Capabilities로 이동
-3. Keychain Sharing capability 추가
+1. Open the project in Xcode
+2. Navigate to Signing & Capabilities
+3. Add Keychain Sharing capability
 
-## Android 설정
+## Android Setup
 
-### Gradle 설정
+### Gradle Configuration
 
 `android/build.gradle`:
 
 ```groovy title="android/build.gradle"
 buildscript {
     ext {
-        minSdkVersion = 23  // 최소 SDK 버전
+        minSdkVersion = 23  // Minimum SDK version
     }
 }
 ```
 
-### ProGuard 설정 (릴리스 빌드)
+### ProGuard Configuration (Release Builds)
 
 `android/app/proguard-rules.pro`:
 
@@ -57,9 +57,9 @@ buildscript {
 -keep class com.oblador.keychain.** { *; }
 ```
 
-## 기본 설정
+## Basic Setup
 
-### 1. GiwaProvider 설정
+### 1. GiwaProvider Configuration
 
 ```tsx title="App.tsx"
 import { GiwaProvider } from '@giwa/react-native-wallet';
@@ -73,7 +73,7 @@ export default function App() {
 }
 ```
 
-### 2. React Navigation 사용 시
+### 2. Using React Navigation
 
 ```tsx title="App.tsx"
 import { NavigationContainer } from '@react-navigation/native';
@@ -90,29 +90,44 @@ export default function App() {
 }
 ```
 
-## 설정 옵션
+## Configuration Options
 
 ```tsx
 <GiwaProvider
   config={{
     network: 'testnet',        // 'testnet' | 'mainnet'
-    customRpcUrl: 'https://...', // 커스텀 RPC (선택)
-    autoConnect: true,         // 앱 시작 시 자동 연결
-    enableFlashblocks: true,   // Flashblocks 활성화
+    autoConnect: true,         // Auto-connect on app start
+    enableFlashblocks: true,   // Enable Flashblocks
   }}
 >
 ```
 
-## 생체 인증 설정 (선택)
+### Custom Endpoints (Optional)
 
-생체 인증을 사용하려면 추가 패키지를 설치합니다:
+```tsx
+<GiwaProvider
+  config={{
+    network: 'testnet',
+    endpoints: {
+      rpcUrl: 'https://my-custom-rpc.example.com',
+      flashblocksRpcUrl: 'https://my-flashblocks-rpc.example.com',
+      flashblocksWsUrl: 'wss://my-flashblocks-ws.example.com',
+      explorerUrl: 'https://my-explorer.example.com',
+    },
+  }}
+>
+```
+
+## Biometric Authentication Setup (Optional)
+
+To use biometric authentication, install the additional package:
 
 ```bash
 npm install react-native-biometrics
 cd ios && pod install && cd ..
 ```
 
-## 빌드 및 실행
+## Build and Run
 
 ```bash
 # iOS
@@ -122,9 +137,9 @@ npx react-native run-ios
 npx react-native run-android
 ```
 
-## 문제 해결
+## Troubleshooting
 
-### Pod 설치 오류
+### Pod Installation Errors
 
 ```bash
 cd ios
@@ -133,7 +148,7 @@ pod install
 cd ..
 ```
 
-### Android 빌드 오류
+### Android Build Errors
 
 ```bash
 cd android
@@ -142,12 +157,12 @@ cd ..
 npx react-native run-android
 ```
 
-### Metro 캐시 문제
+### Metro Cache Issues
 
 ```bash
 npx react-native start --reset-cache
 ```
 
-## 다음 단계
+## Next Steps
 
-- [빠른 시작](/docs/getting-started/quick-start)으로 첫 지갑 만들기
+- Create your first wallet with [Quick Start](/docs/getting-started/quick-start)

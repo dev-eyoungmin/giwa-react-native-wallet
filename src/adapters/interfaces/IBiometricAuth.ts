@@ -39,8 +39,8 @@ export interface IBiometricAuth {
 
 // Default prompt messages
 export const BIOMETRIC_PROMPTS = {
-  UNLOCK_WALLET: '지갑 잠금을 해제하려면 인증하세요',
-  CONFIRM_TRANSACTION: '트랜잭션을 승인하려면 인증하세요',
-  VIEW_MNEMONIC: '복구 구문을 보려면 인증하세요',
-  EXPORT_PRIVATE_KEY: '개인키를 내보내려면 인증하세요',
+  UNLOCK_WALLET: 'Authenticate to unlock wallet',
+  CONFIRM_TRANSACTION: 'Authenticate to confirm transaction',
+  VIEW_MNEMONIC: 'Authenticate to view recovery phrase',
+  EXPORT_PRIVATE_KEY: 'Authenticate to export private key',
 } as const;

@@ -2,9 +2,9 @@
 sidebar_position: 3
 ---
 
-# 토큰
+# Tokens
 
-ERC-20 토큰 관리 방법을 설명합니다.
+This guide explains how to manage ERC-20 tokens.
 
 ## useTokens Hook
 
@@ -13,11 +13,11 @@ import { useTokens } from '@giwa/react-native-wallet';
 
 function TokensScreen() {
   const {
-    getBalance,     // 토큰 잔액 조회
-    transfer,       // 토큰 전송
-    approve,        // 승인
-    allowance,      // 승인량 조회
-    getTokenInfo,   // 토큰 정보 조회
+    getBalance,     // Get token balance
+    transfer,       // Transfer tokens
+    approve,        // Approve
+    allowance,      // Check allowance
+    getTokenInfo,   // Get token information
     isLoading,
   } = useTokens();
 
@@ -25,21 +25,21 @@ function TokensScreen() {
 }
 ```
 
-## 토큰 잔액 조회
+## Get Token Balance
 
 ```tsx
 const checkBalance = async () => {
-  const tokenAddress = '0x...'; // ERC-20 토큰 주소
+  const tokenAddress = '0x...'; // ERC-20 token address
 
   const result = await getBalance(tokenAddress);
 
-  console.log('토큰:', result.token.symbol);
-  console.log('잔액:', result.formattedBalance);
-  console.log('소수점:', result.token.decimals);
+  console.log('Token:', result.token.symbol);
+  console.log('Balance:', result.formattedBalance);
+  console.log('Decimals:', result.token.decimals);
 };
 ```
 
-## 토큰 정보 조회
+## Get Token Information
 
 ```tsx
 const checkTokenInfo = async () => {
@@ -47,55 +47,55 @@ const checkTokenInfo = async () => {
 
   const info = await getTokenInfo(tokenAddress);
 
-  console.log('이름:', info.name);
-  console.log('심볼:', info.symbol);
-  console.log('소수점:', info.decimals);
-  console.log('총 발행량:', info.totalSupply);
+  console.log('Name:', info.name);
+  console.log('Symbol:', info.symbol);
+  console.log('Decimals:', info.decimals);
+  console.log('Total Supply:', info.totalSupply);
 };
 ```
 
-## 토큰 전송
+## Token Transfer
 
 ```tsx
 const handleTransfer = async () => {
-  const tokenAddress = '0x...'; // 토큰 주소
-  const recipient = '0x...';    // 받는 주소
-  const amount = '100';         // 토큰 단위 (소수점 자동 처리)
+  const tokenAddress = '0x...'; // Token address
+  const recipient = '0x...';    // Recipient address
+  const amount = '100';         // Token unit (decimals handled automatically)
 
   try {
     const hash = await transfer(tokenAddress, recipient, amount);
-    console.log('전송 완료:', hash);
+    console.log('Transfer complete:', hash);
   } catch (error) {
-    console.error('전송 실패:', error.message);
+    console.error('Transfer failed:', error.message);
   }
 };
 ```
 
-## 토큰 승인 (Approve)
+## Token Approval (Approve)
 
-DeFi 프로토콜 사용 시 필요한 토큰 승인:
+Token approval required for using DeFi protocols:
 
 ```tsx
 const handleApprove = async () => {
-  const tokenAddress = '0x...';   // 토큰 주소
-  const spenderAddress = '0x...'; // 승인할 컨트랙트 주소
-  const amount = '1000';          // 승인량
+  const tokenAddress = '0x...';   // Token address
+  const spenderAddress = '0x...'; // Contract address to approve
+  const amount = '1000';          // Approval amount
 
   try {
     const hash = await approve(tokenAddress, spenderAddress, amount);
-    console.log('승인 완료:', hash);
+    console.log('Approval complete:', hash);
   } catch (error) {
-    console.error('승인 실패:', error.message);
+    console.error('Approval failed:', error.message);
   }
 };
 
-// 무제한 승인
+// Unlimited approval
 const approveUnlimited = async () => {
   const hash = await approve(tokenAddress, spenderAddress, 'unlimited');
 };
 ```
 
-## 승인량 조회
+## Check Allowance
 
 ```tsx
 const checkAllowance = async () => {
@@ -103,18 +103,18 @@ const checkAllowance = async () => {
   const spenderAddress = '0x...';
 
   const allowed = await allowance(tokenAddress, spenderAddress);
-  console.log('승인된 양:', allowed.formattedAmount);
+  console.log('Approved amount:', allowed.formattedAmount);
 };
 ```
 
-## 전체 예제: 토큰 관리 화면
+## Complete Example: Token Management Screen
 
 ```tsx
 import { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, FlatList, Alert } from 'react-native';
 import { useTokens } from '@giwa/react-native-wallet';
 
-// 알려진 토큰 목록
+// Known token list
 const KNOWN_TOKENS = [
   { address: '0x...', symbol: 'USDT' },
   { address: '0x...', symbol: 'USDC' },
@@ -127,7 +127,7 @@ export function TokensScreen() {
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
 
-  // 모든 토큰 잔액 조회
+  // Get all token balances
   const loadBalances = async () => {
     const results = await Promise.all(
       KNOWN_TOKENS.map(async (token) => {
@@ -150,16 +150,16 @@ export function TokensScreen() {
 
     try {
       const hash = await transfer(selectedToken.address, recipient, amount);
-      Alert.alert('성공', `전송 완료: ${hash.slice(0, 20)}...`);
-      loadBalances(); // 잔액 새로고침
+      Alert.alert('Success', `Transfer complete: ${hash.slice(0, 20)}...`);
+      loadBalances(); // Refresh balances
     } catch (error) {
-      Alert.alert('실패', error.message);
+      Alert.alert('Failed', error.message);
     }
   };
 
   return (
     <View style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontSize: 18, marginBottom: 10 }}>토큰 잔액</Text>
+      <Text style={{ fontSize: 18, marginBottom: 10 }}>Token Balances</Text>
 
       <FlatList
         data={balances}
@@ -177,7 +177,7 @@ export function TokensScreen() {
             <Text>{item.symbol}</Text>
             <Text>{item.balance}</Text>
             <Button
-              title="전송"
+              title="Send"
               onPress={() => setSelectedToken(item)}
             />
           </View>
@@ -187,11 +187,11 @@ export function TokensScreen() {
       {selectedToken && (
         <View style={{ marginTop: 20 }}>
           <Text style={{ marginBottom: 10 }}>
-            {selectedToken.symbol} 전송
+            Send {selectedToken.symbol}
           </Text>
 
           <TextInput
-            placeholder="받는 주소"
+            placeholder="Recipient address"
             value={recipient}
             onChangeText={setRecipient}
             style={{
@@ -203,7 +203,7 @@ export function TokensScreen() {
           />
 
           <TextInput
-            placeholder="수량"
+            placeholder="Amount"
             value={amount}
             onChangeText={setAmount}
             keyboardType="decimal-pad"
@@ -216,32 +216,32 @@ export function TokensScreen() {
           />
 
           <Button
-            title="전송"
+            title="Send"
             onPress={handleTransfer}
             disabled={isLoading}
           />
         </View>
       )}
 
-      <Button title="새로고침" onPress={loadBalances} />
+      <Button title="Refresh" onPress={loadBalances} />
     </View>
   );
 }
 ```
 
-## 커스텀 토큰 추가
+## Add Custom Token
 
 ```tsx
 const addCustomToken = async (tokenAddress: string) => {
   try {
     const info = await getTokenInfo(tokenAddress);
 
-    // 유효한 ERC-20인지 확인
+    // Verify if it's a valid ERC-20
     if (!info.symbol || !info.decimals) {
-      throw new Error('유효하지 않은 토큰 주소입니다');
+      throw new Error('Invalid token address');
     }
 
-    // 로컬 저장소에 추가
+    // Add to local storage
     const customTokens = await AsyncStorage.getItem('customTokens');
     const tokens = customTokens ? JSON.parse(customTokens) : [];
     tokens.push({
@@ -254,12 +254,12 @@ const addCustomToken = async (tokenAddress: string) => {
 
     return info;
   } catch (error) {
-    throw new Error('토큰을 추가할 수 없습니다');
+    throw new Error('Unable to add token');
   }
 };
 ```
 
-## 다음 단계
+## Next Steps
 
-- [브릿지](/docs/guides/bridge) - L1↔L2 토큰 이동
-- [트랜잭션](/docs/guides/transactions) - ETH 전송
+- [Bridge](/docs/guides/bridge) - L1↔L2 token transfers
+- [Transactions](/docs/guides/transactions) - ETH transfers

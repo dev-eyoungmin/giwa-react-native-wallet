@@ -17,10 +17,12 @@ export class RNSecureStorage implements ISecureStorage {
   private async getKeychain() {
     if (!this.Keychain) {
       try {
-        this.Keychain = require('react-native-keychain');
+        this.Keychain = await import('react-native-keychain');
       } catch (error) {
         throw new GiwaSecurityError(
-          'react-native-keychain을 찾을 수 없습니다. npm install react-native-keychain && cd ios && pod install을 실행해주세요.',
+          'react-native-keychain not found. Please run: npm install react-native-keychain && cd ios && pod install',
+          'DEPENDENCY_NOT_FOUND',
+          undefined,
           error instanceof Error ? error : undefined
         );
       }
@@ -40,7 +42,7 @@ export class RNSecureStorage implements ISecureStorage {
     const Keychain = await this.getKeychain();
     const fullKey = this.getKey(key);
 
-    const keychainOptions: import('react-native-keychain').Options = {
+    const keychainOptions: import('react-native-keychain').SetOptions = {
       service: fullKey,
     };
 
@@ -64,7 +66,7 @@ export class RNSecureStorage implements ISecureStorage {
     const Keychain = await this.getKeychain();
     const fullKey = this.getKey(key);
 
-    const keychainOptions: import('react-native-keychain').Options = {
+    const keychainOptions: import('react-native-keychain').GetOptions = {
       service: fullKey,
     };
 
@@ -100,7 +102,7 @@ export class RNSecureStorage implements ISecureStorage {
     } catch {
       // Some versions may not support this
       throw new GiwaSecurityError(
-        '이 버전의 react-native-keychain은 getAllKeys를 지원하지 않습니다.'
+        'This version of react-native-keychain does not support getAllKeys.'
       );
     }
   }

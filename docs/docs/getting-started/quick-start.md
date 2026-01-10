@@ -2,11 +2,11 @@
 sidebar_position: 4
 ---
 
-# 빠른 시작
+# Quick Start
 
-5분 안에 GIWA SDK로 첫 번째 지갑을 만들어 봅니다.
+Create your first wallet with GIWA SDK in 5 minutes.
 
-## 1. 설치
+## 1. Installation
 
 ```bash
 # Expo
@@ -17,21 +17,56 @@ npm install @giwa/react-native-wallet react-native-keychain
 cd ios && pod install
 ```
 
-## 2. Provider 설정
+## 2. Provider Setup
 
 ```tsx title="App.tsx"
 import { GiwaProvider } from '@giwa/react-native-wallet';
 
 export default function App() {
   return (
-    <GiwaProvider config={{ network: 'testnet' }}>
+    <GiwaProvider
+      network="testnet"
+      initTimeout={10000}
+      onError={(error) => console.error('SDK Error:', error)}
+    >
       <WalletDemo />
     </GiwaProvider>
   );
 }
 ```
 
-## 3. 지갑 생성
+### GiwaProvider Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `network` | `'testnet' \| 'mainnet'` | `'testnet'` | Network to connect to |
+| `config.endpoints` | `CustomEndpoints` | - | Custom RPC and explorer URLs |
+| `config.customContracts` | `CustomContracts` | - | Custom contract addresses |
+| `initTimeout` | `number` | `10000` | Initialization timeout (ms) |
+| `onError` | `(error: Error) => void` | - | Callback when error occurs |
+
+### Custom Contract Addresses
+
+The SDK uses OP Stack standard predeploy addresses by default. Override them if needed:
+
+```tsx
+<GiwaProvider
+  config={{
+    network: 'testnet',
+    customContracts: {
+      eas: '0x...', // Custom EAS address
+      schemaRegistry: '0x...', // Custom Schema Registry
+      ensRegistry: '0x...', // Custom ENS Registry
+    },
+  }}
+>
+  <App />
+</GiwaProvider>
+```
+
+See [Core API - Contract Addresses](/docs/api/core#default-contract-addresses) for default addresses.
+
+## 3. Create Wallet
 
 ```tsx title="WalletDemo.tsx"
 import { View, Text, Button, Alert } from 'react-native';
@@ -44,18 +79,18 @@ export function WalletDemo() {
     try {
       const { wallet, mnemonic } = await createWallet();
 
-      // 중요: 니모닉을 사용자에게 안전하게 백업하도록 안내
+      // Important: Guide user to safely backup their mnemonic
       Alert.alert(
-        '지갑 생성 완료',
-        `주소: ${wallet.address}\n\n복구 구문을 안전한 곳에 보관하세요:\n${mnemonic}`
+        'Wallet Created',
+        `Address: ${wallet.address}\n\nPlease store your recovery phrase safely:\n${mnemonic}`
       );
     } catch (error) {
-      Alert.alert('오류', error.message);
+      Alert.alert('Error', error.message);
     }
   };
 
   if (isLoading) {
-    return <Text>로딩 중...</Text>;
+    return <Text>Loading...</Text>;
   }
 
   return (
@@ -63,21 +98,21 @@ export function WalletDemo() {
       {wallet ? (
         <>
           <Text style={{ fontSize: 18, marginBottom: 10 }}>
-            지갑 연결됨
+            Wallet Connected
           </Text>
           <Text selectable style={{ fontFamily: 'monospace' }}>
             {wallet.address}
           </Text>
         </>
       ) : (
-        <Button title="새 지갑 생성" onPress={handleCreate} />
+        <Button title="Create New Wallet" onPress={handleCreate} />
       )}
     </View>
   );
 }
 ```
 
-## 4. 잔액 조회
+## 4. Check Balance
 
 ```tsx
 import { useBalance } from '@giwa/react-native-wallet';
@@ -87,14 +122,14 @@ function BalanceDisplay() {
 
   return (
     <View>
-      <Text>잔액: {formattedBalance} ETH</Text>
-      <Button title="새로고침" onPress={refetch} disabled={isLoading} />
+      <Text>Balance: {formattedBalance} ETH</Text>
+      <Button title="Refresh" onPress={refetch} disabled={isLoading} />
     </View>
   );
 }
 ```
 
-## 5. ETH 전송
+## 5. Send ETH
 
 ```tsx
 import { useState } from 'react';
@@ -108,27 +143,27 @@ function SendETH() {
   const handleSend = async () => {
     try {
       const hash = await sendTransaction({ to, value: amount });
-      Alert.alert('전송 완료', `TX: ${hash}`);
+      Alert.alert('Transfer Complete', `TX: ${hash}`);
     } catch (error) {
-      Alert.alert('오류', error.message);
+      Alert.alert('Error', error.message);
     }
   };
 
   return (
     <View>
       <TextInput
-        placeholder="받는 주소 (0x...)"
+        placeholder="Recipient address (0x...)"
         value={to}
         onChangeText={setTo}
       />
       <TextInput
-        placeholder="금액 (ETH)"
+        placeholder="Amount (ETH)"
         value={amount}
         onChangeText={setAmount}
         keyboardType="decimal-pad"
       />
       <Button
-        title="전송"
+        title="Send"
         onPress={handleSend}
         disabled={isLoading || !to || !amount}
       />
@@ -137,7 +172,7 @@ function SendETH() {
 }
 ```
 
-## 6. 테스트넷 ETH 받기
+## 6. Get Testnet ETH
 
 ```tsx
 import { useFaucet } from '@giwa/react-native-wallet';
@@ -148,15 +183,15 @@ function FaucetButton() {
   const handleRequest = async () => {
     try {
       const result = await requestFaucet();
-      Alert.alert('성공', `${result.amount} ETH를 받았습니다`);
+      Alert.alert('Success', `Received ${result.amount} ETH`);
     } catch (error) {
-      Alert.alert('오류', error.message);
+      Alert.alert('Error', error.message);
     }
   };
 
   return (
     <Button
-      title="테스트넷 ETH 받기"
+      title="Get Testnet ETH"
       onPress={handleRequest}
       disabled={isLoading}
     />
@@ -164,7 +199,7 @@ function FaucetButton() {
 }
 ```
 
-## 전체 예제
+## Complete Example
 
 ```tsx title="App.tsx"
 import { useState } from 'react';
@@ -190,7 +225,7 @@ function WalletApp() {
     return (
       <View style={styles.container}>
         <Button
-          title="새 지갑 생성"
+          title="Create New Wallet"
           onPress={createWallet}
           disabled={walletLoading}
         />
@@ -203,28 +238,28 @@ function WalletApp() {
       <Text style={styles.address}>{wallet.address}</Text>
       <Text style={styles.balance}>{formattedBalance} ETH</Text>
 
-      <Button title="잔액 새로고침" onPress={refetch} />
+      <Button title="Refresh Balance" onPress={refetch} />
       <Button
-        title="테스트넷 ETH 받기"
+        title="Get Testnet ETH"
         onPress={requestFaucet}
         disabled={faucetLoading}
       />
 
       <TextInput
         style={styles.input}
-        placeholder="받는 주소"
+        placeholder="Recipient address"
         value={to}
         onChangeText={setTo}
       />
       <TextInput
         style={styles.input}
-        placeholder="금액 (ETH)"
+        placeholder="Amount (ETH)"
         value={amount}
         onChangeText={setAmount}
         keyboardType="decimal-pad"
       />
       <Button
-        title="전송"
+        title="Send"
         onPress={() => sendTransaction({ to, value: amount })}
         disabled={txLoading}
       />
@@ -234,7 +269,10 @@ function WalletApp() {
 
 export default function App() {
   return (
-    <GiwaProvider config={{ network: 'testnet' }}>
+    <GiwaProvider
+      network="testnet"
+      onError={(err) => console.error('SDK Error:', err)}
+    >
       <WalletApp />
     </GiwaProvider>
   );
@@ -248,8 +286,8 @@ const styles = StyleSheet.create({
 });
 ```
 
-## 다음 단계
+## Next Steps
 
-- [지갑 관리](/docs/guides/wallet-management) - 지갑 복구, 내보내기
-- [트랜잭션](/docs/guides/transactions) - 상세 트랜잭션 처리
-- [토큰](/docs/guides/tokens) - ERC-20 토큰 관리
+- [Wallet Management](/docs/guides/wallet-management) - Wallet recovery, export
+- [Transactions](/docs/guides/transactions) - Detailed transaction handling
+- [Tokens](/docs/guides/tokens) - ERC-20 token management

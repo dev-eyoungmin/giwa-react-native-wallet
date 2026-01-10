@@ -2,19 +2,19 @@
 sidebar_position: 4
 ---
 
-# E2E 테스트
+# E2E Tests
 
-Detox를 사용한 End-to-End 테스트 작성 방법입니다.
+How to write End-to-End tests using Detox.
 
-## Detox 설정
+## Detox Setup
 
-### 설치
+### Installation
 
 ```bash
 # Detox CLI
 npm install -g detox-cli
 
-# 프로젝트 의존성
+# Project dependencies
 npm install --save-dev detox jest-circus
 
 # iOS
@@ -22,7 +22,7 @@ brew tap wix/brew
 brew install applesimutils
 ```
 
-### 설정 파일
+### Configuration File
 
 ```javascript
 // .detoxrc.js
@@ -73,7 +73,7 @@ module.exports = {
 };
 ```
 
-### Jest 설정
+### Jest Configuration
 
 ```javascript
 // e2e/jest.config.js
@@ -90,9 +90,9 @@ module.exports = {
 };
 ```
 
-## E2E 테스트 작성
+## Writing E2E Tests
 
-### 지갑 생성 테스트
+### Wallet Creation Test
 
 ```typescript
 // e2e/wallet.test.ts
@@ -108,13 +108,13 @@ describe('Wallet', () => {
   });
 
   it('should create new wallet', async () => {
-    // 지갑 생성 버튼 탭
+    // Tap create wallet button
     await element(by.id('create-wallet-button')).tap();
 
-    // 주소 표시 확인
+    // Verify address display
     await expect(element(by.id('wallet-address'))).toBeVisible();
 
-    // 주소 형식 확인
+    // Verify address format
     const addressElement = element(by.id('wallet-address'));
     await expect(addressElement).toHaveText(/^0x[a-fA-F0-9]{40}$/);
   });
@@ -122,37 +122,37 @@ describe('Wallet', () => {
   it('should show mnemonic backup screen', async () => {
     await element(by.id('create-wallet-button')).tap();
 
-    // 니모닉 백업 화면 확인
+    // Verify mnemonic backup screen
     await expect(element(by.id('mnemonic-backup-screen'))).toBeVisible();
 
-    // 12단어 확인
+    // Verify 12 words
     await expect(element(by.id('mnemonic-word-0'))).toBeVisible();
     await expect(element(by.id('mnemonic-word-11'))).toBeVisible();
 
-    // 백업 확인 버튼
+    // Confirm backup button
     await element(by.id('confirm-backup-button')).tap();
 
-    // 메인 화면으로 이동
+    // Navigate to main screen
     await expect(element(by.id('wallet-screen'))).toBeVisible();
   });
 
   it('should recover wallet from mnemonic', async () => {
-    // 복구 버튼 탭
+    // Tap recover button
     await element(by.id('recover-wallet-button')).tap();
 
-    // 니모닉 입력
+    // Enter mnemonic
     const testMnemonic =
       'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 
     await element(by.id('mnemonic-input')).typeText(testMnemonic);
 
-    // 복구 버튼 탭
+    // Tap recover button
     await element(by.id('submit-recover-button')).tap();
 
-    // 지갑 화면 확인
+    // Verify wallet screen
     await expect(element(by.id('wallet-screen'))).toBeVisible();
 
-    // 예상 주소 확인
+    // Verify expected address
     await expect(element(by.id('wallet-address'))).toHaveText(
       '0x9858EfFD232B4033E47d90003D41EC34EcaEda94'
     );
@@ -160,7 +160,7 @@ describe('Wallet', () => {
 });
 ```
 
-### 잔액 조회 테스트
+### Balance Query Test
 
 ```typescript
 // e2e/balance.test.ts
@@ -169,7 +169,7 @@ import { device, element, by, expect } from 'detox';
 describe('Balance', () => {
   beforeAll(async () => {
     await device.launchApp();
-    // 지갑 생성
+    // Create wallet
     await element(by.id('create-wallet-button')).tap();
     await element(by.id('confirm-backup-button')).tap();
   });
@@ -182,21 +182,21 @@ describe('Balance', () => {
     // Pull to refresh
     await element(by.id('balance-scroll-view')).swipe('down');
 
-    // 로딩 인디케이터 확인
+    // Verify loading indicator
     await expect(element(by.id('balance-loading'))).toBeVisible();
 
-    // 로딩 완료 대기
+    // Wait for loading to complete
     await waitFor(element(by.id('balance-loading')))
       .not.toBeVisible()
       .withTimeout(5000);
 
-    // 잔액 표시 확인
+    // Verify balance display
     await expect(element(by.id('balance-display'))).toBeVisible();
   });
 });
 ```
 
-### 트랜잭션 전송 테스트
+### Transaction Send Test
 
 ```typescript
 // e2e/transaction.test.ts
@@ -205,7 +205,7 @@ import { device, element, by, expect, waitFor } from 'detox';
 describe('Transaction', () => {
   beforeAll(async () => {
     await device.launchApp();
-    // 테스트 지갑으로 복구 (잔액 있는 지갑)
+    // Recover test wallet (wallet with balance)
     await element(by.id('recover-wallet-button')).tap();
     await element(by.id('mnemonic-input')).typeText('test mnemonic...');
     await element(by.id('submit-recover-button')).tap();
@@ -219,33 +219,33 @@ describe('Transaction', () => {
   it('should validate address input', async () => {
     await element(by.id('send-button')).tap();
 
-    // 잘못된 주소 입력
+    // Enter invalid address
     await element(by.id('recipient-input')).typeText('invalid-address');
     await element(by.id('submit-send-button')).tap();
 
-    // 에러 메시지 확인
+    // Verify error message
     await expect(element(by.id('address-error'))).toBeVisible();
   });
 
   it('should send transaction successfully', async () => {
     await element(by.id('send-button')).tap();
 
-    // 유효한 주소 입력
+    // Enter valid address
     await element(by.id('recipient-input')).replaceText(
       '0x0000000000000000000000000000000000000001'
     );
 
-    // 금액 입력
+    // Enter amount
     await element(by.id('amount-input')).typeText('0.001');
 
-    // 전송 버튼 탭
+    // Tap send button
     await element(by.id('submit-send-button')).tap();
 
-    // 확인 다이얼로그
+    // Confirmation dialog
     await expect(element(by.id('confirm-dialog'))).toBeVisible();
     await element(by.id('confirm-send-button')).tap();
 
-    // 성공 메시지 대기
+    // Wait for success message
     await waitFor(element(by.id('success-message')))
       .toBeVisible()
       .withTimeout(30000);
@@ -253,7 +253,7 @@ describe('Transaction', () => {
 });
 ```
 
-### 생체 인증 테스트
+### Biometric Authentication Test
 
 ```typescript
 // e2e/biometric.test.ts
@@ -265,46 +265,46 @@ describe('Biometric Auth', () => {
   });
 
   it('should prompt biometric for private key export', async () => {
-    // 지갑 생성
+    // Create wallet
     await element(by.id('create-wallet-button')).tap();
     await element(by.id('confirm-backup-button')).tap();
 
-    // 설정 → 개인키 내보내기
+    // Settings → Export private key
     await element(by.id('settings-button')).tap();
     await element(by.id('export-private-key-button')).tap();
 
-    // 경고 다이얼로그 확인
+    // Verify warning dialog
     await expect(element(by.id('export-warning-dialog'))).toBeVisible();
     await element(by.id('confirm-export-button')).tap();
 
-    // 생체 인증 프롬프트 (시뮬레이터에서는 자동 성공)
-    // 실제 기기에서는 생체 인증 필요
+    // Biometric prompt (auto-success on simulator)
+    // Real device requires biometric authentication
 
-    // 개인키 표시 확인 (성공 시)
+    // Verify private key display (on success)
     await expect(element(by.id('private-key-display'))).toBeVisible();
   });
 });
 ```
 
-## 테스트 실행
+## Running Tests
 
 ```bash
-# iOS 시뮬레이터
+# iOS Simulator
 detox build --configuration ios.sim.debug
 detox test --configuration ios.sim.debug
 
-# Android 에뮬레이터
+# Android Emulator
 detox build --configuration android.emu.debug
 detox test --configuration android.emu.debug
 
-# 특정 테스트 파일만
+# Specific test file only
 detox test --configuration ios.sim.debug e2e/wallet.test.ts
 
-# 리트라이 포함
+# With retries
 detox test --configuration ios.sim.debug --retries 3
 ```
 
-## CI/CD 통합
+## CI/CD Integration
 
 ```yaml
 # .github/workflows/e2e.yml
@@ -371,7 +371,7 @@ jobs:
           script: detox test --configuration android.emu.debug --headless
 ```
 
-## 테스트 유틸리티
+## Test Utilities
 
 ```typescript
 // e2e/utils.ts

@@ -8,11 +8,11 @@ const config = {
   favicon: 'img/favicon.ico',
 
   // GitHub Pages URL 설정
-  url: 'https://devym-37.github.io',
+  url: 'https://dev-eyoungmin.github.io',
   baseUrl: '/giwa-react-native-wallet/',
 
   // GitHub Pages 배포 설정
-  organizationName: 'devym-37', // GitHub 사용자명 또는 조직명
+  organizationName: 'dev-eyoungmin', // GitHub 사용자명 또는 조직명
   projectName: 'giwa-react-native-wallet', // 저장소 이름
   deploymentBranch: 'gh-pages',
   trailingSlash: false,
@@ -36,7 +36,7 @@ const config = {
       ({
         docs: {
           sidebarPath: './sidebars.js',
-          editUrl: 'https://github.com/devym-37/giwa-react-native-wallet/tree/main/docs/',
+          editUrl: 'https://github.com/dev-eyoungmin/giwa-react-native-wallet/tree/main/docs/',
         },
         blog: false,
         theme: {
@@ -64,7 +64,7 @@ const config = {
             label: '문서',
           },
           {
-            href: 'https://github.com/devym-37/giwa-react-native-wallet',
+            href: 'https://github.com/dev-eyoungmin/giwa-react-native-wallet',
             label: 'GitHub',
             position: 'right',
           },
@@ -87,7 +87,7 @@ const config = {
           {
             title: '커뮤니티',
             items: [
-              { label: 'GitHub', href: 'https://github.com/devym-37/giwa-react-native-wallet' },
+              { label: 'GitHub', href: 'https://github.com/dev-eyoungmin/giwa-react-native-wallet' },
               { label: 'Discord', href: 'https://discord.gg/giwa' },
             ],
           },

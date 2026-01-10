@@ -1,4 +1,4 @@
-// Shared hooks - 공통 비동기 패턴 추상화
+// Shared hooks - Common async pattern abstractions
 export { useAsyncAction, useAsyncActions } from './useAsyncAction';
 export type { AsyncActionState, UseAsyncActionReturn } from './useAsyncAction';
 

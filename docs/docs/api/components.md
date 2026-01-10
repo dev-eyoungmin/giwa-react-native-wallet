@@ -4,11 +4,11 @@ sidebar_position: 2
 
 # Components API
 
-GIWA SDK에서 제공하는 React 컴포넌트의 API 레퍼런스입니다.
+API reference for React components provided by the GIWA SDK.
 
 ## GiwaProvider
 
-GIWA SDK의 루트 Provider 컴포넌트입니다.
+Root Provider component for the GIWA SDK.
 
 ```tsx
 import { GiwaProvider } from '@giwa/react-native-wallet';
@@ -20,44 +20,58 @@ import { GiwaProvider } from '@giwa/react-native-wallet';
 
 ### Props
 
-| Prop | 타입 | 필수 | 설명 |
-|------|------|------|------|
-| `config` | `GiwaConfig` | ✓ | SDK 설정 |
-| `children` | `ReactNode` | ✓ | 하위 컴포넌트 |
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `config` | `GiwaConfig` | Yes | SDK configuration |
+| `children` | `ReactNode` | Yes | Child components |
 
 ### GiwaConfig
 
 ```tsx
-interface GiwaConfig {
-  /** 네트워크 선택 */
-  network: 'testnet' | 'mainnet';
+interface CustomEndpoints {
+  /** Custom RPC URL */
+  rpcUrl?: string;
+  /** Flashblocks RPC URL */
+  flashblocksRpcUrl?: string;
+  /** Flashblocks WebSocket URL */
+  flashblocksWsUrl?: string;
+  /** Block explorer URL */
+  explorerUrl?: string;
+}
 
-  /** 커스텀 RPC URL (선택) */
+interface GiwaConfig {
+  /** Network selection (default: 'testnet') */
+  network?: 'testnet' | 'mainnet';
+
+  /** Custom endpoint configuration */
+  endpoints?: CustomEndpoints;
+
+  /** @deprecated Use endpoints.rpcUrl instead */
   customRpcUrl?: string;
 
-  /** 앱 시작 시 저장된 지갑 자동 로드 */
+  /** Auto-load saved wallet on app start */
   autoConnect?: boolean;
 
-  /** Flashblocks 기능 활성화 */
+  /** Enable Flashblocks feature */
   enableFlashblocks?: boolean;
 
-  /** 환경 강제 설정 (선택) */
+  /** Force environment setting (optional) */
   forceEnvironment?: 'expo' | 'react-native';
 }
 ```
 
-### 사용 예시
+### Usage Examples
 
 ```tsx
-// 기본 설정
+// Basic configuration (testnet)
 <GiwaProvider config={{ network: 'testnet' }}>
   <App />
 </GiwaProvider>
 
-// 전체 설정
+// Full configuration
 <GiwaProvider
   config={{
-    network: 'mainnet',
+    network: 'testnet',
     autoConnect: true,
     enableFlashblocks: true,
   }}
@@ -65,11 +79,16 @@ interface GiwaConfig {
   <App />
 </GiwaProvider>
 
-// 커스텀 RPC
+// Custom endpoints
 <GiwaProvider
   config={{
-    network: 'mainnet',
-    customRpcUrl: 'https://my-rpc.example.com',
+    network: 'testnet',
+    endpoints: {
+      rpcUrl: 'https://my-rpc.example.com',
+      flashblocksRpcUrl: 'https://my-flashblocks.example.com',
+      flashblocksWsUrl: 'wss://my-flashblocks.example.com',
+      explorerUrl: 'https://my-explorer.example.com',
+    },
   }}
 >
   <App />
@@ -80,7 +99,7 @@ interface GiwaConfig {
 
 ## useGiwaContext
 
-GiwaProvider의 Context에 직접 접근하는 Hook입니다.
+Hook for direct access to the GiwaProvider Context.
 
 ```tsx
 import { useGiwaContext } from '@giwa/react-native-wallet';
@@ -88,31 +107,31 @@ import { useGiwaContext } from '@giwa/react-native-wallet';
 const context = useGiwaContext();
 ```
 
-### 반환값
+### Return Value
 
 ```tsx
 interface GiwaContextValue {
-  /** SDK 설정 */
+  /** SDK configuration */
   config: GiwaConfig;
 
-  /** 현재 네트워크 정보 */
+  /** Current network information */
   network: NetworkInfo;
 
   /** viem Public Client */
   publicClient: PublicClient;
 
-  /** viem Wallet Client (지갑 연결 시) */
+  /** viem Wallet Client (when wallet is connected) */
   walletClient: WalletClient | null;
 
-  /** 어댑터 인스턴스 */
+  /** Adapter instances */
   adapters: Adapters;
 
-  /** 초기화 완료 여부 */
+  /** Initialization complete status */
   isInitialized: boolean;
 }
 ```
 
-### 사용 예시
+### Usage Example
 
 ```tsx
 function AdvancedComponent() {
@@ -122,16 +141,16 @@ function AdvancedComponent() {
     return <Loading />;
   }
 
-  // publicClient로 직접 viem 호출
+  // Call viem directly with publicClient
   const getBlockNumber = async () => {
     const blockNumber = await publicClient.getBlockNumber();
-    console.log('현재 블록:', blockNumber);
+    console.log('Current block:', blockNumber);
   };
 
   return (
     <View>
-      <Text>네트워크: {config.network}</Text>
-      <Button title="블록 번호 조회" onPress={getBlockNumber} />
+      <Text>Network: {config.network}</Text>
+      <Button title="Get Block Number" onPress={getBlockNumber} />
     </View>
   );
 }
@@ -139,14 +158,14 @@ function AdvancedComponent() {
 
 ---
 
-## Provider 중첩
+## Provider Nesting
 
-GiwaProvider는 앱의 루트에 한 번만 사용해야 합니다.
+GiwaProvider should only be used once at the root of your app.
 
-### 올바른 사용
+### Correct Usage
 
 ```tsx
-// ✅ 올바른 사용
+// Correct usage
 export default function App() {
   return (
     <GiwaProvider config={{ network: 'testnet' }}>
@@ -161,15 +180,15 @@ export default function App() {
 }
 ```
 
-### 잘못된 사용
+### Incorrect Usage
 
 ```tsx
-// ❌ 잘못된 사용 - 중첩 Provider
+// Incorrect usage - nested Provider
 export default function App() {
   return (
     <GiwaProvider config={{ network: 'testnet' }}>
       <HomeScreen />
-      <GiwaProvider config={{ network: 'mainnet' }}> {/* 중첩 금지 */}
+      <GiwaProvider config={{ network: 'mainnet' }}> {/* Nesting not allowed */}
         <WalletScreen />
       </GiwaProvider>
     </GiwaProvider>
@@ -179,9 +198,9 @@ export default function App() {
 
 ---
 
-## 네트워크 전환
+## Network Switching
 
-런타임에 네트워크를 전환하려면 앱을 다시 마운트해야 합니다.
+To switch networks at runtime, you need to remount the app.
 
 ```tsx
 function App() {
@@ -190,7 +209,7 @@ function App() {
 
   const switchNetwork = (newNetwork: 'testnet' | 'mainnet') => {
     setNetwork(newNetwork);
-    setKey((prev) => prev + 1); // Provider 재마운트
+    setKey((prev) => prev + 1); // Remount Provider
   };
 
   return (
@@ -204,9 +223,9 @@ function App() {
 
 ---
 
-## 커스텀 어댑터 주입
+## Custom Adapter Injection
 
-고급 사용 사례를 위해 커스텀 어댑터를 주입할 수 있습니다.
+You can inject custom adapters for advanced use cases.
 
 ```tsx
 import {
@@ -215,23 +234,23 @@ import {
   type ISecureStorage,
 } from '@giwa/react-native-wallet';
 
-// 커스텀 보안 저장소 구현
+// Custom secure storage implementation
 class CustomSecureStorage implements ISecureStorage {
   async setItem(key: string, value: string): Promise<void> {
-    // 커스텀 구현
+    // Custom implementation
   }
   async getItem(key: string): Promise<string | null> {
-    // 커스텀 구현
+    // Custom implementation
   }
   async removeItem(key: string): Promise<void> {
-    // 커스텀 구현
+    // Custom implementation
   }
   async getAllKeys(): Promise<string[]> {
-    // 커스텀 구현
+    // Custom implementation
   }
 }
 
-// 커스텀 어댑터 팩토리
+// Custom adapter factory
 const customAdapterFactory = new AdapterFactory({
   forceEnvironment: 'expo',
   customStorage: new CustomSecureStorage(),

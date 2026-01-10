@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react';
-import { useGiwaManagers } from '../providers/GiwaProvider';
+import { useGiwaManagers, useGiwaState } from '../providers/GiwaProvider';
 import { useAsyncActions } from './shared/useAsyncAction';
 import type { Address, Hash } from 'viem';
 import type { BridgeTransaction } from '../types';
@@ -11,51 +11,61 @@ export interface UseBridgeReturn {
   getTransaction: (hash: Hash) => BridgeTransaction | undefined;
   getEstimatedWithdrawalTime: () => number;
   isLoading: boolean;
+  isInitializing: boolean;
   error: Error | null;
 }
 
 /**
  * Hook for L1↔L2 bridge operations
  *
- * 클린 코드 적용:
- * - useAsyncActions로 중복 상태 관리 로직 제거
- * - ErrorMessages 상수 사용으로 매직 스트링 제거
+ * Clean code principles:
+ * - Removed duplicate state management logic with useAsyncActions
+ * - Eliminated magic strings with ErrorMessages constants
+ * - Returns isInitializing=true during SDK initialization
  */
 export function useBridge(): UseBridgeReturn {
-  const { bridgeManager } = useGiwaManagers();
+  const managers = useGiwaManagers();
+  const { isLoading: sdkLoading } = useGiwaState();
 
+  const bridgeManager = managers?.bridgeManager ?? null;
   const bridgeManagerRef = useRef(bridgeManager);
   bridgeManagerRef.current = bridgeManager;
 
-  // useAsyncActions로 비동기 액션 상태 관리
+  // Manage async action state with useAsyncActions
   const actions = useAsyncActions({
     withdrawETH: async (amount: string, to?: Address) => {
+      if (!bridgeManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
       const result = await bridgeManagerRef.current.withdrawETH(amount, to);
       return result.hash;
     },
     withdrawToken: async (l2TokenAddress: Address, amount: bigint, to?: Address) => {
+      if (!bridgeManagerRef.current) {
+        throw new Error('SDK is still initializing');
+      }
       const result = await bridgeManagerRef.current.withdrawToken(l2TokenAddress, amount, to);
       return result.hash;
     },
   });
 
-  // 동기 메서드들
+  // Synchronous methods
   const getPendingTransactions = useCallback((): BridgeTransaction[] => {
-    return bridgeManagerRef.current.getPendingTransactions();
+    return bridgeManagerRef.current?.getPendingTransactions() ?? [];
   }, []);
 
   const getTransaction = useCallback(
     (hash: Hash): BridgeTransaction | undefined => {
-      return bridgeManagerRef.current.getTransaction(hash);
+      return bridgeManagerRef.current?.getTransaction(hash);
     },
     []
   );
 
   const getEstimatedWithdrawalTime = useCallback((): number => {
-    return bridgeManagerRef.current.getEstimatedWithdrawalTime();
+    return bridgeManagerRef.current?.getEstimatedWithdrawalTime() ?? 0;
   }, []);
 
-  // 통합 로딩/에러 상태
+  // Combined loading/error state
   const isLoading = actions.withdrawETH.isLoading || actions.withdrawToken.isLoading;
   const error = actions.withdrawETH.error || actions.withdrawToken.error;
 
@@ -66,6 +76,7 @@ export function useBridge(): UseBridgeReturn {
     getTransaction,
     getEstimatedWithdrawalTime,
     isLoading,
+    isInitializing: sdkLoading,
     error,
   }), [
     actions.withdrawETH.execute,
@@ -74,6 +85,7 @@ export function useBridge(): UseBridgeReturn {
     getTransaction,
     getEstimatedWithdrawalTime,
     isLoading,
+    sdkLoading,
     error,
   ]);
 }

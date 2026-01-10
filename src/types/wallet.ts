@@ -1,5 +1,5 @@
 /**
- * 지갑 관련 타입 정의
+ * Wallet type definitions
  */
 import type { Address, Hex } from 'viem';
 

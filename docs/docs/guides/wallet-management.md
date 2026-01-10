@@ -2,9 +2,9 @@
 sidebar_position: 1
 ---
 
-# 지갑 관리
+# Wallet Management
 
-GIWA SDK의 지갑 생성, 복구, 관리 기능을 설명합니다.
+This guide explains wallet creation, recovery, and management features of the GIWA SDK.
 
 ## useGiwaWallet Hook
 
@@ -13,111 +13,114 @@ import { useGiwaWallet } from '@giwa/react-native-wallet';
 
 function WalletScreen() {
   const {
-    wallet,           // 현재 지갑 정보
-    isLoading,        // 로딩 상태
-    error,            // 에러 정보
-    createWallet,     // 새 지갑 생성
-    recoverWallet,    // 니모닉으로 복구
-    importPrivateKey, // 개인키로 가져오기
-    exportPrivateKey, // 개인키 내보내기
-    disconnect,       // 지갑 연결 해제
+    wallet,           // Current wallet information
+    isLoading,        // Loading state
+    error,            // Error information
+    createWallet,     // Create new wallet
+    recoverWallet,    // Recover with mnemonic
+    importPrivateKey, // Import with private key
+    exportPrivateKey, // Export private key
+    disconnect,       // Disconnect wallet
   } = useGiwaWallet();
 
   // ...
 }
 ```
 
-## 새 지갑 생성
+## Create New Wallet
 
 ```tsx
 const handleCreate = async () => {
   try {
     const { wallet, mnemonic } = await createWallet();
 
-    console.log('주소:', wallet.address);
-    console.log('니모닉:', mnemonic); // 12단어 복구 구문
+    console.log('Address:', wallet.address);
+    console.log('Mnemonic:', mnemonic); // 12-word recovery phrase
 
-    // 중요: 니모닉을 사용자에게 보여주고 안전하게 백업하도록 안내
-    // 니모닉은 한 번만 표시되며, SDK 내부에 저장되지 않습니다
+    // Important: Show the mnemonic to the user and guide them to back it up safely
+    // The mnemonic is displayed only once and is not stored within the SDK
   } catch (error) {
-    console.error('지갑 생성 실패:', error.message);
+    console.error('Wallet creation failed:', error.message);
   }
 };
 ```
 
-:::warning 니모닉 보안
-니모닉(복구 구문)은 지갑 생성 시 단 한 번만 반환됩니다. SDK는 니모닉을 저장하지 않으므로, 사용자가 반드시 안전한 곳에 백업하도록 안내해야 합니다.
+:::warning Mnemonic Security
+The mnemonic (recovery phrase) is returned only once during wallet creation. Since the SDK does not store the mnemonic, you must guide users to back it up in a safe place.
 :::
 
-## 지갑 복구
+## Wallet Recovery
 
-### 니모닉으로 복구
+### Recover with Mnemonic
 
 ```tsx
 const handleRecover = async () => {
-  const mnemonic = 'apple banana cherry ...'; // 12단어
+  const mnemonic = 'apple banana cherry ...'; // 12 words
 
   try {
     const wallet = await recoverWallet(mnemonic);
-    console.log('복구된 주소:', wallet.address);
+    console.log('Recovered address:', wallet.address);
   } catch (error) {
     if (error.code === 'INVALID_MNEMONIC') {
-      Alert.alert('오류', '유효하지 않은 복구 구문입니다');
+      Alert.alert('Error', 'Invalid recovery phrase');
     }
   }
 };
 ```
 
-### 개인키로 가져오기
+### Import with Private Key
 
 ```tsx
 const handleImport = async () => {
-  const privateKey = '0x...'; // 64자 hex 문자열
+  const privateKey = '0x...'; // 64-character hex string
 
   try {
     const wallet = await importPrivateKey(privateKey);
-    console.log('가져온 주소:', wallet.address);
+    console.log('Imported address:', wallet.address);
   } catch (error) {
-    Alert.alert('오류', '유효하지 않은 개인키입니다');
+    Alert.alert('Error', 'Invalid private key');
   }
 };
 ```
 
-## 개인키 내보내기
+## Export Private Key
 
-:::danger 주의
-개인키 내보내기는 민감한 작업입니다. 반드시 생체 인증 또는 추가 확인 후 실행하세요.
+:::danger Warning
+Exporting a private key is a sensitive operation. Always require biometric authentication or additional confirmation before proceeding.
 :::
 
 ```tsx
 const handleExport = async () => {
   try {
-    // 생체 인증이 설정된 경우 자동으로 요청됨
+    // Biometric authentication is automatically requested if configured
     const privateKey = await exportPrivateKey();
 
-    // 화면에 직접 표시하지 말고, 안전한 방식으로 전달
-    Alert.alert('개인키', privateKey, [
-      { text: '복사', onPress: () => copyToClipboard(privateKey) },
-    ]);
+    // Display private key securely (consider using a modal with auto-dismiss)
+    Alert.alert(
+      'Private Key',
+      privateKey,
+      [{ text: 'OK' }],
+      { cancelable: false }
+    );
   } catch (error) {
     if (error.code === 'BIOMETRIC_FAILED') {
-      Alert.alert('인증 실패', '생체 인증에 실패했습니다');
+      Alert.alert('Authentication Failed', 'Biometric authentication failed');
     }
   }
 };
 ```
 
-## 지갑 연결 해제
+## Disconnect Wallet
 
 ```tsx
 const handleDisconnect = async () => {
   Alert.alert(
-    '지갑 연결 해제',
-    '정말로 연결을 해제하시겠습니까? 복구 구문이 없으면 지갑을 복구할 수 없습니다.',
+    'Disconnect Wallet',
+    'Are you sure you want to disconnect? You cannot recover the wallet without the recovery phrase.',
     [
-      { text: '취소', style: 'cancel' },
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: '해제',
+        text: 'Disconnect',
         style: 'destructive',
         onPress: async () => {
           await disconnect();
@@ -128,7 +131,7 @@ const handleDisconnect = async () => {
 };
 ```
 
-## 지갑 상태 확인
+## Check Wallet Status
 
 ```tsx
 function WalletStatus() {
@@ -139,23 +142,23 @@ function WalletStatus() {
   }
 
   if (error) {
-    return <Text>오류: {error.message}</Text>;
+    return <Text>Error: {error.message}</Text>;
   }
 
   if (!wallet) {
-    return <Text>지갑이 연결되지 않았습니다</Text>;
+    return <Text>No wallet connected</Text>;
   }
 
   return (
     <View>
-      <Text>주소: {wallet.address}</Text>
-      <Text>연결됨: {wallet.isConnected ? '예' : '아니오'}</Text>
+      <Text>Address: {wallet.address}</Text>
+      <Text>Connected: {wallet.isConnected ? 'Yes' : 'No'}</Text>
     </View>
   );
 }
 ```
 
-## 전체 예제
+## Complete Example
 
 ```tsx
 import { useState } from 'react';
@@ -178,13 +181,13 @@ export function WalletManager() {
   if (wallet) {
     return (
       <View style={{ padding: 20 }}>
-        <Text style={{ fontSize: 16, marginBottom: 10 }}>지갑 연결됨</Text>
+        <Text style={{ fontSize: 16, marginBottom: 10 }}>Wallet Connected</Text>
         <Text selectable style={{ fontFamily: 'monospace', marginBottom: 20 }}>
           {wallet.address}
         </Text>
 
-        <Button title="개인키 내보내기" onPress={exportPrivateKey} />
-        <Button title="연결 해제" onPress={disconnect} color="red" />
+        <Button title="Export Private Key" onPress={exportPrivateKey} />
+        <Button title="Disconnect" onPress={disconnect} color="red" />
       </View>
     );
   }
@@ -192,23 +195,23 @@ export function WalletManager() {
   return (
     <View style={{ padding: 20 }}>
       <Button
-        title="새 지갑 생성"
+        title="Create New Wallet"
         onPress={async () => {
           const { mnemonic } = await createWallet();
-          Alert.alert('백업 필요', `복구 구문:\n\n${mnemonic}`);
+          Alert.alert('Backup Required', `Recovery phrase:\n\n${mnemonic}`);
         }}
         disabled={isLoading}
       />
 
       <Button
-        title="기존 지갑 복구"
+        title="Recover Existing Wallet"
         onPress={() => setShowRecover(!showRecover)}
       />
 
       {showRecover && (
         <>
           <TextInput
-            placeholder="12단어 복구 구문 입력"
+            placeholder="Enter 12-word recovery phrase"
             value={mnemonicInput}
             onChangeText={setMnemonicInput}
             multiline
@@ -220,7 +223,7 @@ export function WalletManager() {
             }}
           />
           <Button
-            title="복구"
+            title="Recover"
             onPress={() => recoverWallet(mnemonicInput)}
             disabled={isLoading || !mnemonicInput}
           />
@@ -231,8 +234,8 @@ export function WalletManager() {
 }
 ```
 
-## 다음 단계
+## Next Steps
 
-- [트랜잭션](/docs/guides/transactions) - ETH 전송하기
-- [토큰](/docs/guides/tokens) - ERC-20 토큰 관리
-- [보안](/docs/guides/security) - 보안 모범 사례
+- [Transactions](/docs/guides/transactions) - Send ETH
+- [Tokens](/docs/guides/tokens) - Manage ERC-20 tokens
+- [Security](/docs/guides/security) - Security best practices

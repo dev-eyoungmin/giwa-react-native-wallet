@@ -21,27 +21,28 @@ export interface ContractAddresses {
 export const CONTRACT_ADDRESSES: Record<NetworkType, ContractAddresses> = {
   testnet: {
     // Bridge - OP Stack standard addresses
-    l1StandardBridge: '0x0000000000000000000000000000000000000000' as Address, // TBD
+    l1StandardBridge: '0x0000000000000000000000000000000000000000' as Address, // TBD - L1 contract
     l2StandardBridge: '0x4200000000000000000000000000000000000010' as Address,
 
     // ENS - GIWA ID
     ensRegistry: '0x0000000000000000000000000000000000000000' as Address, // TBD
     ensResolver: '0x0000000000000000000000000000000000000000' as Address, // TBD
 
-    // EAS - Dojang
-    eas: '0x0000000000000000000000000000000000000000' as Address, // TBD
-    schemaRegistry: '0x0000000000000000000000000000000000000000' as Address, // TBD
+    // EAS - Dojang (OP Stack standard predeploy addresses)
+    eas: '0x4200000000000000000000000000000000000021' as Address,
+    schemaRegistry: '0x4200000000000000000000000000000000000020' as Address,
 
     // Tokens
     weth: '0x4200000000000000000000000000000000000006' as Address,
   },
   mainnet: {
-    l1StandardBridge: '0x0000000000000000000000000000000000000000' as Address,
+    l1StandardBridge: '0x0000000000000000000000000000000000000000' as Address, // TBD - L1 contract
     l2StandardBridge: '0x4200000000000000000000000000000000000010' as Address,
-    ensRegistry: '0x0000000000000000000000000000000000000000' as Address,
-    ensResolver: '0x0000000000000000000000000000000000000000' as Address,
-    eas: '0x0000000000000000000000000000000000000000' as Address,
-    schemaRegistry: '0x0000000000000000000000000000000000000000' as Address,
+    ensRegistry: '0x0000000000000000000000000000000000000000' as Address, // TBD
+    ensResolver: '0x0000000000000000000000000000000000000000' as Address, // TBD
+    // EAS - Dojang (OP Stack standard predeploy addresses)
+    eas: '0x4200000000000000000000000000000000000021' as Address,
+    schemaRegistry: '0x4200000000000000000000000000000000000020' as Address,
     weth: '0x4200000000000000000000000000000000000006' as Address,
   },
 };

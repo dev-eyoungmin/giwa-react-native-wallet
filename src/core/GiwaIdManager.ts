@@ -5,8 +5,7 @@ import {
 import { normalize } from 'viem/ens';
 import type { GiwaClient } from './GiwaClient';
 import type { GiwaId, TransactionResult } from '../types';
-import { getContractAddresses } from '../constants/contracts';
-import { GiwaError } from '../utils/errors';
+import { GiwaError, safeLog } from '../utils/errors';
 
 // ENS Public Resolver ABI (simplified)
 const ENS_RESOLVER_ABI = [
@@ -88,8 +87,7 @@ export class GiwaIdManager {
    */
   async resolveAddress(giwaId: string): Promise<Address | null> {
     const publicClient = this.client.getPublicClient();
-    const network = this.client.getNetwork();
-    const contracts = getContractAddresses(network);
+    const contracts = this.client.getContractAddresses();
 
     // Normalize the name
     const fullName = this.normalizeGiwaId(giwaId);
@@ -117,7 +115,8 @@ export class GiwaIdManager {
       });
 
       return address as Address;
-    } catch {
+    } catch (err) {
+      safeLog('GiwaIdManager.resolveAddress', err);
       return null;
     }
   }
@@ -135,8 +134,7 @@ export class GiwaIdManager {
         `${address.toLowerCase().slice(2)}.addr.reverse`
       );
 
-      const network = this.client.getNetwork();
-      const contracts = getContractAddresses(network);
+      const contracts = this.client.getContractAddresses();
 
       // Get resolver for reverse record
       const resolverAddress = await publicClient.readContract({
@@ -159,7 +157,8 @@ export class GiwaIdManager {
       });
 
       return name as string;
-    } catch {
+    } catch (err) {
+      safeLog('GiwaIdManager.resolveName', err);
       return null;
     }
   }
@@ -202,8 +201,7 @@ export class GiwaIdManager {
    */
   async getTextRecord(giwaId: string, key: string): Promise<string | null> {
     const publicClient = this.client.getPublicClient();
-    const network = this.client.getNetwork();
-    const contracts = getContractAddresses(network);
+    const contracts = this.client.getContractAddresses();
 
     const fullName = this.normalizeGiwaId(giwaId);
     const node = namehash(fullName);
@@ -228,7 +226,8 @@ export class GiwaIdManager {
       });
 
       return (value as string) || null;
-    } catch {
+    } catch (err) {
+      safeLog('GiwaIdManager.getTextRecord', err);
       return null;
     }
   }
@@ -246,12 +245,11 @@ export class GiwaIdManager {
   ): Promise<TransactionResult> {
     const walletClient = this.client.getWalletClient();
     if (!walletClient) {
-      throw new GiwaError('지갑이 연결되지 않았습니다.', 'WALLET_NOT_CONNECTED');
+      throw new GiwaError('Wallet is not connected.', 'WALLET_NOT_CONNECTED');
     }
 
     const publicClient = this.client.getPublicClient();
-    const network = this.client.getNetwork();
-    const contracts = getContractAddresses(network);
+    const contracts = this.client.getContractAddresses();
 
     const fullName = this.normalizeGiwaId(giwaId);
     const node = namehash(fullName);
@@ -265,7 +263,7 @@ export class GiwaIdManager {
     });
 
     if (resolverAddress === '0x0000000000000000000000000000000000000000') {
-      throw new GiwaError('GIWA ID를 찾을 수 없습니다.', 'GIWA_ID_NOT_FOUND');
+      throw new GiwaError('GIWA ID not found.', 'GIWA_ID_NOT_FOUND');
     }
 
     const hash = await walletClient.writeContract({

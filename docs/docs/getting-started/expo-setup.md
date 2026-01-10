@@ -2,21 +2,21 @@
 sidebar_position: 2
 ---
 
-# Expo 설정
+# Expo Setup
 
-Expo 프로젝트에서 GIWA SDK를 설정하는 방법입니다.
+This guide explains how to set up the GIWA SDK in an Expo project.
 
-## 설치
+## Installation
 
 ```bash
 npx expo install @giwa/react-native-wallet expo-secure-store
 ```
 
-## 기본 설정
+## Basic Setup
 
-### 1. GiwaProvider 설정
+### 1. GiwaProvider Configuration
 
-앱의 루트에 `GiwaProvider`를 추가합니다:
+Add `GiwaProvider` to the root of your app:
 
 ```tsx title="App.tsx"
 import { GiwaProvider } from '@giwa/react-native-wallet';
@@ -30,7 +30,7 @@ export default function App() {
 }
 ```
 
-### 2. Expo Router 사용 시
+### 2. Using Expo Router
 
 ```tsx title="app/_layout.tsx"
 import { Stack } from 'expo-router';
@@ -45,70 +45,85 @@ export default function RootLayout() {
 }
 ```
 
-## 설정 옵션
+## Configuration Options
 
 ```tsx
 <GiwaProvider
   config={{
     network: 'testnet',        // 'testnet' | 'mainnet'
-    customRpcUrl: 'https://...', // 커스텀 RPC (선택)
-    autoConnect: true,         // 앱 시작 시 자동 연결
-    enableFlashblocks: true,   // Flashblocks 활성화
+    autoConnect: true,         // Auto-connect on app start
+    enableFlashblocks: true,   // Enable Flashblocks
   }}
 >
 ```
 
-## 생체 인증 설정 (선택)
+### Custom Endpoints (Optional)
 
-생체 인증을 사용하려면 추가 패키지를 설치합니다:
+```tsx
+<GiwaProvider
+  config={{
+    network: 'testnet',
+    endpoints: {
+      rpcUrl: 'https://my-custom-rpc.example.com',
+      flashblocksRpcUrl: 'https://my-flashblocks-rpc.example.com',
+      flashblocksWsUrl: 'wss://my-flashblocks-ws.example.com',
+      explorerUrl: 'https://my-explorer.example.com',
+    },
+  }}
+>
+```
+
+## Biometric Authentication Setup (Optional)
+
+To use biometric authentication, install the additional package:
 
 ```bash
 npx expo install expo-local-authentication
 ```
 
-### app.json 설정
+### app.json Configuration
 
 ```json title="app.json"
 {
   "expo": {
     "ios": {
       "infoPlist": {
-        "NSFaceIDUsageDescription": "지갑 접근을 위해 Face ID를 사용합니다"
+        "NSFaceIDUsageDescription": "Face ID is used for wallet access"
       }
     }
   }
 }
 ```
 
-## Expo Go 제한사항
+## Expo Go Limitations
 
 :::info Expo Go
-Expo Go에서는 대부분의 기능이 작동하지만, 일부 네이티브 기능은 개발 빌드에서만 사용할 수 있습니다.
+Most features work in Expo Go, but some native features are only available in development builds.
 :::
 
-개발 빌드 생성:
+Creating a development build:
 
 ```bash
 npx expo prebuild
 npx expo run:ios
-# 또는
+# or
 npx expo run:android
 ```
 
-## 문제 해결
+## Troubleshooting
 
-### Metro 번들러 캐시 문제
+### Metro Bundler Cache Issues
 
 ```bash
 npx expo start --clear
 ```
 
-### 의존성 충돌
+### Dependency Conflicts
 
 ```bash
 npx expo install --fix
 ```
 
-## 다음 단계
+## Next Steps
 
-- [빠른 시작](/docs/getting-started/quick-start)으로 첫 지갑 만들기
+- Create your first wallet with [Quick Start](/docs/getting-started/quick-start)

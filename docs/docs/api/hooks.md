@@ -4,70 +4,96 @@ sidebar_position: 1
 
 # Hooks API
 
-GIWA SDK에서 제공하는 모든 React Hook의 API 레퍼런스입니다.
+API reference for all React Hooks provided by GIWA SDK.
 
 ## useGiwaWallet
 
-지갑 관리 Hook
+Wallet management Hook
 
 ```tsx
 import { useGiwaWallet } from '@giwa/react-native-wallet';
 
 const {
-  wallet,           // WalletInfo | null
+  wallet,           // GiwaWallet | null
   isLoading,        // boolean
-  error,            // GiwaError | null
-  createWallet,     // () => Promise<CreateWalletResult>
-  recoverWallet,    // (mnemonic: string) => Promise<WalletInfo>
-  importPrivateKey, // (privateKey: string) => Promise<WalletInfo>
-  exportPrivateKey, // () => Promise<string>
-  disconnect,       // () => Promise<void>
+  isInitializing,   // boolean - Whether SDK is initializing
+  hasWallet,        // boolean - wallet !== null (convenience property)
+  error,            // Error | null
+  createWallet,     // (options?: SecureStorageOptions) => Promise<WalletCreationResult>
+  recoverWallet,    // (mnemonic: string, options?: SecureStorageOptions) => Promise<GiwaWallet>
+  importFromPrivateKey, // (privateKey: Hex, options?: SecureStorageOptions) => Promise<GiwaWallet>
+  loadWallet,       // (options?: SecureStorageOptions) => Promise<GiwaWallet | null>
+  deleteWallet,     // () => Promise<void>
+  exportMnemonic,   // (options?: SecureStorageOptions) => Promise<string | null>
+  exportPrivateKey, // (options?: SecureStorageOptions) => Promise<Hex | null>
 } = useGiwaWallet();
 ```
 
-### 타입
-
+:::tip Checking Initialization State
+`isInitializing` is `true` while the SDK is initializing. Check this value before performing wallet operations.
 ```tsx
-interface WalletInfo {
-  address: string;
-  isConnected: boolean;
-}
-
-interface CreateWalletResult {
-  wallet: WalletInfo;
-  mnemonic: string;
+if (isInitializing) {
+  return <LoadingSpinner />;
 }
 ```
+:::
+
+### Types
+
+```tsx
+interface GiwaWallet {
+  address: `0x${string}`;
+}
+
+interface WalletCreationResult {
+  wallet: GiwaWallet;
+  mnemonic: string;
+}
+
+interface SecureStorageOptions {
+  requireBiometric?: boolean;
+}
+```
+
+### Security Notes
+
+- `exportMnemonic` and `exportPrivateKey` have **Rate Limiting** applied (3 times per minute, 5-minute cooldown when exceeded)
+- Sensitive data is automatically cleared from memory after 5 minutes of inactivity
 
 ---
 
 ## useBalance
 
-ETH 잔액 조회 Hook
+ETH balance query Hook
 
 ```tsx
 import { useBalance } from '@giwa/react-native-wallet';
 
 const {
-  balance,           // bigint | undefined
-  formattedBalance,  // string
+  balance,           // bigint (default 0n)
+  formattedBalance,  // string (default '0')
   isLoading,         // boolean
-  error,             // GiwaError | null
+  error,             // Error | null
   refetch,           // () => Promise<void>
 } = useBalance(address?: string);
 ```
 
-### 매개변수
+:::note Type Change
+`balance` is always of type `bigint` (previously: `bigint | null`).
+The initial value is `0n`, and null checks are not required.
+:::
 
-| 이름 | 타입 | 설명 |
-|------|------|------|
-| `address` | `string` (선택) | 조회할 주소. 미지정 시 연결된 지갑 주소 |
+### Parameters
+
+| Name | Type | Description |
+|------|------|-------------|
+| `address` | `string` (optional) | Address to query. Uses connected wallet address if not specified |
 
 ---
 
 ## useTransaction
 
-트랜잭션 전송 Hook
+Transaction sending Hook
 
 ```tsx
 import { useTransaction } from '@giwa/react-native-wallet';
@@ -82,13 +108,13 @@ const {
 } = useTransaction();
 ```
 
-### 타입
+### Types
 
 ```tsx
 interface TransactionRequest {
   to: string;
-  value?: string;       // ETH 단위
-  data?: string;        // 컨트랙트 호출 데이터
+  value?: string;       // ETH units
+  data?: string;        // Contract call data
   gasLimit?: bigint;
   gasPrice?: bigint;
   nonce?: number;
@@ -97,7 +123,7 @@ interface TransactionRequest {
 interface GasEstimate {
   gasLimit: bigint;
   gasPrice: bigint;
-  estimatedFee: string; // ETH 단위
+  estimatedFee: string; // ETH units
 }
 
 interface WaitOptions {
@@ -110,7 +136,7 @@ interface WaitOptions {
 
 ## useTokens
 
-ERC-20 토큰 관리 Hook
+ERC-20 token management Hook
 
 ```tsx
 import { useTokens } from '@giwa/react-native-wallet';
@@ -125,7 +151,7 @@ const {
 } = useTokens();
 ```
 
-### 타입
+### Types
 
 ```tsx
 interface TokenBalance {
@@ -152,7 +178,7 @@ interface AllowanceResult {
 
 ## useBridge
 
-L1↔L2 브릿지 Hook
+L1↔L2 Bridge Hook
 
 ```tsx
 import { useBridge } from '@giwa/react-native-wallet';
@@ -167,17 +193,17 @@ const {
 } = useBridge();
 ```
 
-### 타입
+### Types
 
 ```tsx
 interface BridgeParams {
   amount: string;
-  token: 'ETH' | string; // 'ETH' 또는 토큰 주소
+  token: 'ETH' | string; // 'ETH' or token address
 }
 
 interface DepositResult {
   l1TxHash: string;
-  estimatedTime: number; // 초 단위
+  estimatedTime: number; // in seconds
 }
 
 interface WithdrawResult {
@@ -203,7 +229,7 @@ type WithdrawStatus = {
 
 ## useFlashblocks
 
-Flashblocks (빠른 확인) Hook
+Flashblocks (fast confirmation) Hook
 
 ```tsx
 import { useFlashblocks } from '@giwa/react-native-wallet';
@@ -216,12 +242,12 @@ const {
 } = useFlashblocks();
 ```
 
-### 타입
+### Types
 
 ```tsx
 interface FlashblocksTx {
   to: string;
-  value: bigint;  // wei 단위
+  value: bigint;  // in wei
   data?: string;
 }
 
@@ -260,11 +286,11 @@ const {
 } = useGiwaId();
 ```
 
-### 타입
+### Types
 
 ```tsx
 interface RegisterOptions {
-  duration: number; // 일 단위
+  duration: number; // in days
 }
 
 interface RegisterResult {
@@ -285,7 +311,7 @@ interface Profile {
 
 ## useDojang
 
-Dojang (증명) Hook
+Dojang (attestation) Hook
 
 ```tsx
 import { useDojang } from '@giwa/react-native-wallet';
@@ -300,7 +326,7 @@ const {
 } = useDojang();
 ```
 
-### 타입
+### Types
 
 ```tsx
 interface Attestation {
@@ -333,7 +359,7 @@ interface CreateAttestationParams {
 
 ## useFaucet
 
-테스트넷 Faucet Hook
+Testnet Faucet Hook
 
 ```tsx
 import { useFaucet } from '@giwa/react-native-wallet';
@@ -345,18 +371,96 @@ const {
 } = useFaucet();
 ```
 
-### 타입
+### Types
 
 ```tsx
 interface FaucetResult {
   txHash: string;
-  amount: string; // ETH 단위
+  amount: string; // ETH units
 }
 ```
 
 ---
 
-## 공통 타입
+## useNetworkInfo
+
+Network status and feature availability Hook
+
+```tsx
+import { useNetworkInfo } from '@giwa/react-native-wallet';
+
+const {
+  network,              // 'testnet' | 'mainnet'
+  networkConfig,        // GiwaNetwork
+  status,               // NetworkStatus
+  isTestnet,            // boolean
+  isReady,              // boolean
+  hasWarnings,          // boolean
+  warnings,             // string[]
+  isFeatureAvailable,   // (feature: FeatureName) => boolean
+  getFeatureInfo,       // (feature: FeatureName) => FeatureAvailability
+  unavailableFeatures,  // FeatureName[]
+  chainId,              // number
+  rpcUrl,               // string
+  flashblocksRpcUrl,    // string - Flashblocks RPC endpoint
+  flashblocksWsUrl,     // string - Flashblocks WebSocket endpoint
+  explorerUrl,          // string
+} = useNetworkInfo();
+```
+
+### Usage Example
+
+```tsx
+function NetworkStatus() {
+  const { network, isReady, hasWarnings, warnings, isFeatureAvailable } = useNetworkInfo();
+
+  return (
+    <View>
+      <Text>Network: {network}</Text>
+      <Text>Ready: {isReady ? 'Yes' : 'No'}</Text>
+
+      {hasWarnings && (
+        <View>
+          <Text>Warnings:</Text>
+          {warnings.map((w, i) => <Text key={i}>- {w}</Text>)}
+        </View>
+      )}
+
+      {!isFeatureAvailable('giwaId') && (
+        <Text>GIWA ID is not available</Text>
+      )}
+    </View>
+  );
+}
+```
+
+### Types
+
+```tsx
+type FeatureName = 'bridge' | 'giwaId' | 'dojang' | 'faucet' | 'flashblocks' | 'tokens';
+
+type FeatureStatus = 'available' | 'unavailable' | 'partial';
+
+interface FeatureAvailability {
+  name: FeatureName;
+  status: FeatureStatus;
+  reason?: string;
+  contractAddress?: string;
+}
+
+interface NetworkStatus {
+  network: 'testnet' | 'mainnet';
+  readiness: 'ready' | 'partial' | 'not_ready';
+  isTestnet: boolean;
+  hasWarnings: boolean;
+  warnings: NetworkWarning[];
+  features: Record<FeatureName, FeatureAvailability>;
+}
+```
+
+---
+
+## Common Types
 
 ### GiwaError
 
@@ -366,7 +470,7 @@ class GiwaError extends Error {
   details?: Record<string, any>;
 }
 
-// 에러 코드
+// Error Codes
 const ErrorCodes = {
   INVALID_ADDRESS: 'INVALID_ADDRESS',
   INVALID_MNEMONIC: 'INVALID_MNEMONIC',

@@ -1,6 +1,5 @@
 import type { ISecureStorage } from './interfaces/ISecureStorage';
 import type { IBiometricAuth } from './interfaces/IBiometricAuth';
-import type { IClipboard } from './interfaces/IClipboard';
 import { GiwaSecurityError } from '../utils/errors';
 import {
   detectEnvironment,
@@ -10,7 +9,6 @@ import {
 export interface Adapters {
   secureStorage: ISecureStorage;
   biometricAuth: IBiometricAuth;
-  clipboard: IClipboard;
 }
 
 export interface AdapterFactoryOptions {
@@ -77,7 +75,7 @@ export class AdapterFactory {
 
     if (env === 'unsupported') {
       throw new GiwaSecurityError(
-        '보안 저장소를 찾을 수 없습니다. expo-secure-store 또는 react-native-keychain을 설치해주세요.'
+        'Secure storage not found. Please install expo-secure-store or react-native-keychain.'
       );
     }
 
@@ -96,12 +94,10 @@ export class AdapterFactory {
   private async createExpoAdapters(): Promise<Adapters> {
     const { ExpoSecureStorage } = await import('./expo/ExpoSecureStorage');
     const { ExpoBiometricAuth } = await import('./expo/ExpoBiometricAuth');
-    const { ExpoClipboard } = await import('./expo/ExpoClipboard');
 
     return {
       secureStorage: new ExpoSecureStorage(this.options.storagePrefix),
       biometricAuth: new ExpoBiometricAuth(),
-      clipboard: new ExpoClipboard(),
     };
   }
 
@@ -111,12 +107,10 @@ export class AdapterFactory {
   private async createRNAdapters(): Promise<Adapters> {
     const { RNSecureStorage } = await import('./react-native/RNSecureStorage');
     const { RNBiometricAuth } = await import('./react-native/RNBiometricAuth');
-    const { RNClipboard } = await import('./react-native/RNClipboard');
 
     return {
       secureStorage: new RNSecureStorage(this.options.storagePrefix),
       biometricAuth: new RNBiometricAuth(),
-      clipboard: new RNClipboard(),
     };
   }
 
@@ -134,14 +128,6 @@ export class AdapterFactory {
   async getBiometricAuth(): Promise<IBiometricAuth> {
     const adapters = await this.getAdapters();
     return adapters.biometricAuth;
-  }
-
-  /**
-   * Get clipboard adapter
-   */
-  async getClipboard(): Promise<IClipboard> {
-    const adapters = await this.getAdapters();
-    return adapters.clipboard;
   }
 
   /**

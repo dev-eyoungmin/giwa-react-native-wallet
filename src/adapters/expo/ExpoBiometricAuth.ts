@@ -12,10 +12,12 @@ export class ExpoBiometricAuth implements IBiometricAuth {
   private async getLocalAuth() {
     if (!this.LocalAuth) {
       try {
-        this.LocalAuth = require('expo-local-authentication');
+        this.LocalAuth = await import('expo-local-authentication');
       } catch (error) {
         throw new GiwaSecurityError(
-          'expo-local-authentication을 찾을 수 없습니다. npx expo install expo-local-authentication을 실행해주세요.',
+          'expo-local-authentication not found. Please run: npx expo install expo-local-authentication',
+          'DEPENDENCY_NOT_FOUND',
+          undefined,
           error instanceof Error ? error : undefined
         );
       }
@@ -61,8 +63,8 @@ export class ExpoBiometricAuth implements IBiometricAuth {
     const LocalAuth = await this.getLocalAuth();
 
     const result = await LocalAuth.authenticateAsync({
-      promptMessage: promptMessage || '인증이 필요합니다',
-      fallbackLabel: '비밀번호 사용',
+      promptMessage: promptMessage || 'Authentication required',
+      fallbackLabel: 'Use password',
       disableDeviceFallback: false,
     });
 

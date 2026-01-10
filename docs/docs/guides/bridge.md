@@ -2,9 +2,9 @@
 sidebar_position: 4
 ---
 
-# L1↔L2 브릿지
+# L1↔L2 Bridge
 
-이더리움 메인넷(L1)과 GIWA Chain(L2) 간 자산 이동 방법을 설명합니다.
+This guide explains how to transfer assets between Ethereum mainnet (L1) and GIWA Chain (L2).
 
 ## useBridge Hook
 
@@ -13,11 +13,11 @@ import { useBridge } from '@giwa/react-native-wallet';
 
 function BridgeScreen() {
   const {
-    deposit,           // L1 → L2 입금
-    withdraw,          // L2 → L1 출금
-    getDepositStatus,  // 입금 상태 조회
-    getWithdrawStatus, // 출금 상태 조회
-    estimateFees,      // 수수료 추정
+    deposit,           // L1 → L2 deposit
+    withdraw,          // L2 → L1 withdrawal
+    getDepositStatus,  // Get deposit status
+    getWithdrawStatus, // Get withdrawal status
+    estimateFees,      // Estimate fees
     isLoading,
   } = useBridge();
 
@@ -25,31 +25,31 @@ function BridgeScreen() {
 }
 ```
 
-## L1 → L2 입금 (Deposit)
+## L1 → L2 Deposit
 
-이더리움 메인넷에서 GIWA Chain으로 자산 이동:
+Transfer assets from Ethereum mainnet to GIWA Chain:
 
 ```tsx
 const handleDeposit = async () => {
   try {
     const result = await deposit({
-      amount: '0.1',     // ETH 단위
-      token: 'ETH',      // 또는 토큰 주소
+      amount: '0.1',     // ETH unit
+      token: 'ETH',      // Or token address
     });
 
     console.log('L1 TX:', result.l1TxHash);
-    console.log('예상 완료 시간:', result.estimatedTime);
+    console.log('Estimated completion time:', result.estimatedTime);
 
-    // 입금은 약 10-15분 소요
+    // Deposits take approximately 10-15 minutes
   } catch (error) {
-    console.error('입금 실패:', error.message);
+    console.error('Deposit failed:', error.message);
   }
 };
 ```
 
-## L2 → L1 출금 (Withdraw)
+## L2 → L1 Withdrawal
 
-GIWA Chain에서 이더리움 메인넷으로 자산 이동:
+Transfer assets from GIWA Chain to Ethereum mainnet:
 
 ```tsx
 const handleWithdraw = async () => {
@@ -60,20 +60,20 @@ const handleWithdraw = async () => {
     });
 
     console.log('L2 TX:', result.l2TxHash);
-    console.log('예상 완료 시간:', result.estimatedTime);
+    console.log('Estimated completion time:', result.estimatedTime);
 
-    // 출금은 Challenge Period로 인해 약 7일 소요
+    // Withdrawals take approximately 7 days due to Challenge Period
   } catch (error) {
-    console.error('출금 실패:', error.message);
+    console.error('Withdrawal failed:', error.message);
   }
 };
 ```
 
 :::info Challenge Period
-L2 → L1 출금은 보안상의 이유로 약 7일의 Challenge Period가 필요합니다. 이 기간 동안 검증자들이 출금 요청의 유효성을 검증합니다.
+L2 → L1 withdrawals require approximately 7 days of Challenge Period for security reasons. During this period, validators verify the validity of the withdrawal request.
 :::
 
-## 수수료 추정
+## Fee Estimation
 
 ```tsx
 const checkFees = async () => {
@@ -83,15 +83,15 @@ const checkFees = async () => {
     token: 'ETH',
   });
 
-  console.log('L1 가스비:', fees.l1GasFee);
-  console.log('L2 가스비:', fees.l2GasFee);
-  console.log('총 예상 수수료:', fees.totalFee);
+  console.log('L1 gas fee:', fees.l1GasFee);
+  console.log('L2 gas fee:', fees.l2GasFee);
+  console.log('Total estimated fee:', fees.totalFee);
 };
 ```
 
-## 상태 조회
+## Status Check
 
-### 입금 상태
+### Deposit Status
 
 ```tsx
 const checkDepositStatus = async (l1TxHash: string) => {
@@ -99,22 +99,22 @@ const checkDepositStatus = async (l1TxHash: string) => {
 
   switch (status.state) {
     case 'pending':
-      console.log('L1에서 처리 중...');
+      console.log('Processing on L1...');
       break;
     case 'l1_confirmed':
-      console.log('L1 확인됨, L2 대기 중...');
+      console.log('L1 confirmed, waiting for L2...');
       break;
     case 'completed':
-      console.log('완료! L2 TX:', status.l2TxHash);
+      console.log('Complete! L2 TX:', status.l2TxHash);
       break;
     case 'failed':
-      console.log('실패:', status.error);
+      console.log('Failed:', status.error);
       break;
   }
 };
 ```
 
-### 출금 상태
+### Withdrawal Status
 
 ```tsx
 const checkWithdrawStatus = async (l2TxHash: string) => {
@@ -122,35 +122,35 @@ const checkWithdrawStatus = async (l2TxHash: string) => {
 
   switch (status.state) {
     case 'pending':
-      console.log('L2에서 처리 중...');
+      console.log('Processing on L2...');
       break;
     case 'waiting_for_proof':
-      console.log('증명 대기 중...');
+      console.log('Waiting for proof...');
       break;
     case 'ready_to_prove':
-      console.log('증명 준비 완료');
+      console.log('Ready to prove');
       break;
     case 'in_challenge':
-      console.log('Challenge 기간 중...', status.remainingTime);
+      console.log('In Challenge period...', status.remainingTime);
       break;
     case 'ready_to_finalize':
-      console.log('최종 확정 가능');
+      console.log('Ready to finalize');
       break;
     case 'completed':
-      console.log('완료! L1 TX:', status.l1TxHash);
+      console.log('Complete! L1 TX:', status.l1TxHash);
       break;
   }
 };
 ```
 
-## ERC-20 토큰 브릿지
+## ERC-20 Token Bridge
 
 ```tsx
-// L1 → L2 토큰 입금
+// L1 → L2 token deposit
 const depositToken = async () => {
-  const tokenAddress = '0x...'; // L1 토큰 주소
+  const tokenAddress = '0x...'; // L1 token address
 
-  // 먼저 브릿지 컨트랙트에 토큰 승인 필요
+  // First, approve tokens to bridge contract
   await approveToken(tokenAddress, BRIDGE_ADDRESS, '100');
 
   const result = await deposit({
@@ -159,9 +159,9 @@ const depositToken = async () => {
   });
 };
 
-// L2 → L1 토큰 출금
+// L2 → L1 token withdrawal
 const withdrawToken = async () => {
-  const l2TokenAddress = '0x...'; // L2 토큰 주소
+  const l2TokenAddress = '0x...'; // L2 token address
 
   const result = await withdraw({
     amount: '100',
@@ -170,7 +170,7 @@ const withdrawToken = async () => {
 };
 ```
 
-## 전체 예제: 브릿지 화면
+## Complete Example: Bridge Screen
 
 ```tsx
 import { useState } from 'react';
@@ -188,25 +188,25 @@ export function BridgeScreen() {
     if (!amount) return;
 
     try {
-      // 수수료 확인
+      // Check fees
       const fees = await estimateFees({ direction, amount, token: 'ETH' });
 
       Alert.alert(
-        '수수료 확인',
-        `예상 수수료: ${fees.totalFee} ETH\n진행하시겠습니까?`,
+        'Fee Confirmation',
+        `Estimated fee: ${fees.totalFee} ETH\nDo you want to proceed?`,
         [
-          { text: '취소', style: 'cancel' },
+          { text: 'Cancel', style: 'cancel' },
           {
-            text: '확인',
+            text: 'Confirm',
             onPress: async () => {
               if (direction === 'deposit') {
                 const result = await deposit({ amount, token: 'ETH' });
-                Alert.alert('입금 시작', `TX: ${result.l1TxHash}`);
+                Alert.alert('Deposit Started', `TX: ${result.l1TxHash}`);
               } else {
                 const result = await withdraw({ amount, token: 'ETH' });
                 Alert.alert(
-                  '출금 시작',
-                  `TX: ${result.l2TxHash}\n\n출금은 약 7일이 소요됩니다.`
+                  'Withdrawal Started',
+                  `TX: ${result.l2TxHash}\n\nWithdrawals take approximately 7 days.`
                 );
               }
             },
@@ -214,22 +214,22 @@ export function BridgeScreen() {
         ]
       );
     } catch (error) {
-      Alert.alert('오류', error.message);
+      Alert.alert('Error', error.message);
     }
   };
 
   return (
     <View style={{ padding: 20 }}>
-      <Text style={{ fontSize: 18, marginBottom: 20 }}>브릿지</Text>
+      <Text style={{ fontSize: 18, marginBottom: 20 }}>Bridge</Text>
 
       <View style={{ flexDirection: 'row', marginBottom: 20 }}>
         <Button
-          title="입금 (L1→L2)"
+          title="Deposit (L1→L2)"
           onPress={() => setDirection('deposit')}
           color={direction === 'deposit' ? 'blue' : 'gray'}
         />
         <Button
-          title="출금 (L2→L1)"
+          title="Withdraw (L2→L1)"
           onPress={() => setDirection('withdraw')}
           color={direction === 'withdraw' ? 'blue' : 'gray'}
         />
@@ -237,18 +237,18 @@ export function BridgeScreen() {
 
       <Text style={{ marginBottom: 5 }}>
         {direction === 'deposit'
-          ? 'L1 (이더리움) → L2 (GIWA)'
-          : 'L2 (GIWA) → L1 (이더리움)'}
+          ? 'L1 (Ethereum) → L2 (GIWA)'
+          : 'L2 (GIWA) → L1 (Ethereum)'}
       </Text>
 
       {direction === 'withdraw' && (
         <Text style={{ marginBottom: 10, color: '#666' }}>
-          L2 잔액: {l2Balance} ETH
+          L2 Balance: {l2Balance} ETH
         </Text>
       )}
 
       <TextInput
-        placeholder="금액 (ETH)"
+        placeholder="Amount (ETH)"
         value={amount}
         onChangeText={setAmount}
         keyboardType="decimal-pad"
@@ -263,12 +263,12 @@ export function BridgeScreen() {
 
       {direction === 'withdraw' && (
         <Text style={{ color: 'orange', marginBottom: 10 }}>
-          ⚠️ 출금은 Challenge Period로 약 7일이 소요됩니다
+          Warning: Withdrawals take approximately 7 days due to Challenge Period
         </Text>
       )}
 
       <Button
-        title={isLoading ? '처리 중...' : direction === 'deposit' ? '입금' : '출금'}
+        title={isLoading ? 'Processing...' : direction === 'deposit' ? 'Deposit' : 'Withdraw'}
         onPress={handleBridge}
         disabled={isLoading || !amount}
       />
@@ -277,7 +277,7 @@ export function BridgeScreen() {
 }
 ```
 
-## 다음 단계
+## Next Steps
 
-- [Flashblocks](/docs/guides/flashblocks) - 빠른 트랜잭션 확인
-- [트랜잭션](/docs/guides/transactions) - 기본 트랜잭션
+- [Flashblocks](/docs/guides/flashblocks) - Fast transaction confirmation
+- [Transactions](/docs/guides/transactions) - Basic transactions

@@ -10,7 +10,7 @@ export async function validateSecureStorage(
   const available = await isAvailable();
   if (!available) {
     throw new GiwaSecurityError(
-      '보안 저장소를 사용할 수 없습니다. 이 기기에서는 지갑을 사용할 수 없습니다.'
+      'Secure storage is not available. The wallet cannot be used on this device.'
     );
   }
 }
@@ -18,10 +18,11 @@ export async function validateSecureStorage(
 /**
  * Check if running in Expo environment
  */
-export function isExpoEnvironment(): boolean {
+export async function isExpoEnvironment(): Promise<boolean> {
   try {
-    // Check for Expo constants
-    const expoConstants = require('expo-constants');
+    // @ts-ignore - expo-constants is an optional peer dependency
+    const expoConstants = await import('expo-constants').catch(() => null);
+    if (!expoConstants) return false;
     return expoConstants?.default?.expoConfig !== undefined;
   } catch {
     return false;
@@ -30,13 +31,19 @@ export function isExpoEnvironment(): boolean {
 
 /**
  * Check if expo-secure-store is available
+ * Uses dynamic import to avoid Metro bundler errors
  */
 export async function isExpoSecureStoreAvailable(): Promise<boolean> {
   try {
-    const SecureStore = require('expo-secure-store');
+    // @ts-ignore - expo-secure-store is an optional peer dependency
+    const SecureStore = await import('expo-secure-store').catch(() => null);
+    if (!SecureStore) return false;
     // Try a simple operation to verify it works
-    await SecureStore.isAvailableAsync();
-    return true;
+    if (typeof SecureStore.isAvailableAsync === 'function') {
+      await SecureStore.isAvailableAsync();
+      return true;
+    }
+    return false;
   } catch {
     return false;
   }
@@ -44,10 +51,19 @@ export async function isExpoSecureStoreAvailable(): Promise<boolean> {
 
 /**
  * Check if react-native-keychain is available
+ * Uses dynamic import to avoid Metro bundler errors
  */
 export async function isRNKeychainAvailable(): Promise<boolean> {
+  // Skip keychain check if expo-secure-store is available (we're in Expo)
+  // This prevents unnecessary checks in Expo projects
+  const expoAvailable = await isExpoSecureStoreAvailable();
+  if (expoAvailable) {
+    return false;
+  }
+
   try {
-    const Keychain = require('react-native-keychain');
+    const Keychain = await import('react-native-keychain').catch(() => null);
+    if (!Keychain) return false;
     // Check if the module has the expected methods
     return typeof Keychain.setGenericPassword === 'function';
   } catch {
@@ -82,7 +98,7 @@ export async function ensureSecureStorageAvailable(): Promise<Environment> {
 
   if (env === 'unsupported') {
     throw new GiwaSecurityError(
-      '보안 저장소를 찾을 수 없습니다. expo-secure-store 또는 react-native-keychain을 설치해주세요.'
+      'Secure storage not found. Please install expo-secure-store or react-native-keychain.'
     );
   }
 

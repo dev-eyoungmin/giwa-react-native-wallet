@@ -35,3 +35,13 @@ coverage/
 
 # TypeScript
 *.tsbuildinfo
+
+# Expo
+.expo/
+
+# Native folders (not needed for SDK library)
+ios/
+android/
+
+# npm pack artifacts
+*.tgz

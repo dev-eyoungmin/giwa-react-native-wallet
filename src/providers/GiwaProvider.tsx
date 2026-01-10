@@ -15,14 +15,15 @@ import { FlashblocksManager } from '../core/FlashblocksManager';
 import { GiwaIdManager } from '../core/GiwaIdManager';
 import { DojangManager } from '../core/DojangManager';
 import { AdapterFactory, type Adapters } from '../adapters/AdapterFactory';
+import { safeLog } from '../utils/errors';
 import type { GiwaConfig, GiwaWallet, NetworkType } from '../types';
 import type { Environment } from '../utils/secureStorageValidator';
 
 // ============================================================================
-// Context 분리: Manager, Wallet, State로 분리하여 불필요한 리렌더링 방지
+// Context Separation: Split into Manager, Wallet, State to prevent unnecessary re-renders
 // ============================================================================
 
-// Manager Context - 거의 변경되지 않는 매니저 인스턴스들
+// Manager Context - rarely changing manager instances
 interface ManagerContextState {
   client: GiwaClient;
   walletManager: WalletManager;
@@ -35,13 +36,13 @@ interface ManagerContextState {
   network: NetworkType;
 }
 
-// Wallet Context - wallet 상태만 (자주 변경됨)
+// Wallet Context - wallet state only (frequently changed)
 interface WalletContextState {
   wallet: GiwaWallet | null;
   setWallet: (wallet: GiwaWallet | null) => void;
 }
 
-// State Context - 로딩/에러 상태 (자주 변경됨)
+// State Context - loading/error state (frequently changed)
 interface StateContextState {
   isInitialized: boolean;
   isLoading: boolean;
@@ -49,12 +50,12 @@ interface StateContextState {
   environment: Environment | null;
 }
 
-// 분리된 Context 생성
+// Create separated Contexts
 const ManagerContext = createContext<ManagerContextState | undefined>(undefined);
 const WalletContext = createContext<WalletContextState | undefined>(undefined);
 const StateContext = createContext<StateContextState | undefined>(undefined);
 
-// 레거시 호환을 위한 통합 Context 타입
+// Combined Context type for legacy compatibility
 interface GiwaContextState extends ManagerContextState, WalletContextState, StateContextState {}
 
 // Provider props
@@ -62,15 +63,19 @@ export interface GiwaProviderProps {
   children: ReactNode;
   config?: GiwaConfig;
   forceEnvironment?: Environment;
+  /** Callback when initialization error occurs */
+  onError?: (error: Error) => void;
+  /** Initialization timeout in milliseconds (default: 10000) */
+  initTimeout?: number;
 }
 
 /**
  * GIWA Provider - wraps application with GIWA SDK context
  *
- * 최적화:
- * - Context를 Manager, Wallet, State로 분리하여 불필요한 리렌더링 방지
- * - 매니저가 변경되어도 wallet 상태만 사용하는 컴포넌트는 리렌더링 안됨
- * - 로딩 상태가 변경되어도 매니저만 사용하는 컴포넌트는 리렌더링 안됨
+ * Optimization:
+ * - Context split into Manager, Wallet, State to prevent unnecessary re-renders
+ * - Components using only wallet state won't re-render when managers change
+ * - Components using only managers won't re-render when loading state changes
  *
  * Usage:
  * ```tsx
@@ -83,7 +88,9 @@ export function GiwaProvider({
   children,
   config = {},
   forceEnvironment,
-}: GiwaProviderProps): JSX.Element {
+  onError,
+  initTimeout = 10000,
+}: GiwaProviderProps): React.JSX.Element {
   // State
   const [wallet, setWalletState] = useState<GiwaWallet | null>(null);
   const [adapters, setAdapters] = useState<Adapters | null>(null);
@@ -93,7 +100,7 @@ export function GiwaProvider({
   const [environment, setEnvironment] = useState<Environment | null>(null);
   const [walletManager, setWalletManager] = useState<WalletManager | null>(null);
 
-  // config 값들을 안정적인 참조로 메모이제이션
+  // Memoize config values for stable references
   const networkConfig = config.network;
   const customRpcUrl = config.customRpcUrl;
   const enableFlashblocks = config.enableFlashblocks;
@@ -117,58 +124,86 @@ export function GiwaProvider({
   // Initialize adapters
   useEffect(() => {
     let mounted = true;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     async function initialize() {
       setIsLoading(true);
       setError(null);
 
+      // Create timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error(`SDK initialization timed out after ${initTimeout}ms`));
+        }, initTimeout);
+      });
+
       try {
-        const factory = AdapterFactory.getInstance({
-          forceEnvironment,
-        });
+        // Race between initialization and timeout
+        await Promise.race([
+          (async () => {
+            if (__DEV__) console.log('[GiwaProvider] Starting initialization...');
 
-        const env = await factory.detectEnvironment();
-        if (!mounted) return;
+            const factory = AdapterFactory.getInstance({
+              forceEnvironment,
+            });
 
-        setEnvironment(env);
+            if (__DEV__) console.log('[GiwaProvider] Detecting environment...');
+            const env = await factory.detectEnvironment();
+            if (!mounted) return;
 
-        if (env === 'unsupported') {
-          throw new Error(
-            '보안 저장소를 찾을 수 없습니다. expo-secure-store 또는 react-native-keychain을 설치해주세요.'
-          );
-        }
+            if (__DEV__) console.log('[GiwaProvider] Environment detected:', env);
+            setEnvironment(env);
 
-        const adapterInstances = await factory.getAdapters();
-        if (!mounted) return;
-
-        setAdapters(adapterInstances);
-
-        // Create wallet manager with secure storage
-        const manager = new WalletManager(adapterInstances.secureStorage);
-        setWalletManager(manager);
-
-        // Try to load existing wallet if autoConnect is enabled
-        if (autoConnect !== false) {
-          const existingWallet = await manager.loadWallet();
-          if (existingWallet && mounted) {
-            setWalletState(existingWallet);
-
-            // Set account in client
-            const account = manager.getAccount();
-            if (account) {
-              client.setAccount(account);
+            if (env === 'unsupported') {
+              throw new Error(
+                'Secure storage not found. Please install expo-secure-store or react-native-keychain.'
+              );
             }
-          }
-        }
 
-        if (mounted) {
-          setIsInitialized(true);
-        }
+            if (__DEV__) console.log('[GiwaProvider] Getting adapters...');
+            const adapterInstances = await factory.getAdapters();
+            if (!mounted) return;
+
+            setAdapters(adapterInstances);
+
+            // Create wallet manager with secure storage
+            if (__DEV__) console.log('[GiwaProvider] Creating wallet manager...');
+            const manager = new WalletManager(adapterInstances.secureStorage);
+            setWalletManager(manager);
+
+            // Try to load existing wallet if autoConnect is enabled
+            if (autoConnect !== false) {
+              if (__DEV__) console.log('[GiwaProvider] Loading existing wallet...');
+              const existingWallet = await manager.loadWallet();
+              if (existingWallet && mounted) {
+                setWalletState(existingWallet);
+
+                // Set account in client
+                const account = manager.getAccount();
+                if (account) {
+                  client.setAccount(account);
+                }
+              }
+            }
+
+            if (mounted) {
+              if (__DEV__) console.log('[GiwaProvider] Initialization complete');
+              setIsInitialized(true);
+            }
+          })(),
+          timeoutPromise,
+        ]);
       } catch (err) {
+        const error = err instanceof Error ? err : new Error('Initialization failed');
+        safeLog('GiwaProvider initialization', error);
         if (mounted) {
-          setError(err instanceof Error ? err : new Error('초기화 실패'));
+          setError(error);
+          onError?.(error);
         }
       } finally {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
         if (mounted) {
           setIsLoading(false);
         }
@@ -179,8 +214,11 @@ export function GiwaProvider({
 
     return () => {
       mounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
-  }, [forceEnvironment, autoConnect, client]);
+  }, [forceEnvironment, autoConnect, client, initTimeout, onError]);
 
   // Update client account when wallet changes (stable callback)
   const setWallet = useCallback(
@@ -199,7 +237,7 @@ export function GiwaProvider({
     [client, walletManager]
   );
 
-  // Manager Context value (거의 변경되지 않음)
+  // Manager Context value (rarely changes)
   const managerContextValue = useMemo<ManagerContextState | null>(() => {
     if (!walletManager) {
       return null;
@@ -228,13 +266,13 @@ export function GiwaProvider({
     networkConfig,
   ]);
 
-  // Wallet Context value (wallet 변경 시만 업데이트)
+  // Wallet Context value (updates only when wallet changes)
   const walletContextValue = useMemo<WalletContextState>(() => ({
     wallet,
     setWallet,
   }), [wallet, setWallet]);
 
-  // State Context value (로딩/에러 상태 변경 시만 업데이트)
+  // State Context value (updates only when loading/error state changes)
   const stateContextValue = useMemo<StateContextState>(() => ({
     isInitialized,
     isLoading,
@@ -242,49 +280,49 @@ export function GiwaProvider({
     environment,
   }), [isInitialized, isLoading, error, environment]);
 
-  // Show loading or error state
-  if (isLoading) {
-    return <>{children}</>;
-  }
-
+  // Log error if any (but don't prevent rendering)
   if (error) {
-    console.error('GIWA Provider Error:', error);
-    return <>{children}</>;
+    safeLog('GIWA Provider Error', error);
   }
 
-  if (!managerContextValue) {
-    return <>{children}</>;
-  }
-
+  // Always provide StateContext so hooks can check isLoading/error
+  // WalletContext is always available (wallet can be null)
+  // ManagerContext is only provided when managers are ready
   return (
-    <ManagerContext.Provider value={managerContextValue}>
+    <StateContext.Provider value={stateContextValue}>
       <WalletContext.Provider value={walletContextValue}>
-        <StateContext.Provider value={stateContextValue}>
-          {children}
-        </StateContext.Provider>
+        {managerContextValue ? (
+          <ManagerContext.Provider value={managerContextValue}>
+            {children}
+          </ManagerContext.Provider>
+        ) : (
+          // During loading/error, provide children without ManagerContext
+          // Hooks should check isLoading/error via useGiwaState before accessing managers
+          children
+        )}
       </WalletContext.Provider>
-    </ManagerContext.Provider>
+    </StateContext.Provider>
   );
 }
 
 // ============================================================================
-// 최적화된 개별 Context Hooks
+// Optimized Individual Context Hooks
 // ============================================================================
 
 /**
- * Hook to access only manager instances (거의 리렌더링 안됨)
- * wallet 상태가 필요 없을 때 사용
+ * Hook to access only manager instances (rarely re-renders)
+ * Use when wallet state is not needed
+ * Returns null during loading phase - callers should check isLoading via useGiwaState
  */
-export function useGiwaManagers(): ManagerContextState {
+export function useGiwaManagers(): ManagerContextState | null {
   const context = useContext(ManagerContext);
-  if (context === undefined) {
-    throw new Error('useGiwaManagers must be used within a GiwaProvider');
-  }
-  return context;
+  // Returns null during loading/initialization phase
+  // Callers should check isLoading via useGiwaState() before using managers
+  return context ?? null;
 }
 
 /**
- * Hook to access only wallet state (wallet 변경 시만 리렌더링)
+ * Hook to access only wallet state (re-renders only when wallet changes)
  */
 export function useGiwaWalletContext(): WalletContextState {
   const context = useContext(WalletContext);
@@ -295,7 +333,7 @@ export function useGiwaWalletContext(): WalletContextState {
 }
 
 /**
- * Hook to access only loading/error state (상태 변경 시만 리렌더링)
+ * Hook to access only loading/error state (re-renders only when state changes)
  */
 export function useGiwaState(): StateContextState {
   const context = useContext(StateContext);
@@ -306,18 +344,19 @@ export function useGiwaState(): StateContextState {
 }
 
 /**
- * Hook to access full GIWA context (레거시 호환)
- * 주의: 모든 상태 변경에 리렌더링됨
- * 가능하면 useGiwaManagers, useGiwaWalletContext, useGiwaState를 개별 사용 권장
+ * Hook to access full GIWA context (legacy compatible)
+ * Warning: Re-renders on all state changes
+ * Prefer using useGiwaManagers, useGiwaWalletContext, useGiwaState individually when possible
+ * Returns partial context during loading (managers will be null-ish)
  */
-export function useGiwaContext(): GiwaContextState {
+export function useGiwaContext(): Partial<GiwaContextState> & StateContextState & WalletContextState {
   const managers = useGiwaManagers();
   const walletContext = useGiwaWalletContext();
   const state = useGiwaState();
 
-  // 통합 객체 메모이제이션
+  // Memoize combined object
   return useMemo(() => ({
-    ...managers,
+    ...(managers || {}),
     ...walletContext,
     ...state,
   }), [managers, walletContext, state]);

@@ -4,11 +4,11 @@ sidebar_position: 6
 
 # GIWA ID
 
-ENS 기반 네이밍 서비스 GIWA ID 사용 방법을 설명합니다.
+This guide explains how to use GIWA ID, an ENS-based naming service.
 
-## GIWA ID란?
+## What is GIWA ID?
 
-GIWA ID는 복잡한 이더리움 주소(0x...) 대신 읽기 쉬운 이름(alice.giwa.id)을 사용할 수 있게 해주는 ENS 기반 네이밍 서비스입니다.
+GIWA ID is an ENS-based naming service that allows you to use human-readable names (alice.giwa.id) instead of complex Ethereum addresses (0x...).
 
 ```
 0x742d35Cc6634C0532925a3b844Bc9e7595f...  →  alice.giwa.id
@@ -21,12 +21,12 @@ import { useGiwaId } from '@giwa/react-native-wallet';
 
 function GiwaIdScreen() {
   const {
-    resolveAddress,     // GIWA ID → 주소
-    resolveName,        // 주소 → GIWA ID
-    isNameAvailable,    // 이름 사용 가능 여부
-    register,           // GIWA ID 등록
-    getProfile,         // 프로필 정보 조회
-    setProfile,         // 프로필 정보 설정
+    resolveAddress,     // GIWA ID → Address
+    resolveName,        // Address → GIWA ID
+    isNameAvailable,    // Name availability check
+    register,           // Register GIWA ID
+    getProfile,         // Get profile information
+    setProfile,         // Set profile information
     isLoading,
   } = useGiwaId();
 
@@ -34,7 +34,7 @@ function GiwaIdScreen() {
 }
 ```
 
-## GIWA ID → 주소 변환
+## GIWA ID → Address Resolution
 
 ```tsx
 const handleResolve = async () => {
@@ -44,17 +44,17 @@ const handleResolve = async () => {
     const address = await resolveAddress(giwaId);
 
     if (address) {
-      console.log('주소:', address);
+      console.log('Address:', address);
     } else {
-      console.log('등록되지 않은 GIWA ID입니다');
+      console.log('GIWA ID not registered');
     }
   } catch (error) {
-    console.error('조회 실패:', error.message);
+    console.error('Lookup failed:', error.message);
   }
 };
 ```
 
-## 주소 → GIWA ID 변환 (역방향 조회)
+## Address → GIWA ID Resolution (Reverse Lookup)
 
 ```tsx
 const handleReverseLookup = async () => {
@@ -66,57 +66,57 @@ const handleReverseLookup = async () => {
     if (name) {
       console.log('GIWA ID:', name);
     } else {
-      console.log('등록된 GIWA ID가 없습니다');
+      console.log('No registered GIWA ID');
     }
   } catch (error) {
-    console.error('조회 실패:', error.message);
+    console.error('Lookup failed:', error.message);
   }
 };
 ```
 
-## 이름 사용 가능 여부 확인
+## Check Name Availability
 
 ```tsx
 const checkAvailability = async () => {
-  const name = 'alice'; // .giwa.id 제외
+  const name = 'alice'; // Without .giwa.id
 
   const available = await isNameAvailable(name);
 
   if (available) {
-    console.log(`${name}.giwa.id는 등록 가능합니다`);
+    console.log(`${name}.giwa.id is available for registration`);
   } else {
-    console.log(`${name}.giwa.id는 이미 사용 중입니다`);
+    console.log(`${name}.giwa.id is already taken`);
   }
 };
 ```
 
-## GIWA ID 등록
+## Register GIWA ID
 
 ```tsx
 const handleRegister = async () => {
-  const name = 'alice'; // .giwa.id 제외
+  const name = 'alice'; // Without .giwa.id
 
   try {
-    // 먼저 사용 가능 여부 확인
+    // First check availability
     const available = await isNameAvailable(name);
     if (!available) {
-      Alert.alert('오류', '이미 사용 중인 이름입니다');
+      Alert.alert('Error', 'This name is already taken');
       return;
     }
 
     const result = await register(name, {
-      duration: 365, // 일 단위 (1년)
+      duration: 365, // Days (1 year)
     });
 
-    console.log('등록 완료:', result.txHash);
-    Alert.alert('성공', `${name}.giwa.id가 등록되었습니다`);
+    console.log('Registration complete:', result.txHash);
+    Alert.alert('Success', `${name}.giwa.id has been registered`);
   } catch (error) {
-    Alert.alert('등록 실패', error.message);
+    Alert.alert('Registration Failed', error.message);
   }
 };
 ```
 
-## 프로필 정보 조회
+## Get Profile Information
 
 ```tsx
 const handleGetProfile = async () => {
@@ -125,38 +125,38 @@ const handleGetProfile = async () => {
   try {
     const profile = await getProfile(giwaId);
 
-    console.log('아바타:', profile.avatar);
-    console.log('소개:', profile.description);
-    console.log('트위터:', profile.twitter);
-    console.log('이메일:', profile.email);
-    console.log('웹사이트:', profile.url);
+    console.log('Avatar:', profile.avatar);
+    console.log('Description:', profile.description);
+    console.log('Twitter:', profile.twitter);
+    console.log('Email:', profile.email);
+    console.log('Website:', profile.url);
   } catch (error) {
-    console.error('프로필 조회 실패:', error.message);
+    console.error('Profile lookup failed:', error.message);
   }
 };
 ```
 
-## 프로필 정보 설정
+## Set Profile Information
 
 ```tsx
 const handleSetProfile = async () => {
   try {
     const txHash = await setProfile({
       avatar: 'https://example.com/avatar.png',
-      description: '안녕하세요, Alice입니다!',
+      description: 'Hello, I am Alice!',
       twitter: '@alice',
       email: 'alice@example.com',
       url: 'https://alice.com',
     });
 
-    console.log('프로필 업데이트:', txHash);
+    console.log('Profile updated:', txHash);
   } catch (error) {
-    Alert.alert('업데이트 실패', error.message);
+    Alert.alert('Update Failed', error.message);
   }
 };
 ```
 
-## 전체 예제: GIWA ID 화면
+## Complete Example: GIWA ID Screen
 
 ```tsx
 import { useState, useEffect } from 'react';
@@ -180,14 +180,14 @@ export function GiwaIdScreen() {
   const [newName, setNewName] = useState('');
   const [nameAvailable, setNameAvailable] = useState<boolean | null>(null);
 
-  // 내 GIWA ID 조회
+  // Look up my GIWA ID
   useEffect(() => {
     if (wallet?.address) {
       resolveName(wallet.address).then(setMyGiwaId);
     }
   }, [wallet]);
 
-  // GIWA ID로 주소 검색
+  // Search address by GIWA ID
   const handleSearch = async () => {
     if (!searchInput) return;
 
@@ -199,7 +199,7 @@ export function GiwaIdScreen() {
     setSearchResult(address);
   };
 
-  // 이름 사용 가능 여부 확인
+  // Check name availability
   const handleCheckAvailability = async () => {
     if (!newName) return;
 
@@ -207,20 +207,20 @@ export function GiwaIdScreen() {
     setNameAvailable(available);
   };
 
-  // GIWA ID 등록
+  // Register GIWA ID
   const handleRegister = async () => {
     if (!newName || !nameAvailable) return;
 
     try {
       await register(newName, { duration: 365 });
-      Alert.alert('성공', `${newName}.giwa.id가 등록되었습니다!`);
+      Alert.alert('Success', `${newName}.giwa.id has been registered!`);
       setNewName('');
       setNameAvailable(null);
-      // 내 GIWA ID 새로고침
+      // Refresh my GIWA ID
       const name = await resolveName(wallet.address);
       setMyGiwaId(name);
     } catch (error) {
-      Alert.alert('오류', error.message);
+      Alert.alert('Error', error.message);
     }
   };
 
@@ -228,22 +228,22 @@ export function GiwaIdScreen() {
     <View style={{ padding: 20 }}>
       <Text style={{ fontSize: 20, marginBottom: 20 }}>GIWA ID</Text>
 
-      {/* 내 GIWA ID */}
+      {/* My GIWA ID */}
       <View style={{ marginBottom: 30 }}>
-        <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>내 GIWA ID</Text>
+        <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>My GIWA ID</Text>
         {myGiwaId ? (
           <Text style={{ fontSize: 18, color: 'blue' }}>{myGiwaId}</Text>
         ) : (
-          <Text style={{ color: '#888' }}>등록된 GIWA ID가 없습니다</Text>
+          <Text style={{ color: '#888' }}>No registered GIWA ID</Text>
         )}
       </View>
 
-      {/* GIWA ID 검색 */}
+      {/* GIWA ID Search */}
       <View style={{ marginBottom: 30 }}>
-        <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>GIWA ID 검색</Text>
+        <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>Search GIWA ID</Text>
         <View style={{ flexDirection: 'row' }}>
           <TextInput
-            placeholder="alice 또는 alice.giwa.id"
+            placeholder="alice or alice.giwa.id"
             value={searchInput}
             onChangeText={setSearchInput}
             style={{
@@ -254,24 +254,24 @@ export function GiwaIdScreen() {
               marginRight: 10,
             }}
           />
-          <Button title="검색" onPress={handleSearch} disabled={isLoading} />
+          <Button title="Search" onPress={handleSearch} disabled={isLoading} />
         </View>
         {searchResult !== null && (
           <Text style={{ marginTop: 10 }}>
             {searchResult
-              ? `주소: ${searchResult.slice(0, 20)}...`
-              : '등록되지 않은 GIWA ID입니다'}
+              ? `Address: ${searchResult.slice(0, 20)}...`
+              : 'GIWA ID not registered'}
           </Text>
         )}
       </View>
 
-      {/* GIWA ID 등록 */}
+      {/* GIWA ID Registration */}
       {!myGiwaId && (
         <View>
-          <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>GIWA ID 등록</Text>
+          <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>Register GIWA ID</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TextInput
-              placeholder="원하는 이름"
+              placeholder="Desired name"
               value={newName}
               onChangeText={(text) => {
                 setNewName(text);
@@ -288,7 +288,7 @@ export function GiwaIdScreen() {
           </View>
 
           <Button
-            title="사용 가능 확인"
+            title="Check Availability"
             onPress={handleCheckAvailability}
             disabled={isLoading || !newName}
           />
@@ -301,14 +301,14 @@ export function GiwaIdScreen() {
               }}
             >
               {nameAvailable
-                ? '✓ 사용 가능합니다'
-                : '✗ 이미 사용 중입니다'}
+                ? 'Available'
+                : 'Already taken'}
             </Text>
           )}
 
           {nameAvailable && (
             <Button
-              title={`${newName}.giwa.id 등록`}
+              title={`Register ${newName}.giwa.id`}
               onPress={handleRegister}
               disabled={isLoading}
             />
@@ -320,15 +320,15 @@ export function GiwaIdScreen() {
 }
 ```
 
-## 주소 입력 시 GIWA ID 자동 해석
+## Auto-resolve GIWA ID in Address Input
 
-트랜잭션 전송 시 GIWA ID를 자동으로 주소로 변환:
+Automatically convert GIWA ID to address when sending transactions:
 
 ```tsx
 const sendToGiwaId = async (recipient: string, amount: string) => {
   let toAddress = recipient;
 
-  // GIWA ID인 경우 주소로 변환
+  // Convert GIWA ID to address if applicable
   if (recipient.endsWith('.giwa.id') || !recipient.startsWith('0x')) {
     const giwaId = recipient.endsWith('.giwa.id')
       ? recipient
@@ -336,17 +336,17 @@ const sendToGiwaId = async (recipient: string, amount: string) => {
 
     const resolved = await resolveAddress(giwaId);
     if (!resolved) {
-      throw new Error('유효하지 않은 GIWA ID입니다');
+      throw new Error('Invalid GIWA ID');
     }
     toAddress = resolved;
   }
 
-  // 트랜잭션 전송
+  // Send transaction
   return sendTransaction({ to: toAddress, value: amount });
 };
 ```
 
-## 다음 단계
+## Next Steps
 
-- [Dojang](/docs/guides/dojang) - EAS 기반 증명
-- [지갑 관리](/docs/guides/wallet-management) - 지갑 기능
+- [Dojang](/docs/guides/dojang) - EAS-based attestations
+- [Wallet Management](/docs/guides/wallet-management) - Wallet features

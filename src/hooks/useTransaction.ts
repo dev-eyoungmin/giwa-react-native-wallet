@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
-import { useGiwaManagers } from '../providers/GiwaProvider';
+import { useGiwaManagers, useGiwaState } from '../providers/GiwaProvider';
 import { parseEther, type Address, type Hash } from 'viem';
 import type { TransactionReceipt } from '../types';
 
@@ -13,6 +13,7 @@ export interface UseTransactionReturn {
   sendTransaction: (params: SendTransactionParams) => Promise<Hash>;
   waitForReceipt: (hash: Hash) => Promise<TransactionReceipt>;
   isLoading: boolean;
+  isInitializing: boolean;
   error: Error | null;
   lastTxHash: Hash | null;
 }
@@ -20,26 +21,34 @@ export interface UseTransactionReturn {
 /**
  * Hook for sending transactions
  *
- * 최적화:
- * - useGiwaManagers만 사용 (wallet 상태 불필요)
- * - useRef로 client 참조 안정화
- * - 반환 객체 useMemo로 메모이제이션
+ * Optimizations:
+ * - Only use useGiwaManagers (wallet state not needed)
+ * - Stabilize client reference with useRef
+ * - Return object memoized with useMemo
+ * - Returns isInitializing=true during SDK initialization
  */
 export function useTransaction(): UseTransactionReturn {
-  const { client } = useGiwaManagers();
+  const managers = useGiwaManagers();
+  const { isLoading: sdkLoading } = useGiwaState();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [lastTxHash, setLastTxHash] = useState<Hash | null>(null);
 
-  // client를 ref로 저장하여 안정적인 참조 유지
+  const client = managers?.client ?? null;
+
+  // Store client in ref to maintain stable reference
   const clientRef = useRef(client);
   clientRef.current = client;
 
   const sendTransaction = useCallback(
     async (params: SendTransactionParams): Promise<Hash> => {
+      if (!clientRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+
       const walletClient = clientRef.current.getWalletClient();
       if (!walletClient) {
-        throw new Error('지갑이 연결되지 않았습니다.');
+        throw new Error('Wallet is not connected.');
       }
 
       setIsLoading(true);
@@ -55,7 +64,7 @@ export function useTransaction(): UseTransactionReturn {
         setLastTxHash(hash);
         return hash;
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('트랜잭션 전송 실패');
+        const error = err instanceof Error ? err : new Error('Failed to send transaction');
         setError(error);
         throw error;
       } finally {
@@ -67,6 +76,10 @@ export function useTransaction(): UseTransactionReturn {
 
   const waitForReceipt = useCallback(
     async (hash: Hash): Promise<TransactionReceipt> => {
+      if (!clientRef.current) {
+        throw new Error('SDK is still initializing');
+      }
+
       const publicClient = clientRef.current.getPublicClient();
 
       try {
@@ -79,7 +92,7 @@ export function useTransaction(): UseTransactionReturn {
           gasUsed: receipt.gasUsed,
         };
       } catch (err) {
-        const error = err instanceof Error ? err : new Error('트랜잭션 확인 실패');
+        const error = err instanceof Error ? err : new Error('Failed to confirm transaction');
         setError(error);
         throw error;
       }
@@ -87,12 +100,13 @@ export function useTransaction(): UseTransactionReturn {
     []
   );
 
-  // 반환 객체 메모이제이션
+  // Memoize return object
   return useMemo(() => ({
     sendTransaction,
     waitForReceipt,
     isLoading,
+    isInitializing: sdkLoading,
     error,
     lastTxHash,
-  }), [sendTransaction, waitForReceipt, isLoading, error, lastTxHash]);
+  }), [sendTransaction, waitForReceipt, isLoading, sdkLoading, error, lastTxHash]);
 }

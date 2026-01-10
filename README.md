@@ -18,13 +18,25 @@ GIWA Chain SDK for React Native - Expo and React Native CLI compatible
 ### Expo
 
 ```bash
+# Expo는 프로젝트의 패키지 매니저를 자동 감지합니다
 npx expo install @giwa/react-native-wallet expo-secure-store
 ```
 
 ### React Native CLI
 
 ```bash
+# npm
 npm install @giwa/react-native-wallet react-native-keychain
+
+# yarn
+yarn add @giwa/react-native-wallet react-native-keychain
+
+# pnpm
+pnpm add @giwa/react-native-wallet react-native-keychain
+```
+
+```bash
+# iOS 설정
 cd ios && pod install
 ```
 
@@ -180,6 +192,7 @@ function GiwaIdScreen() {
 | `useGiwaId` | GIWA ID (ENS) resolution |
 | `useDojang` | Attestation verification |
 | `useFaucet` | Testnet faucet |
+| `useNetworkInfo` | Network status and feature availability |
 
 ### Configuration
 
@@ -187,19 +200,119 @@ function GiwaIdScreen() {
 <GiwaProvider
   config={{
     network: 'testnet', // 'testnet' | 'mainnet'
-    customRpcUrl: 'https://...', // Optional custom RPC
     autoConnect: true, // Auto-load wallet on startup
     enableFlashblocks: true, // Enable fast confirmations
   }}
 >
 ```
 
+### Custom Endpoints
+
+You can override default network endpoints:
+
+```tsx
+<GiwaProvider
+  config={{
+    network: 'testnet',
+    endpoints: {
+      rpcUrl: 'https://my-custom-rpc.example.com',
+      flashblocksRpcUrl: 'https://my-flashblocks-rpc.example.com',
+      flashblocksWsUrl: 'wss://my-flashblocks-ws.example.com',
+      explorerUrl: 'https://my-explorer.example.com',
+    },
+  }}
+>
+```
+
+Access endpoints at runtime:
+
+```tsx
+import { useNetworkInfo } from '@giwa/react-native-wallet';
+
+function MyComponent() {
+  const { rpcUrl, flashblocksRpcUrl, flashblocksWsUrl, explorerUrl } = useNetworkInfo();
+  // Use the resolved endpoints
+}
+```
+
+## Network Selection
+
+### Check Network Status and Feature Availability
+
+```tsx
+import { useNetworkInfo } from '@giwa/react-native-wallet';
+
+function NetworkStatus() {
+  const {
+    network,
+    isTestnet,
+    isReady,
+    hasWarnings,
+    warnings,
+    isFeatureAvailable,
+    unavailableFeatures,
+  } = useNetworkInfo();
+
+  return (
+    <View>
+      <Text>Network: {network}</Text>
+      <Text>Testnet: {isTestnet ? 'Yes' : 'No'}</Text>
+      <Text>Ready: {isReady ? 'Yes' : 'No'}</Text>
+
+      {hasWarnings && (
+        <View>
+          <Text>Warnings:</Text>
+          {warnings.map((w, i) => <Text key={i}>- {w}</Text>)}
+        </View>
+      )}
+
+      {/* Check specific feature availability */}
+      {!isFeatureAvailable('giwaId') && (
+        <Text>GIWA ID is not available on this network</Text>
+      )}
+    </View>
+  );
+}
+```
+
+### Network Warnings
+
+When using mainnet with TBD (not yet deployed) contracts, the SDK will log warnings:
+
+```
+[GIWA SDK] Network "mainnet" has 4 warning(s):
+  1. [WARNING] Mainnet is not fully ready. 4 feature(s) unavailable.
+  2. [WARNING] bridge: L1 Bridge contract is TBD
+  3. [WARNING] giwaId: ENS Registry/Resolver contracts are TBD
+  4. [WARNING] dojang: EAS/Schema Registry contracts are TBD
+[GIWA SDK] Consider using "testnet" for development and testing.
+```
+
 ## Network Information
 
-| Network | Chain ID | RPC URL |
-|---------|----------|---------|
-| Testnet | 91342 | https://sepolia-rpc.giwa.io/ |
-| Mainnet | 91341 | https://rpc.giwa.io/ |
+### Testnet (GIWA Sepolia)
+
+| Property | Value |
+|----------|-------|
+| Chain ID | 91342 |
+| RPC URL | `https://sepolia-rpc.giwa.io` |
+| Flashblocks RPC | `https://sepolia-rpc-flashblocks.giwa.io` |
+| Flashblocks WebSocket | `wss://sepolia-rpc-flashblocks.giwa.io` |
+| Block Explorer | `https://sepolia-explorer.giwa.io` |
+| Currency | ETH |
+
+### Mainnet (Coming Soon)
+
+| Property | Value |
+|----------|-------|
+| Chain ID | 91341 (TBD) |
+| RPC URL | `https://rpc.giwa.io` |
+| Flashblocks RPC | `https://rpc-flashblocks.giwa.io` |
+| Flashblocks WebSocket | `wss://rpc-flashblocks.giwa.io` |
+| Block Explorer | `https://explorer.giwa.io` |
+| Currency | ETH |
+
+> **Note**: Mainnet contracts are not yet deployed. Use `testnet` for development.
 
 ## Security
 
@@ -300,7 +413,7 @@ describe('useGiwaWallet', () => {
 
     await expect(
       result.current.recoverWallet('invalid mnemonic phrase')
-    ).rejects.toThrow('유효하지 않은 복구 구문입니다');
+    ).rejects.toThrow('Invalid recovery phrase.');
   });
 });
 ```

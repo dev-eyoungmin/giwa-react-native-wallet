@@ -12,10 +12,12 @@ export class RNBiometricAuth implements IBiometricAuth {
   private async getKeychain() {
     if (!this.Keychain) {
       try {
-        this.Keychain = require('react-native-keychain');
+        this.Keychain = await import('react-native-keychain');
       } catch (error) {
         throw new GiwaSecurityError(
-          'react-native-keychain을 찾을 수 없습니다. npm install react-native-keychain && cd ios && pod install을 실행해주세요.',
+          'react-native-keychain not found. Please run: npm install react-native-keychain && cd ios && pod install',
+          'DEPENDENCY_NOT_FOUND',
+          undefined,
           error instanceof Error ? error : undefined
         );
       }
@@ -82,14 +84,13 @@ export class RNBiometricAuth implements IBiometricAuth {
       await Keychain.setGenericPassword('test', 'test', {
         service: testService,
         accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET,
-        authenticationType: Keychain.AUTHENTICATION_TYPE.BIOMETRICS,
       });
 
       // Try to access it - this triggers biometric prompt
       const result = await Keychain.getGenericPassword({
         service: testService,
         authenticationPrompt: {
-          title: promptMessage || '인증이 필요합니다',
+          title: promptMessage || 'Authentication required',
         },
       });
 

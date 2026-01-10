@@ -4,43 +4,55 @@ sidebar_position: 3
 
 # Core API
 
-GIWA SDK의 Core 모듈 API 레퍼런스입니다. 이 모듈들은 Hook 외부에서 직접 사용할 수 있습니다.
+API reference for the GIWA SDK Core modules. These modules can be used directly outside of Hooks.
 
 ## GiwaClient
 
-viem 기반 블록체인 클라이언트
+viem-based blockchain client
 
 ```tsx
 import { GiwaClient } from '@giwa/react-native-wallet';
 
 const client = new GiwaClient({
   network: 'testnet',
-  customRpcUrl?: string,
+  endpoints: {
+    rpcUrl: 'https://...', // Custom RPC URL
+    flashblocksRpcUrl: 'https://...', // Custom Flashblocks RPC
+    flashblocksWsUrl: 'wss://...', // Custom Flashblocks WebSocket
+    explorerUrl: 'https://...', // Custom Explorer URL
+  },
+  customContracts: {
+    eas: '0x...', // Override EAS address
+    schemaRegistry: '0x...', // Override Schema Registry
+    ensRegistry: '0x...', // Override ENS Registry
+    ensResolver: '0x...', // Override ENS Resolver
+    l2StandardBridge: '0x...', // Override L2 Bridge
+  },
 });
 ```
 
-### 메서드
+### Methods
 
 ```tsx
-// Public Client (읽기 전용)
+// Public Client (read-only)
 client.getPublicClient(): PublicClient
 
-// Wallet Client (서명 필요)
+// Wallet Client (requires signing)
 client.getWalletClient(privateKey: string): WalletClient
 
-// 네트워크 정보
+// Network information
 client.getNetwork(): NetworkInfo
 
-// 블록 번호
+// Block number
 client.getBlockNumber(): Promise<bigint>
 
-// 잔액 조회
+// Balance query
 client.getBalance(address: string): Promise<bigint>
 
-// 트랜잭션 조회
+// Transaction query
 client.getTransaction(hash: string): Promise<Transaction | null>
 
-// 트랜잭션 영수증
+// Transaction receipt
 client.getTransactionReceipt(hash: string): Promise<TransactionReceipt | null>
 ```
 
@@ -48,7 +60,7 @@ client.getTransactionReceipt(hash: string): Promise<TransactionReceipt | null>
 
 ## WalletManager
 
-지갑 생성 및 관리
+Wallet creation and management
 
 ```tsx
 import { WalletManager } from '@giwa/react-native-wallet';
@@ -56,35 +68,35 @@ import { WalletManager } from '@giwa/react-native-wallet';
 const walletManager = new WalletManager(secureStorage, biometricAuth);
 ```
 
-### 메서드
+### Methods
 
 ```tsx
-// 새 지갑 생성
+// Create new wallet
 walletManager.createWallet(): Promise<{
   address: string;
   mnemonic: string;
 }>
 
-// 니모닉으로 복구
+// Recover from mnemonic
 walletManager.recoverFromMnemonic(mnemonic: string): Promise<{
   address: string;
 }>
 
-// 개인키로 가져오기
+// Import from private key
 walletManager.importFromPrivateKey(privateKey: string): Promise<{
   address: string;
 }>
 
-// 개인키 내보내기 (생체 인증 필요)
+// Export private key (requires biometric authentication)
 walletManager.exportPrivateKey(): Promise<string>
 
-// 현재 지갑 정보
+// Current wallet information
 walletManager.getCurrentWallet(): Promise<WalletInfo | null>
 
-// 지갑 삭제
+// Delete wallet
 walletManager.deleteWallet(): Promise<void>
 
-// 지갑 존재 여부
+// Check if wallet exists
 walletManager.hasWallet(): Promise<boolean>
 ```
 
@@ -92,7 +104,7 @@ walletManager.hasWallet(): Promise<boolean>
 
 ## TokenManager
 
-ERC-20 토큰 관리
+ERC-20 token management
 
 ```tsx
 import { TokenManager } from '@giwa/react-native-wallet';
@@ -100,33 +112,33 @@ import { TokenManager } from '@giwa/react-native-wallet';
 const tokenManager = new TokenManager(publicClient, walletClient);
 ```
 
-### 메서드
+### Methods
 
 ```tsx
-// 토큰 정보 조회
+// Get token information
 tokenManager.getTokenInfo(tokenAddress: string): Promise<TokenInfo>
 
-// 토큰 잔액 조회
+// Get token balance
 tokenManager.getBalance(
   tokenAddress: string,
   ownerAddress: string
 ): Promise<bigint>
 
-// 토큰 전송
+// Transfer tokens
 tokenManager.transfer(
   tokenAddress: string,
   to: string,
   amount: bigint
 ): Promise<string>
 
-// 승인
+// Approve
 tokenManager.approve(
   tokenAddress: string,
   spender: string,
   amount: bigint
 ): Promise<string>
 
-// 승인량 조회
+// Get allowance
 tokenManager.allowance(
   tokenAddress: string,
   owner: string,
@@ -138,7 +150,7 @@ tokenManager.allowance(
 
 ## BridgeManager
 
-L1↔L2 브릿지 관리
+L1↔L2 bridge management
 
 ```tsx
 import { BridgeManager } from '@giwa/react-native-wallet';
@@ -146,10 +158,10 @@ import { BridgeManager } from '@giwa/react-native-wallet';
 const bridgeManager = new BridgeManager(l1Client, l2Client, walletClient);
 ```
 
-### 메서드
+### Methods
 
 ```tsx
-// L1 → L2 입금
+// L1 -> L2 deposit
 bridgeManager.deposit(params: {
   amount: bigint;
   token: 'ETH' | string;
@@ -158,7 +170,7 @@ bridgeManager.deposit(params: {
   estimatedTime: number;
 }>
 
-// L2 → L1 출금
+// L2 -> L1 withdrawal
 bridgeManager.withdraw(params: {
   amount: bigint;
   token: 'ETH' | string;
@@ -167,13 +179,13 @@ bridgeManager.withdraw(params: {
   estimatedTime: number;
 }>
 
-// 입금 상태 조회
+// Get deposit status
 bridgeManager.getDepositStatus(l1TxHash: string): Promise<DepositStatus>
 
-// 출금 상태 조회
+// Get withdrawal status
 bridgeManager.getWithdrawStatus(l2TxHash: string): Promise<WithdrawStatus>
 
-// 수수료 추정
+// Estimate fees
 bridgeManager.estimateFees(params: {
   direction: 'deposit' | 'withdraw';
   amount: bigint;
@@ -185,7 +197,7 @@ bridgeManager.estimateFees(params: {
 
 ## FlashblocksManager
 
-Flashblocks 관리
+Flashblocks management
 
 ```tsx
 import { FlashblocksManager } from '@giwa/react-native-wallet';
@@ -193,10 +205,10 @@ import { FlashblocksManager } from '@giwa/react-native-wallet';
 const flashblocksManager = new FlashblocksManager(client, walletClient);
 ```
 
-### 메서드
+### Methods
 
 ```tsx
-// Flashblocks 트랜잭션 전송
+// Send Flashblocks transaction
 flashblocksManager.sendTransaction(tx: {
   to: string;
   value: bigint;
@@ -206,10 +218,10 @@ flashblocksManager.sendTransaction(tx: {
   result: TransactionResult;
 }>
 
-// 사용 가능 여부
+// Check availability
 flashblocksManager.isAvailable(): boolean
 
-// 평균 지연 시간
+// Get average latency
 flashblocksManager.getAverageLatency(): number
 ```
 
@@ -217,7 +229,7 @@ flashblocksManager.getAverageLatency(): number
 
 ## GiwaIdManager
 
-GIWA ID (ENS) 관리
+GIWA ID (ENS) management
 
 ```tsx
 import { GiwaIdManager } from '@giwa/react-native-wallet';
@@ -225,28 +237,28 @@ import { GiwaIdManager } from '@giwa/react-native-wallet';
 const giwaIdManager = new GiwaIdManager(client);
 ```
 
-### 메서드
+### Methods
 
 ```tsx
-// 이름 → 주소
+// Name -> Address
 giwaIdManager.resolveAddress(name: string): Promise<string | null>
 
-// 주소 → 이름
+// Address -> Name
 giwaIdManager.resolveName(address: string): Promise<string | null>
 
-// 이름 사용 가능 여부
+// Check name availability
 giwaIdManager.isNameAvailable(name: string): Promise<boolean>
 
-// 이름 등록
+// Register name
 giwaIdManager.register(
   name: string,
   duration: number
 ): Promise<{ txHash: string }>
 
-// 프로필 조회
+// Get profile
 giwaIdManager.getProfile(name: string): Promise<Profile>
 
-// 프로필 설정
+// Set profile
 giwaIdManager.setProfile(profile: Partial<Profile>): Promise<string>
 ```
 
@@ -254,7 +266,7 @@ giwaIdManager.setProfile(profile: Partial<Profile>): Promise<string>
 
 ## DojangManager
 
-Dojang 증명 관리
+Dojang attestation management
 
 ```tsx
 import { DojangManager } from '@giwa/react-native-wallet';
@@ -262,23 +274,23 @@ import { DojangManager } from '@giwa/react-native-wallet';
 const dojangManager = new DojangManager(client);
 ```
 
-### 메서드
+### Methods
 
 ```tsx
-// 증명 조회
+// Get attestation
 dojangManager.getAttestation(id: string): Promise<Attestation>
 
-// 증명 목록 조회
+// Get attestation list
 dojangManager.getAttestations(filter: {
   recipient?: string;
   attester?: string;
   schemaId?: string;
 }): Promise<Attestation[]>
 
-// 증명 검증
+// Verify attestation
 dojangManager.verifyAttestation(id: string): Promise<boolean>
 
-// 증명 생성 (발급자만)
+// Create attestation (issuer only)
 dojangManager.createAttestation(params: {
   schemaId: string;
   recipient: string;
@@ -287,7 +299,7 @@ dojangManager.createAttestation(params: {
   revocable?: boolean;
 }): Promise<{ attestationId: string; txHash: string }>
 
-// 증명 취소 (발급자만)
+// Revoke attestation (issuer only)
 dojangManager.revokeAttestation(id: string): Promise<string>
 ```
 
@@ -295,41 +307,88 @@ dojangManager.revokeAttestation(id: string): Promise<string>
 
 ## AdapterFactory
 
-어댑터 팩토리
+Adapter factory
 
 ```tsx
 import { AdapterFactory, getAdapterFactory } from '@giwa/react-native-wallet';
 
-// 싱글톤 인스턴스
+// Singleton instance
 const factory = getAdapterFactory();
 
-// 또는 직접 생성
+// Or create directly
 const factory = new AdapterFactory({
   forceEnvironment?: 'expo' | 'react-native',
 });
 ```
 
-### 메서드
+### Methods
 
 ```tsx
-// 환경 감지
+// Detect environment
 factory.detectEnvironment(): 'expo' | 'react-native'
 
-// 어댑터 생성
+// Create adapters
 factory.createAdapters(): Promise<Adapters>
 
-// 개별 어댑터
+// Individual adapters
 factory.getSecureStorage(): ISecureStorage
 factory.getBiometricAuth(): IBiometricAuth
-factory.getClipboard(): IClipboard
 ```
 
-### Adapters 타입
+### Adapters Type
 
 ```tsx
 interface Adapters {
   secureStorage: ISecureStorage;
   biometricAuth: IBiometricAuth;
-  clipboard: IClipboard;
 }
+```
+
+---
+
+## Default Contract Addresses
+
+The SDK uses OP Stack standard predeploy addresses by default. These can be overridden via `customContracts` in `GiwaConfig`.
+
+### OP Stack Standard Addresses
+
+| Contract | Address | Description |
+|----------|---------|-------------|
+| EAS | `0x4200000000000000000000000000000000000021` | Ethereum Attestation Service (Dojang) |
+| Schema Registry | `0x4200000000000000000000000000000000000020` | EAS Schema Registry |
+| L2 Standard Bridge | `0x4200000000000000000000000000000000000010` | L2 Bridge for ETH/ERC-20 withdrawals |
+| WETH | `0x4200000000000000000000000000000000000006` | Wrapped ETH |
+
+### CustomContracts Type
+
+```tsx
+interface CustomContracts {
+  eas?: Address;           // EAS contract address
+  schemaRegistry?: Address; // Schema Registry address
+  ensRegistry?: Address;    // ENS Registry address
+  ensResolver?: Address;    // ENS Resolver address
+  l2StandardBridge?: Address; // L2 Standard Bridge address
+  l1StandardBridge?: Address; // L1 Standard Bridge address
+  weth?: Address;           // WETH address
+}
+```
+
+### Usage Example
+
+```tsx
+import { GiwaProvider } from '@giwa/react-native-wallet';
+
+// Override specific contract addresses
+<GiwaProvider
+  config={{
+    network: 'testnet',
+    customContracts: {
+      // Only override what you need
+      eas: '0xYourCustomEASAddress',
+      ensRegistry: '0xYourCustomENSRegistry',
+    },
+  }}
+>
+  <App />
+</GiwaProvider>
 ```

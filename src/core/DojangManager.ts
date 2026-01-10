@@ -5,7 +5,8 @@ import {
 } from 'viem';
 import type { GiwaClient } from './GiwaClient';
 import type { Attestation, AttestationType } from '../types';
-import { getContractAddresses, DOJANG_SCHEMAS } from '../constants/contracts';
+import { DOJANG_SCHEMAS } from '../constants/contracts';
+import { safeLog } from '../utils/errors';
 
 // EAS ABI (simplified)
 const EAS_ABI = [
@@ -97,8 +98,7 @@ export class DojangManager {
    */
   async getAttestation(uid: Hex): Promise<Attestation | null> {
     const publicClient = this.client.getPublicClient();
-    const network = this.client.getNetwork();
-    const contracts = getContractAddresses(network);
+    const contracts = this.client.getContractAddresses();
 
     try {
       const rawAttestation = await publicClient.readContract({
@@ -130,7 +130,8 @@ export class DojangManager {
         revocable: attestation.revocable,
         revoked: attestation.revocationTime > 0n,
       };
-    } catch {
+    } catch (err) {
+      safeLog('DojangManager.getAttestation', err);
       return null;
     }
   }
@@ -141,8 +142,7 @@ export class DojangManager {
    */
   async isAttestationValid(uid: Hex): Promise<boolean> {
     const publicClient = this.client.getPublicClient();
-    const network = this.client.getNetwork();
-    const contracts = getContractAddresses(network);
+    const contracts = this.client.getContractAddresses();
 
     try {
       const isValid = await publicClient.readContract({
@@ -153,7 +153,8 @@ export class DojangManager {
       });
 
       return isValid as boolean;
-    } catch {
+    } catch (err) {
+      safeLog('DojangManager.isAttestationValid', err);
       return false;
     }
   }
@@ -208,7 +209,8 @@ export class DojangManager {
         balance: decoded[0] as bigint,
         timestamp: decoded[1] as bigint,
       };
-    } catch {
+    } catch (err) {
+      safeLog('DojangManager.getVerifiedBalance', err);
       return null;
     }
   }
@@ -242,8 +244,7 @@ export class DojangManager {
     revocable: boolean;
   } | null> {
     const publicClient = this.client.getPublicClient();
-    const network = this.client.getNetwork();
-    const contracts = getContractAddresses(network);
+    const contracts = this.client.getContractAddresses();
 
     try {
       const schema = await publicClient.readContract({
@@ -260,7 +261,8 @@ export class DojangManager {
         schema: result.schema,
         revocable: result.revocable,
       };
-    } catch {
+    } catch (err) {
+      safeLog('DojangManager.getSchema', err);
       return null;
     }
   }

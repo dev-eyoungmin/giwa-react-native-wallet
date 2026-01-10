@@ -7,6 +7,11 @@ import {
 import type { GiwaClient } from './GiwaClient';
 import type { Token, TokenBalance, TransactionResult } from '../types';
 import { GiwaTransactionError } from '../utils/errors';
+import {
+  validateTokenAddress,
+  validateAndChecksumAddress,
+  validateSpenderAddress,
+} from '../utils/validation';
 
 /**
  * Token Manager - handles ERC-20 token operations
@@ -114,19 +119,33 @@ export class TokenManager {
     to: Address,
     amount: string
   ): Promise<TransactionResult> {
+    // Validate inputs
+    const validatedTokenAddress = validateTokenAddress(tokenAddress);
+    const validatedRecipient = validateAndChecksumAddress(to, 'recipient');
+
     const walletClient = this.client.getWalletClient();
     if (!walletClient) {
-      throw new GiwaTransactionError('지갑이 연결되지 않았습니다.');
+      throw new GiwaTransactionError('Wallet is not connected.');
     }
 
-    const token = await this.getToken(tokenAddress);
+    const token = await this.getToken(validatedTokenAddress);
+
+    // Validate amount
+    if (!amount || amount.trim() === '') {
+      throw new GiwaTransactionError('Transfer amount is required', 'INVALID_AMOUNT');
+    }
+
     const amountInWei = parseUnits(amount, token.decimals);
 
+    if (amountInWei <= 0n) {
+      throw new GiwaTransactionError('Transfer amount must be greater than zero', 'INVALID_AMOUNT');
+    }
+
     const hash = await walletClient.writeContract({
-      address: tokenAddress,
+      address: validatedTokenAddress,
       abi: erc20Abi,
       functionName: 'transfer',
-      args: [to, amountInWei],
+      args: [validatedRecipient, amountInWei],
     });
 
     const publicClient = this.client.getPublicClient();
@@ -156,19 +175,29 @@ export class TokenManager {
     spender: Address,
     amount: string
   ): Promise<TransactionResult> {
+    // Validate inputs
+    const validatedTokenAddress = validateTokenAddress(tokenAddress);
+    const validatedSpender = validateSpenderAddress(spender);
+
     const walletClient = this.client.getWalletClient();
     if (!walletClient) {
-      throw new GiwaTransactionError('지갑이 연결되지 않았습니다.');
+      throw new GiwaTransactionError('Wallet is not connected.');
     }
 
-    const token = await this.getToken(tokenAddress);
+    const token = await this.getToken(validatedTokenAddress);
+
+    // Validate amount
+    if (!amount || amount.trim() === '') {
+      throw new GiwaTransactionError('Approve amount is required', 'INVALID_AMOUNT');
+    }
+
     const amountInWei = parseUnits(amount, token.decimals);
 
     const hash = await walletClient.writeContract({
-      address: tokenAddress,
+      address: validatedTokenAddress,
       abi: erc20Abi,
       functionName: 'approve',
-      args: [spender, amountInWei],
+      args: [validatedSpender, amountInWei],
     });
 
     const publicClient = this.client.getPublicClient();

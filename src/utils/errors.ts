@@ -12,9 +12,17 @@ export class GiwaError extends Error {
 }
 
 export class GiwaSecurityError extends GiwaError {
-  constructor(message: string, cause?: Error) {
-    super(message, 'SECURITY_ERROR', cause);
+  public readonly details?: Record<string, unknown>;
+
+  constructor(
+    message: string,
+    code: string = 'SECURITY_ERROR',
+    details?: Record<string, unknown>,
+    cause?: Error
+  ) {
+    super(message, code, cause);
     this.name = 'GiwaSecurityError';
+    this.details = details;
     Object.setPrototypeOf(this, GiwaSecurityError.prototype);
   }
 }
@@ -36,10 +44,26 @@ export class GiwaWalletError extends GiwaError {
 }
 
 export class GiwaTransactionError extends GiwaError {
-  constructor(message: string, cause?: Error) {
-    super(message, 'TRANSACTION_ERROR', cause);
+  constructor(message: string, code: string = 'TRANSACTION_ERROR', cause?: Error) {
+    super(message, code, cause);
     this.name = 'GiwaTransactionError';
     Object.setPrototypeOf(this, GiwaTransactionError.prototype);
+  }
+}
+
+export class GiwaFeatureUnavailableError extends GiwaError {
+  public readonly feature: string;
+  public readonly network: string;
+
+  constructor(feature: string, network: string, reason?: string) {
+    const message = reason
+      ? `Feature "${feature}" is not available on ${network}: ${reason}`
+      : `Feature "${feature}" is not available on ${network}`;
+    super(message, 'FEATURE_UNAVAILABLE');
+    this.name = 'GiwaFeatureUnavailableError';
+    this.feature = feature;
+    this.network = network;
+    Object.setPrototypeOf(this, GiwaFeatureUnavailableError.prototype);
   }
 }
 
@@ -50,6 +74,10 @@ export const ErrorCodes = {
   BIOMETRIC_NOT_AVAILABLE: 'BIOMETRIC_NOT_AVAILABLE',
   BIOMETRIC_NOT_ENROLLED: 'BIOMETRIC_NOT_ENROLLED',
   BIOMETRIC_FAILED: 'BIOMETRIC_FAILED',
+  RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
+  INVALID_RPC_URL: 'INVALID_RPC_URL',
+  INVALID_ADDRESS: 'INVALID_ADDRESS',
+  INVALID_AMOUNT: 'INVALID_AMOUNT',
 
   // Wallet
   WALLET_NOT_FOUND: 'WALLET_NOT_FOUND',
@@ -69,6 +97,11 @@ export const ErrorCodes = {
   // Bridge
   BRIDGE_DEPOSIT_FAILED: 'BRIDGE_DEPOSIT_FAILED',
   BRIDGE_WITHDRAW_FAILED: 'BRIDGE_WITHDRAW_FAILED',
+
+  // Network
+  FEATURE_UNAVAILABLE: 'FEATURE_UNAVAILABLE',
+  NETWORK_NOT_READY: 'NETWORK_NOT_READY',
+  TBD_CONTRACT: 'TBD_CONTRACT',
 } as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
@@ -144,6 +177,11 @@ export const ErrorMessages = {
   // General
   INITIALIZATION_FAILED: 'Initialization failed.',
   UNKNOWN_ERROR: 'Unknown error occurred.',
+
+  // Network/Feature
+  FEATURE_UNAVAILABLE: 'This feature is not available on the current network.',
+  NETWORK_NOT_READY: 'The selected network is not ready for use.',
+  TBD_CONTRACT: 'Contract address is not yet deployed (TBD).',
 } as const;
 
 export type ErrorMessage = (typeof ErrorMessages)[keyof typeof ErrorMessages];
@@ -170,3 +208,83 @@ export function wrapError(
   const cause = err instanceof Error ? err : undefined;
   return new ErrorClass(message, cause);
 }
+
+/**
+ * Sensitive data patterns to filter from error messages
+ */
+const SENSITIVE_PATTERNS = [
+  // Private keys (64 hex characters with optional 0x prefix)
+  /\b(0x)?[a-fA-F0-9]{64}\b/g,
+  // Mnemonic phrases (12 or 24 word sequences)
+  /\b(\w+\s+){11,23}\w+\b/g,
+  // API keys/tokens (common patterns)
+  /\b(api[_-]?key|token|secret|password|auth)[\s:=]*['"]?[\w\-._]+['"]?/gi,
+] as const;
+
+/**
+ * Sanitize error message by removing sensitive data
+ * @param error - The error to sanitize
+ * @returns Sanitized error message
+ */
+export function sanitizeError(error: Error): string {
+  let message = error.message;
+
+  for (const pattern of SENSITIVE_PATTERNS) {
+    message = message.replace(pattern, '[REDACTED]');
+  }
+
+  return message;
+}
+
+/**
+ * Safe logging function that sanitizes sensitive data
+ * @param context - Context/label for the log
+ * @param error - The error to log
+ */
+export function safeLog(context: string, error: unknown): void {
+  // In development, show full error for debugging
+  if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    console.error(`${context}:`, error);
+    return;
+  }
+
+  // In production, sanitize the error
+  const sanitized =
+    error instanceof Error ? sanitizeError(error) : 'Unknown error';
+  console.error(`${context}: ${sanitized}`);
+}
+
+/**
+ * Create a safe error object for external reporting
+ * Removes stack traces and sensitive data
+ * @param error - The error to sanitize
+ * @returns Safe error object
+ */
+export function createSafeError(error: unknown): {
+  message: string;
+  code?: string;
+  name: string;
+} {
+  if (error instanceof GiwaError) {
+    return {
+      name: error.name,
+      message: sanitizeError(error),
+      code: error.code,
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: sanitizeError(error),
+    };
+  }
+
+  return {
+    name: 'UnknownError',
+    message: 'An unknown error occurred',
+  };
+}
+
+// Declare __DEV__ for React Native environment
+declare const __DEV__: boolean;
