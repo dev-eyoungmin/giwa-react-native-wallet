@@ -18,13 +18,25 @@ GIWA Chain SDK for React Native - Expo and React Native CLI compatible
 ### Expo
 
 ```bash
+# Expo는 프로젝트의 패키지 매니저를 자동 감지합니다
 npx expo install @giwa/react-native-wallet expo-secure-store
 ```
 
 ### React Native CLI
 
 ```bash
+# npm
 npm install @giwa/react-native-wallet react-native-keychain
+
+# yarn
+yarn add @giwa/react-native-wallet react-native-keychain
+
+# pnpm
+pnpm add @giwa/react-native-wallet react-native-keychain
+```
+
+```bash
+# iOS 설정
 cd ios && pod install
 ```
 
