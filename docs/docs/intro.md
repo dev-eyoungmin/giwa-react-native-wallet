@@ -71,3 +71,4 @@ function WalletScreen() {
 - Get started with [Installation Guide](/docs/getting-started/installation)
 - Learn about [Wallet Management](/docs/guides/wallet-management)
 - Check all Hooks in [API Reference](/docs/api/hooks)
+# Trigger rebuild
