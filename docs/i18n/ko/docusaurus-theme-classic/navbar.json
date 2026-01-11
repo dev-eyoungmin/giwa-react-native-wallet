@@ -7,9 +7,9 @@
     "message": "GIWA 로고",
     "description": "The alt text of logo image"
   },
-  "item.label.문서": {
+  "item.label.Docs": {
     "message": "문서",
-    "description": "Navbar item with label 문서"
+    "description": "Navbar item with label Docs"
   },
   "item.label.GitHub": {
     "message": "GitHub",

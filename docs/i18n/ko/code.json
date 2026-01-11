@@ -1,7 +1,43 @@
 {
+  "homepage.hero.badge": {
+    "message": "GIWA Chain을 위한 React Native SDK",
+    "description": "Badge text in hero section"
+  },
+  "homepage.hero.title": {
+    "message": "GIWA Chain",
+    "description": "Hero title first line"
+  },
+  "homepage.hero.titleHighlight": {
+    "message": "Mobile SDK",
+    "description": "Hero title highlighted part"
+  },
+  "homepage.hero.subtitle": {
+    "message": "GIWA Chain을 위한 React Native SDK. Flashblocks, GIWA ID, Dojang, L1↔L2 Bridge로 모바일 dApp을 개발하세요.",
+    "description": "Hero subtitle text"
+  },
   "homepage.getStarted": {
     "message": "시작하기",
     "description": "The get started button text on homepage"
+  },
+  "homepage.stats.confirmation": {
+    "message": "사전확인",
+    "description": "Preconfirmation stat label"
+  },
+  "homepage.stats.hooks": {
+    "message": "React Hooks",
+    "description": "React Hooks stat label"
+  },
+  "homepage.stats.typescript": {
+    "message": "TypeScript",
+    "description": "TypeScript stat label"
+  },
+  "homepage.features.title": {
+    "message": "GIWA Chain 기능",
+    "description": "Features section title"
+  },
+  "homepage.features.subtitle": {
+    "message": "React Native를 위한 GIWA Chain의 모든 기능을 하나의 SDK로",
+    "description": "Features section subtitle"
   },
   "homepage.feature.easyInstall.title": {
     "message": "간편한 설치",
@@ -12,19 +48,19 @@
     "description": "Description of the easy install feature"
   },
   "homepage.feature.secureWallet.title": {
-    "message": "안전한 지갑",
+    "message": "안전한 저장소",
     "description": "Title of the secure wallet feature"
   },
   "homepage.feature.secureWallet.description": {
-    "message": "iOS Keychain, Android Keystore를 활용한 OS 레벨 보안 저장소.",
+    "message": "iOS Keychain과 Android Keystore를 활용한 하드웨어 기반 보안.",
     "description": "Description of the secure wallet feature"
   },
   "homepage.feature.fastTx.title": {
-    "message": "빠른 트랜잭션",
+    "message": "Flashblocks",
     "description": "Title of the fast transactions feature"
   },
   "homepage.feature.fastTx.description": {
-    "message": "Flashblocks로 ~200ms 내 트랜잭션 사전 확인.",
+    "message": "~200ms의 초고속 사전확인으로 즉각적인 트랜잭션 피드백.",
     "description": "Description of the fast transactions feature"
   },
   "homepage.feature.giwaId.title": {
@@ -32,7 +68,7 @@
     "description": "Title of the GIWA ID feature"
   },
   "homepage.feature.giwaId.description": {
-    "message": "ENS 기반 네이밍 서비스. alice.giwa.id로 간편하게.",
+    "message": "alice.giwa.id 같은 ENS 기반의 사람이 읽을 수 있는 주소.",
     "description": "Description of the GIWA ID feature"
   },
   "homepage.feature.bridge.title": {
@@ -40,16 +76,64 @@
     "description": "Title of the bridge feature"
   },
   "homepage.feature.bridge.description": {
-    "message": "이더리움과 GIWA Chain 간 자산 이동.",
+    "message": "이더리움과 GIWA Chain 간의 원활한 자산 이동.",
     "description": "Description of the bridge feature"
   },
   "homepage.feature.typescript.title": {
-    "message": "TypeScript",
+    "message": "TypeScript 네이티브",
     "description": "Title of the TypeScript feature"
   },
   "homepage.feature.typescript.description": {
-    "message": "완벽한 타입 지원으로 안전한 개발 경험.",
+    "message": "완벽한 TypeScript 정의로 완전한 타입 안전성 제공.",
     "description": "Description of the TypeScript feature"
+  },
+  "homepage.code.title": {
+    "message": "간단하고 직관적인 API",
+    "description": "Code section title"
+  },
+  "homepage.code.description": {
+    "message": "몇 줄의 코드만으로 시작하세요. 지갑, Flashblocks, GIWA ID, Dojang 등을 위한 React Hooks 제공.",
+    "description": "Code section description"
+  },
+  "homepage.code.feature1": {
+    "message": "모든 기능을 위한 React Hooks",
+    "description": "Code feature 1"
+  },
+  "homepage.code.feature2": {
+    "message": "자동 상태 관리",
+    "description": "Code feature 2"
+  },
+  "homepage.code.feature3": {
+    "message": "내장된 에러 처리",
+    "description": "Code feature 3"
+  },
+  "homepage.code.feature4": {
+    "message": "TypeScript 지원",
+    "description": "Code feature 4"
+  },
+  "homepage.install.title": {
+    "message": "빠른 설치",
+    "description": "Install section title"
+  },
+  "homepage.install.subtitle": {
+    "message": "플랫폼을 선택하고 몇 초 만에 시작하세요",
+    "description": "Install section subtitle"
+  },
+  "homepage.cta.title": {
+    "message": "GIWA Chain에서 개발할 준비가 되셨나요?",
+    "description": "CTA section title"
+  },
+  "homepage.cta.description": {
+    "message": "지금 바로 GIWA Chain 모바일 dApp 개발을 시작하세요.",
+    "description": "CTA section description"
+  },
+  "homepage.cta.docs": {
+    "message": "문서 보기",
+    "description": "CTA docs button"
+  },
+  "homepage.cta.github": {
+    "message": "GitHub에서 보기",
+    "description": "CTA GitHub button"
   },
   "homepage.quickStart.title": {
     "message": "빠른 시작",

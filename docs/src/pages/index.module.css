@@ -202,6 +202,7 @@
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 1rem;
+  color: var(--ifm-font-color-base);
 }
 
 .sectionSubtitle {
@@ -249,6 +250,7 @@
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
+  color: var(--ifm-font-color-base);
 }
 
 .featureDescription {
@@ -276,6 +278,7 @@
   font-size: 2rem;
   font-weight: 700;
   margin-bottom: 1rem;
+  color: var(--ifm-font-color-base);
 }
 
 .codeDescription {
@@ -297,6 +300,7 @@
   gap: 0.75rem;
   padding: 0.5rem 0;
   font-size: 1rem;
+  color: var(--ifm-font-color-base);
 }
 
 .checkIcon {
@@ -394,10 +398,59 @@
 .installCardHeader h3 {
   margin: 0;
   font-size: 1.25rem;
+  color: var(--ifm-font-color-base);
 }
 
 .installIcon {
   font-size: 1.5rem;
+}
+
+.installIconSvg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ifm-font-color-base);
+}
+
+.installIconSvg svg {
+  fill: currentColor;
+}
+
+.installCommands {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.installCommandRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #1e1e2e;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+}
+
+.packageManager {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  padding: 0.25rem 0.5rem;
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.installCommandRow code {
+  color: #a6e3a1;
+  font-size: 0.8rem;
+  background: transparent;
+  white-space: nowrap;
 }
 
 .installCommand {

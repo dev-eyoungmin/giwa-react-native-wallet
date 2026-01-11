@@ -5,7 +5,7 @@ import { themes as prismThemes } from 'prism-react-renderer';
 const config = {
   title: 'GIWA React Native SDK',
   tagline: 'GIWA Chain SDK for React Native - Expo and React Native CLI compatible',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon.svg',
 
   // GitHub Pages URL 설정
   url: 'https://dev-eyoungmin.github.io',
@@ -21,11 +21,11 @@ const config = {
   onBrokenMarkdownLinks: 'warn',
 
   i18n: {
-    defaultLocale: 'ko',
-    locales: ['ko', 'en'],
+    defaultLocale: 'en',
+    locales: ['en', 'ko'],
     localeConfigs: {
-      ko: { label: '한국어' },
       en: { label: 'English' },
+      ko: { label: '한국어' },
     },
   },
 
@@ -61,7 +61,7 @@ const config = {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar',
             position: 'left',
-            label: '문서',
+            label: 'Docs',
           },
           {
             href: 'https://github.com/dev-eyoungmin/giwa-react-native-wallet',
@@ -78,29 +78,27 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: '문서',
+            title: 'Docs',
             items: [
-              { label: '시작하기', to: '/docs' },
-              { label: 'API 레퍼런스', to: '/docs/api/hooks' },
+              { label: 'Getting Started', to: '/docs' },
+              { label: 'API Reference', to: '/docs/api/hooks' },
             ],
           },
           {
-            title: '커뮤니티',
+            title: 'Community',
             items: [
               { label: 'GitHub', href: 'https://github.com/dev-eyoungmin/giwa-react-native-wallet' },
-              { label: 'Discord', href: 'https://discord.gg/giwa' },
             ],
           },
           {
-            title: '더 보기',
+            title: 'More',
             items: [
               { label: 'GIWA Chain', href: 'https://giwa.io' },
-              { label: 'GIWA 공식 문서', href: 'https://docs.giwa.io' },
-              { label: 'npm', href: 'https://www.npmjs.com/package/@giwa/react-native-wallet' },
+              { label: 'GIWA Official Docs', href: 'https://docs.giwa.io' },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} GIWA. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Youngmin Lee. Built with Docusaurus.`,
       },
       prism: {
         theme: prismThemes.github,

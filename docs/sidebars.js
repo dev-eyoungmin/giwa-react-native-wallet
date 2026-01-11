@@ -4,7 +4,7 @@ const sidebars = {
     'intro',
     {
       type: 'category',
-      label: '시작하기',
+      label: 'Getting Started',
       items: [
         'getting-started/installation',
         'getting-started/expo-setup',
@@ -14,7 +14,7 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: '가이드',
+      label: 'Guides',
       items: [
         'guides/wallet-management',
         'guides/transactions',
@@ -28,7 +28,7 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: 'API 레퍼런스',
+      label: 'API Reference',
       items: [
         'api/hooks',
         'api/components',
@@ -38,12 +38,19 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: '테스트',
+      label: 'Testing',
       items: [
         'testing/setup',
         'testing/unit-tests',
         'testing/integration-tests',
         'testing/e2e-tests',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Concepts',
+      items: [
+        'concepts/blockchain-fundamentals',
       ],
     },
   ],

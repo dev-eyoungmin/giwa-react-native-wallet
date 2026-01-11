@@ -112,14 +112,7 @@ th {
   background-color: rgba(99, 102, 241, 0.2);
 }
 
-/* Footer */
-.footer {
-  background-color: var(--ifm-color-emphasis-100);
-}
-
-[data-theme='dark'] .footer {
-  background-color: var(--ifm-background-surface-color);
-}
+/* Footer - dark style 유지 */
 
 /* Navbar */
 .navbar {
