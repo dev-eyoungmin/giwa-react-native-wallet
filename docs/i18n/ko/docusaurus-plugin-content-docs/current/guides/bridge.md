@@ -2,9 +2,15 @@
 sidebar_position: 4
 ---
 
-# L1↔L2 Bridge
+# L2→L1 Bridge
 
-이 가이드에서는 이더리움 메인넷(L1)과 GIWA Chain(L2) 간 자산 전송 방법을 설명합니다.
+이 가이드에서는 GIWA Chain(L2)에서 이더리움 메인넷(L1)으로 자산을 출금하는 방법을 설명합니다.
+
+:::info L1→L2 Deposit
+이더리움에서 GIWA Chain으로 입금하려면 공식 [GIWA Superbridge](https://superbridge.app)를 사용하세요.
+
+참고: [GIWA Bridge 문서](https://docs.giwa.io/tools/bridges)
+:::
 
 ## useBridge Hook
 
@@ -13,11 +19,10 @@ import { useBridge } from '@giwa/react-native-wallet';
 
 function BridgeScreen() {
   const {
-    deposit,           // L1 → L2 deposit
-    withdraw,          // L2 → L1 withdrawal
-    getDepositStatus,  // Get deposit status
-    getWithdrawStatus, // Get withdrawal status
-    estimateFees,      // Estimate fees
+    withdrawETH,       // L2 → L1 ETH 출금
+    withdrawToken,     // L2 → L1 토큰 출금
+    getPendingTransactions,
+    getEstimatedWithdrawalTime,
     isLoading,
   } = useBridge();
 
@@ -25,227 +30,142 @@ function BridgeScreen() {
 }
 ```
 
-## L1 → L2 Deposit
+## ETH Withdrawal
 
-이더리움 메인넷에서 GIWA Chain으로 자산 전송:
-
-```tsx
-const handleDeposit = async () => {
-  try {
-    const result = await deposit({
-      amount: '0.1',     // ETH unit
-      token: 'ETH',      // Or token address
-    });
-
-    console.log('L1 TX:', result.l1TxHash);
-    console.log('Estimated completion time:', result.estimatedTime);
-
-    // Deposits take approximately 10-15 minutes
-  } catch (error) {
-    console.error('Deposit failed:', error.message);
-  }
-};
-```
-
-## L2 → L1 Withdrawal
-
-GIWA Chain에서 이더리움 메인넷으로 자산 전송:
+GIWA Chain에서 이더리움 메인넷으로 ETH 전송:
 
 ```tsx
-const handleWithdraw = async () => {
+const handleWithdrawETH = async () => {
   try {
-    const result = await withdraw({
-      amount: '0.1',
-      token: 'ETH',
-    });
+    const { hash, wait } = await withdrawETH('0.1'); // 0.1 ETH
 
-    console.log('L2 TX:', result.l2TxHash);
-    console.log('Estimated completion time:', result.estimatedTime);
+    console.log('L2 TX Hash:', hash);
 
-    // Withdrawals take approximately 7 days due to Challenge Period
+    // 확인 대기
+    const receipt = await wait();
+    console.log('Confirmed in block:', receipt.blockNumber);
+
+    // 참고: Challenge Period로 인해 전체 출금에 약 7일 소요
   } catch (error) {
     console.error('Withdrawal failed:', error.message);
   }
 };
 ```
 
-:::info Challenge Period
-L2 → L1 출금은 보안상의 이유로 약 7일의 Challenge Period가 필요합니다. 이 기간 동안 검증자들이 출금 요청의 유효성을 검증합니다.
+### Withdraw to Different Address
+
+```tsx
+// 특정 L1 주소로 출금
+const { hash } = await withdrawETH('0.1', '0x1234...abcd');
+```
+
+## Token Withdrawal
+
+GIWA Chain에서 이더리움 메인넷으로 ERC-20 토큰 전송:
+
+```tsx
+const handleWithdrawToken = async () => {
+  const l2TokenAddress = '0x...'; // L2 토큰 주소
+  const amount = 100000000000000000000n; // 100 토큰 (wei 단위)
+
+  try {
+    const { hash, wait } = await withdrawToken(l2TokenAddress, amount);
+
+    console.log('L2 TX Hash:', hash);
+
+    const receipt = await wait();
+    console.log('Confirmed:', receipt.status);
+  } catch (error) {
+    console.error('Withdrawal failed:', error.message);
+  }
+};
+```
+
+## Challenge Period
+
+:::warning 7일 대기 기간
+L2 → L1 출금은 보안상의 이유로 약 **7일**의 Challenge Period가 필요합니다. 이 기간 동안 검증자들이 출금 요청의 유효성을 검증합니다.
+
+이는 OP Stack 아키텍처의 보안 기능이며, 이 SDK의 제한 사항이 아닙니다.
 :::
 
-## Fee Estimation
-
 ```tsx
-const checkFees = async () => {
-  const fees = await estimateFees({
-    direction: 'deposit', // 'deposit' | 'withdraw'
-    amount: '0.1',
-    token: 'ETH',
-  });
-
-  console.log('L1 gas fee:', fees.l1GasFee);
-  console.log('L2 gas fee:', fees.l2GasFee);
-  console.log('Total estimated fee:', fees.totalFee);
-};
+// 예상 출금 시간(초) 조회
+const time = getEstimatedWithdrawalTime();
+console.log('Estimated time:', time / 86400, 'days'); // ~7 days
 ```
 
-## Status Check
+## Pending Transactions
 
-### Deposit Status
-
-```tsx
-const checkDepositStatus = async (l1TxHash: string) => {
-  const status = await getDepositStatus(l1TxHash);
-
-  switch (status.state) {
-    case 'pending':
-      console.log('Processing on L1...');
-      break;
-    case 'l1_confirmed':
-      console.log('L1 confirmed, waiting for L2...');
-      break;
-    case 'completed':
-      console.log('Complete! L2 TX:', status.l2TxHash);
-      break;
-    case 'failed':
-      console.log('Failed:', status.error);
-      break;
-  }
-};
-```
-
-### Withdrawal Status
+대기 중인 브릿지 트랜잭션 추적:
 
 ```tsx
-const checkWithdrawStatus = async (l2TxHash: string) => {
-  const status = await getWithdrawStatus(l2TxHash);
+const pendingTxs = getPendingTransactions();
 
-  switch (status.state) {
-    case 'pending':
-      console.log('Processing on L2...');
-      break;
-    case 'waiting_for_proof':
-      console.log('Waiting for proof...');
-      break;
-    case 'ready_to_prove':
-      console.log('Ready to prove');
-      break;
-    case 'in_challenge':
-      console.log('In Challenge period...', status.remainingTime);
-      break;
-    case 'ready_to_finalize':
-      console.log('Ready to finalize');
-      break;
-    case 'completed':
-      console.log('Complete! L1 TX:', status.l1TxHash);
-      break;
-  }
-};
+pendingTxs.forEach((tx) => {
+  console.log('Hash:', tx.l2TxHash);
+  console.log('Amount:', tx.amount);
+  console.log('Status:', tx.status);
+});
 ```
 
-## ERC-20 Token Bridge
-
-```tsx
-// L1 → L2 token deposit
-const depositToken = async () => {
-  const tokenAddress = '0x...'; // L1 token address
-
-  // First, approve tokens to bridge contract
-  await approveToken(tokenAddress, BRIDGE_ADDRESS, '100');
-
-  const result = await deposit({
-    amount: '100',
-    token: tokenAddress,
-  });
-};
-
-// L2 → L1 token withdrawal
-const withdrawToken = async () => {
-  const l2TokenAddress = '0x...'; // L2 token address
-
-  const result = await withdraw({
-    amount: '100',
-    token: l2TokenAddress,
-  });
-};
-```
-
-## Complete Example: Bridge Screen
+## Complete Example
 
 ```tsx
 import { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, SegmentedButtons } from 'react-native';
+import { View, Text, TextInput, Button, Alert, Linking } from 'react-native';
 import { useBridge, useBalance } from '@giwa/react-native-wallet';
 
 export function BridgeScreen() {
-  const [direction, setDirection] = useState<'deposit' | 'withdraw'>('deposit');
   const [amount, setAmount] = useState('');
+  const { withdrawETH, getEstimatedWithdrawalTime, isLoading } = useBridge();
+  const { formattedBalance } = useBalance();
 
-  const { deposit, withdraw, estimateFees, isLoading } = useBridge();
-  const { formattedBalance: l2Balance } = useBalance();
-
-  const handleBridge = async () => {
+  const handleWithdraw = async () => {
     if (!amount) return;
 
-    try {
-      // Check fees
-      const fees = await estimateFees({ direction, amount, token: 'ETH' });
+    const days = Math.round(getEstimatedWithdrawalTime() / 86400);
 
-      Alert.alert(
-        'Fee Confirmation',
-        `Estimated fee: ${fees.totalFee} ETH\nDo you want to proceed?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Confirm',
-            onPress: async () => {
-              if (direction === 'deposit') {
-                const result = await deposit({ amount, token: 'ETH' });
-                Alert.alert('Deposit Started', `TX: ${result.l1TxHash}`);
-              } else {
-                const result = await withdraw({ amount, token: 'ETH' });
-                Alert.alert(
-                  'Withdrawal Started',
-                  `TX: ${result.l2TxHash}\n\nWithdrawals take approximately 7 days.`
-                );
-              }
-            },
+    Alert.alert(
+      'Confirm Withdrawal',
+      `${amount} ETH를 L1으로 출금하시겠습니까?\n\n약 ${days}일이 소요됩니다.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: async () => {
+            try {
+              const { hash } = await withdrawETH(amount);
+              Alert.alert('Withdrawal Started', `TX: ${hash}`);
+            } catch (error) {
+              Alert.alert('Error', error.message);
+            }
           },
-        ]
-      );
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    }
+        },
+      ]
+    );
+  };
+
+  const openSuperbridge = () => {
+    Linking.openURL('https://superbridge.app');
   };
 
   return (
     <View style={{ padding: 20 }}>
-      <Text style={{ fontSize: 18, marginBottom: 20 }}>Bridge</Text>
+      <Text style={{ fontSize: 18, marginBottom: 10 }}>Bridge</Text>
 
-      <View style={{ flexDirection: 'row', marginBottom: 20 }}>
-        <Button
-          title="Deposit (L1→L2)"
-          onPress={() => setDirection('deposit')}
-          color={direction === 'deposit' ? 'blue' : 'gray'}
-        />
-        <Button
-          title="Withdraw (L2→L1)"
-          onPress={() => setDirection('withdraw')}
-          color={direction === 'withdraw' ? 'blue' : 'gray'}
-        />
-      </View>
+      {/* Deposit Link */}
+      <Button
+        title="Deposit (L1→L2) via Superbridge"
+        onPress={openSuperbridge}
+      />
 
-      <Text style={{ marginBottom: 5 }}>
-        {direction === 'deposit'
-          ? 'L1 (Ethereum) → L2 (GIWA)'
-          : 'L2 (GIWA) → L1 (Ethereum)'}
+      <Text style={{ marginTop: 20, marginBottom: 10 }}>
+        Withdraw (L2→L1)
       </Text>
-
-      {direction === 'withdraw' && (
-        <Text style={{ marginBottom: 10, color: '#666' }}>
-          L2 Balance: {l2Balance} ETH
-        </Text>
-      )}
+      <Text style={{ color: '#666', marginBottom: 10 }}>
+        Balance: {formattedBalance} ETH
+      </Text>
 
       <TextInput
         placeholder="Amount (ETH)"
@@ -261,15 +181,13 @@ export function BridgeScreen() {
         }}
       />
 
-      {direction === 'withdraw' && (
-        <Text style={{ color: 'orange', marginBottom: 10 }}>
-          Warning: Withdrawals take approximately 7 days due to Challenge Period
-        </Text>
-      )}
+      <Text style={{ color: 'orange', marginBottom: 10, fontSize: 12 }}>
+        ⚠️ 출금에는 약 7일이 소요됩니다
+      </Text>
 
       <Button
-        title={isLoading ? 'Processing...' : direction === 'deposit' ? 'Deposit' : 'Withdraw'}
-        onPress={handleBridge}
+        title={isLoading ? 'Processing...' : 'Withdraw'}
+        onPress={handleWithdraw}
         disabled={isLoading || !amount}
       />
     </View>

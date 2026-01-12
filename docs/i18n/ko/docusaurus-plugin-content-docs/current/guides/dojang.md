@@ -6,21 +6,24 @@ sidebar_position: 7
 
 이 가이드에서는 EAS(Ethereum Attestation Service) 기반의 Dojang 증명 서비스를 설명합니다.
 
+:::info Attestation Creation
+증명은 공식 발급자(예: Upbit Korea)만 생성할 수 있습니다. 이 SDK는 증명을 검증하기 위한 읽기 전용 접근을 제공합니다.
+
+참고: [Dojang 문서](https://docs.giwa.io/giwa-ecosystem/dojang)
+:::
+
 ## What is Dojang?
 
-Dojang은 GIWA Chain의 증명 서비스입니다. 신원 확인, 자격 증명, 업적 인증 등을 블록체인에 기록하고 검증할 수 있습니다.
+Dojang은 온체인 지갑 주소와 오프체인 정보를 연결하는 GIWA Chain의 증명 서비스입니다. 사용자가 개인 식별 정보(PII)를 직접 노출하지 않고도 신원을 확립할 수 있게 해줍니다.
 
-```
-┌─────────────────────────────────────────┐
-│           Dojang (Attestations)         │
-├─────────────────────────────────────────┤
-│  - KYC Verification (Identity)          │
-│  - Education/Credential Proofs          │
-│  - Project Participation Proofs         │
-│  - NFT Ownership Proofs                 │
-│  - DAO Membership Proofs                │
-└─────────────────────────────────────────┘
-```
+### Attestation Types
+
+| 타입 | 설명 |
+|------|------|
+| **Verified Address** | KYC 인증된 지갑 주소 |
+| **Balance Root** | 잔액의 머클 트리 요약 |
+| **Verified Balance** | 특정 시점의 잔액 증명 |
+| **Verified Code** | 오프체인 코드의 온체인 검증 |
 
 ## useDojang Hook
 
@@ -29,11 +32,10 @@ import { useDojang } from '@giwa/react-native-wallet';
 
 function DojangScreen() {
   const {
-    getAttestation,      // Get attestation
-    getAttestations,     // Get attestation list
-    verifyAttestation,   // Verify attestation
-    createAttestation,   // Create attestation (authorized issuers only)
-    revokeAttestation,   // Revoke attestation
+    getAttestation,       // UID로 증명 조회
+    isAttestationValid,   // 증명 유효성 확인
+    getVerifiedBalance,   // 검증된 잔액 데이터 조회
+    getSchema,            // 스키마 정보 조회
     isLoading,
   } = useDojang();
 
@@ -43,275 +45,170 @@ function DojangScreen() {
 
 ## Get Attestation
 
-### Get Single Attestation
-
 ```tsx
 const handleGetAttestation = async () => {
-  const attestationId = '0x...'; // Attestation ID
+  const attestationUid = '0x...'; // Attestation UID
 
   try {
-    const attestation = await getAttestation(attestationId);
+    const attestation = await getAttestation(attestationUid);
 
-    console.log('Issuer:', attestation.attester);
-    console.log('Recipient:', attestation.recipient);
-    console.log('Schema:', attestation.schema);
-    console.log('Data:', attestation.data);
-    console.log('Issued:', attestation.time);
-    console.log('Expiration:', attestation.expirationTime);
-    console.log('Revoked:', attestation.revoked);
+    if (attestation) {
+      console.log('Attester:', attestation.attester);
+      console.log('Recipient:', attestation.recipient);
+      console.log('Type:', attestation.attestationType);
+      console.log('Issued:', attestation.time);
+      console.log('Revoked:', attestation.revoked);
+    } else {
+      console.log('Attestation not found');
+    }
   } catch (error) {
     console.error('Lookup failed:', error.message);
   }
 };
 ```
 
-### Get All User Attestations
-
-```tsx
-const handleGetMyAttestations = async () => {
-  const address = wallet.address;
-
-  const attestations = await getAttestations({
-    recipient: address,
-  });
-
-  console.log(`Total ${attestations.length} attestations`);
-
-  attestations.forEach((att) => {
-    console.log(`- ${att.schema.name}: ${att.data.value}`);
-  });
-};
-```
-
-### Get Attestations by Schema
-
-```tsx
-import { DOJANG_SCHEMAS } from '@giwa/react-native-wallet';
-
-const handleGetKycAttestations = async () => {
-  const attestations = await getAttestations({
-    recipient: wallet.address,
-    schemaId: DOJANG_SCHEMAS.KYC,
-  });
-
-  const kycVerified = attestations.some(
-    (att) => !att.revoked && att.data.verified === true
-  );
-
-  console.log('KYC Verified:', kycVerified);
-};
-```
-
 ## Verify Attestation
+
+증명이 유효한지(존재하고 취소되지 않았는지) 확인:
 
 ```tsx
 const handleVerify = async () => {
-  const attestationId = '0x...';
+  const attestationUid = '0x...';
 
-  try {
-    const isValid = await verifyAttestation(attestationId);
+  const isValid = await isAttestationValid(attestationUid);
 
-    if (isValid) {
-      console.log('Valid attestation');
-    } else {
-      console.log('Invalid or revoked attestation');
-    }
-  } catch (error) {
-    console.error('Verification failed:', error.message);
+  if (isValid) {
+    console.log('Attestation is valid');
+  } else {
+    console.log('Attestation is invalid or revoked');
   }
 };
 ```
 
-## Create Attestation (For Issuers)
+## Get Verified Balance
 
-:::info Permission Required
-증명 생성은 인증된 증명자(attester)만 가능합니다. 일반 사용자는 증명을 생성할 수 없습니다.
-:::
+`verified_balance` 타입 증명의 경우:
 
 ```tsx
-const handleCreateAttestation = async () => {
-  try {
-    const result = await createAttestation({
-      schemaId: DOJANG_SCHEMAS.MEMBERSHIP,
-      recipient: '0x...', // Recipient address
-      data: {
-        organization: 'GIWA DAO',
-        role: 'Member',
-        joinedAt: Date.now(),
-      },
-      expirationTime: 0, // 0 = No expiration
-      revocable: true,
-    });
+const handleGetBalance = async () => {
+  const attestationUid = '0x...';
 
-    console.log('Attestation created:', result.attestationId);
-  } catch (error) {
-    Alert.alert('Creation Failed', error.message);
+  const result = await getVerifiedBalance(attestationUid);
+
+  if (result) {
+    console.log('Balance:', result.balance);
+    console.log('Timestamp:', result.timestamp);
   }
 };
 ```
 
-## Available Schemas
+## Get Schema Information
 
 ```tsx
-import { DOJANG_SCHEMAS } from '@giwa/react-native-wallet';
+const handleGetSchema = async () => {
+  const schemaUid = '0x...';
 
-// Available schemas
-DOJANG_SCHEMAS.KYC           // Identity Verification
-DOJANG_SCHEMAS.MEMBERSHIP    // Membership
-DOJANG_SCHEMAS.ACHIEVEMENT   // Achievement
-DOJANG_SCHEMAS.CREDENTIAL    // Credential
-DOJANG_SCHEMAS.VERIFICATION  // General Verification
+  const schema = await getSchema(schemaUid);
+
+  if (schema) {
+    console.log('Schema UID:', schema.uid);
+    console.log('Schema:', schema.schema);
+    console.log('Revocable:', schema.revocable);
+  }
+};
 ```
 
-## Complete Example: Attestation Screen
+## Complete Example
 
 ```tsx
-import { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Alert } from 'react-native';
-import { useDojang, useGiwaWallet, DOJANG_SCHEMAS } from '@giwa/react-native-wallet';
+import { useState } from 'react';
+import { View, Text, TextInput, Button, Alert } from 'react-native';
+import { useDojang } from '@giwa/react-native-wallet';
 
 export function DojangScreen() {
-  const { wallet } = useGiwaWallet();
-  const { getAttestations, verifyAttestation, isLoading } = useDojang();
+  const { getAttestation, isAttestationValid, isLoading } = useDojang();
+  const [uid, setUid] = useState('');
+  const [attestation, setAttestation] = useState(null);
 
-  const [attestations, setAttestations] = useState([]);
-  const [selectedAttestation, setSelectedAttestation] = useState(null);
+  const handleLookup = async () => {
+    if (!uid) return;
 
-  // Load my attestations
-  useEffect(() => {
-    if (wallet?.address) {
-      loadAttestations();
-    }
-  }, [wallet]);
-
-  const loadAttestations = async () => {
-    const atts = await getAttestations({
-      recipient: wallet.address,
-    });
-    setAttestations(atts);
+    const att = await getAttestation(uid);
+    setAttestation(att);
   };
 
-  // Verify attestation
-  const handleVerify = async (attestationId: string) => {
-    const isValid = await verifyAttestation(attestationId);
+  const handleVerify = async () => {
+    if (!uid) return;
+
+    const isValid = await isAttestationValid(uid);
     Alert.alert(
       'Verification Result',
-      isValid ? 'Valid attestation' : 'Invalid attestation'
+      isValid ? '유효한 증명' : '유효하지 않거나 취소된 증명'
     );
   };
 
-  // Convert schema name
-  const getSchemaName = (schemaId: string) => {
-    switch (schemaId) {
-      case DOJANG_SCHEMAS.KYC:
-        return 'Identity Verification';
-      case DOJANG_SCHEMAS.MEMBERSHIP:
-        return 'Membership';
-      case DOJANG_SCHEMAS.ACHIEVEMENT:
-        return 'Achievement';
-      case DOJANG_SCHEMAS.CREDENTIAL:
-        return 'Credential';
+  const getTypeName = (type: string) => {
+    switch (type) {
+      case 'verified_address':
+        return 'Verified Address';
+      case 'balance_root':
+        return 'Balance Root';
+      case 'verified_balance':
+        return 'Verified Balance';
+      case 'verified_code':
+        return 'Verified Code';
       default:
-        return 'General Attestation';
+        return type;
     }
   };
 
   return (
-    <View style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontSize: 20, marginBottom: 20 }}>My Dojang Attestations</Text>
+    <View style={{ padding: 20 }}>
+      <Text style={{ fontSize: 20, marginBottom: 20 }}>Dojang Attestations</Text>
 
-      {attestations.length === 0 ? (
-        <Text style={{ color: '#888' }}>No registered attestations</Text>
-      ) : (
-        <FlatList
-          data={attestations}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={{
-                padding: 15,
-                backgroundColor: item.revoked ? '#ffebee' : '#f5f5f5',
-                marginBottom: 10,
-                borderRadius: 8,
-              }}
-              onPress={() => setSelectedAttestation(item)}
-            >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontWeight: 'bold' }}>
-                  {getSchemaName(item.schemaId)}
-                </Text>
-                {item.revoked && (
-                  <Text style={{ color: 'red' }}>Revoked</Text>
-                )}
-              </View>
+      <Text style={{ marginBottom: 5 }}>Attestation UID</Text>
+      <TextInput
+        placeholder="0x..."
+        value={uid}
+        onChangeText={setUid}
+        style={{
+          borderWidth: 1,
+          borderColor: '#ccc',
+          padding: 10,
+          marginBottom: 10,
+          fontFamily: 'monospace',
+        }}
+      />
 
-              <Text style={{ color: '#666', marginTop: 5 }}>
-                Issuer: {item.attester.slice(0, 10)}...
-              </Text>
+      <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+        <Button title="Lookup" onPress={handleLookup} disabled={isLoading} />
+        <View style={{ width: 10 }} />
+        <Button title="Verify" onPress={handleVerify} disabled={isLoading} />
+      </View>
 
-              <Text style={{ color: '#888', fontSize: 12, marginTop: 5 }}>
-                {new Date(item.time * 1000).toLocaleDateString()}
-              </Text>
-            </TouchableOpacity>
-          )}
-        />
-      )}
-
-      {/* Selected attestation details */}
-      {selectedAttestation && (
+      {attestation && (
         <View
           style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: 'white',
-            padding: 20,
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 4,
+            backgroundColor: attestation.revoked ? '#ffebee' : '#e8f5e9',
+            padding: 15,
+            borderRadius: 8,
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
-            Attestation Details
+          <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>
+            {getTypeName(attestation.attestationType)}
           </Text>
 
-          <Text>ID: {selectedAttestation.id.slice(0, 20)}...</Text>
-          <Text>Schema: {getSchemaName(selectedAttestation.schemaId)}</Text>
-          <Text>Issuer: {selectedAttestation.attester}</Text>
+          <Text>Attester: {attestation.attester.slice(0, 20)}...</Text>
+          <Text>Recipient: {attestation.recipient.slice(0, 20)}...</Text>
           <Text>
-            Issued: {new Date(selectedAttestation.time * 1000).toLocaleString()}
+            Issued: {new Date(Number(attestation.time) * 1000).toLocaleString()}
           </Text>
 
-          <View style={{ flexDirection: 'row', marginTop: 15 }}>
-            <TouchableOpacity
-              style={{
-                flex: 1,
-                backgroundColor: '#007AFF',
-                padding: 12,
-                borderRadius: 8,
-                marginRight: 10,
-              }}
-              onPress={() => handleVerify(selectedAttestation.id)}
-            >
-              <Text style={{ color: 'white', textAlign: 'center' }}>Verify</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={{
-                flex: 1,
-                backgroundColor: '#ccc',
-                padding: 12,
-                borderRadius: 8,
-              }}
-              onPress={() => setSelectedAttestation(null)}
-            >
-              <Text style={{ textAlign: 'center' }}>Close</Text>
-            </TouchableOpacity>
-          </View>
+          {attestation.revoked && (
+            <Text style={{ color: 'red', marginTop: 10 }}>
+              이 증명은 취소되었습니다
+            </Text>
+          )}
         </View>
       )}
     </View>
@@ -319,35 +216,51 @@ export function DojangScreen() {
 }
 ```
 
-## Usage Examples by Attestation Type
+## Use Cases
 
-### KYC Verification Check
+### Check if Address is Verified
 
 ```tsx
-const isKycVerified = async (address: string) => {
-  const attestations = await getAttestations({
-    recipient: address,
-    schemaId: DOJANG_SCHEMAS.KYC,
-  });
+const checkVerifiedAddress = async (attestationUid: string) => {
+  const attestation = await getAttestation(attestationUid);
 
-  return attestations.some(
-    (att) => !att.revoked && att.data.level >= 1
-  );
+  if (!attestation) {
+    return { verified: false, reason: 'Attestation not found' };
+  }
+
+  if (attestation.revoked) {
+    return { verified: false, reason: 'Attestation revoked' };
+  }
+
+  if (attestation.attestationType !== 'verified_address') {
+    return { verified: false, reason: 'Wrong attestation type' };
+  }
+
+  return { verified: true, address: attestation.recipient };
 };
 ```
 
-### DAO Membership Check
+### Verify Before Transaction
 
 ```tsx
-const isDaoMember = async (address: string, daoId: string) => {
-  const attestations = await getAttestations({
-    recipient: address,
-    schemaId: DOJANG_SCHEMAS.MEMBERSHIP,
-  });
+const sendToVerifiedAddress = async (attestationUid: string, amount: string) => {
+  // 먼저 증명 검증
+  const isValid = await isAttestationValid(attestationUid);
+  if (!isValid) {
+    throw new Error('Invalid or revoked attestation');
+  }
 
-  return attestations.some(
-    (att) => !att.revoked && att.data.daoId === daoId
-  );
+  // 수신자 주소 조회
+  const attestation = await getAttestation(attestationUid);
+  if (!attestation) {
+    throw new Error('Attestation not found');
+  }
+
+  // 트랜잭션 전송
+  return sendTransaction({
+    to: attestation.recipient,
+    value: amount,
+  });
 };
 ```
 

@@ -66,6 +66,15 @@ function WalletScreen() {
 - expo-secure-store >= 15.0.0 (Expo)
 - react-native-keychain >= 9.2.0 (React Native CLI)
 
+## GIWA Official Resources
+
+| 리소스 | URL |
+|--------|-----|
+| GIWA 문서 | [docs.giwa.io](https://docs.giwa.io) |
+| Bridge (Superbridge) | [superbridge.app](https://superbridge.app) |
+| Faucet | [faucet.giwa.io](https://faucet.giwa.io) |
+| Block Explorer | [sepolia-explorer.giwa.io](https://sepolia-explorer.giwa.io) |
+
 ## Next Steps
 
 - [설치 가이드](/docs/getting-started/installation)로 시작하기

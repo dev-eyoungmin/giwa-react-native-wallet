@@ -2,9 +2,15 @@
 sidebar_position: 4
 ---
 
-# L1↔L2 Bridge
+# L2→L1 Bridge
 
-This guide explains how to transfer assets between Ethereum mainnet (L1) and GIWA Chain (L2).
+This guide explains how to withdraw assets from GIWA Chain (L2) to Ethereum mainnet (L1).
+
+:::info L1→L2 Deposit
+For deposits from Ethereum to GIWA Chain, use the official [GIWA Superbridge](https://superbridge.app).
+
+See: [GIWA Bridge Documentation](https://docs.giwa.io/tools/bridges)
+:::
 
 ## useBridge Hook
 
@@ -13,11 +19,10 @@ import { useBridge } from '@giwa/react-native-wallet';
 
 function BridgeScreen() {
   const {
-    deposit,           // L1 → L2 deposit
-    withdraw,          // L2 → L1 withdrawal
-    getDepositStatus,  // Get deposit status
-    getWithdrawStatus, // Get withdrawal status
-    estimateFees,      // Estimate fees
+    withdrawETH,       // L2 → L1 ETH withdrawal
+    withdrawToken,     // L2 → L1 token withdrawal
+    getPendingTransactions,
+    getEstimatedWithdrawalTime,
     isLoading,
   } = useBridge();
 
@@ -25,227 +30,142 @@ function BridgeScreen() {
 }
 ```
 
-## L1 → L2 Deposit
+## ETH Withdrawal
 
-Transfer assets from Ethereum mainnet to GIWA Chain:
-
-```tsx
-const handleDeposit = async () => {
-  try {
-    const result = await deposit({
-      amount: '0.1',     // ETH unit
-      token: 'ETH',      // Or token address
-    });
-
-    console.log('L1 TX:', result.l1TxHash);
-    console.log('Estimated completion time:', result.estimatedTime);
-
-    // Deposits take approximately 10-15 minutes
-  } catch (error) {
-    console.error('Deposit failed:', error.message);
-  }
-};
-```
-
-## L2 → L1 Withdrawal
-
-Transfer assets from GIWA Chain to Ethereum mainnet:
+Transfer ETH from GIWA Chain to Ethereum mainnet:
 
 ```tsx
-const handleWithdraw = async () => {
+const handleWithdrawETH = async () => {
   try {
-    const result = await withdraw({
-      amount: '0.1',
-      token: 'ETH',
-    });
+    const { hash, wait } = await withdrawETH('0.1'); // 0.1 ETH
 
-    console.log('L2 TX:', result.l2TxHash);
-    console.log('Estimated completion time:', result.estimatedTime);
+    console.log('L2 TX Hash:', hash);
 
-    // Withdrawals take approximately 7 days due to Challenge Period
+    // Wait for confirmation
+    const receipt = await wait();
+    console.log('Confirmed in block:', receipt.blockNumber);
+
+    // Note: Full withdrawal takes ~7 days due to Challenge Period
   } catch (error) {
     console.error('Withdrawal failed:', error.message);
   }
 };
 ```
 
-:::info Challenge Period
-L2 → L1 withdrawals require approximately 7 days of Challenge Period for security reasons. During this period, validators verify the validity of the withdrawal request.
+### Withdraw to Different Address
+
+```tsx
+// Withdraw to a specific L1 address
+const { hash } = await withdrawETH('0.1', '0x1234...abcd');
+```
+
+## Token Withdrawal
+
+Transfer ERC-20 tokens from GIWA Chain to Ethereum mainnet:
+
+```tsx
+const handleWithdrawToken = async () => {
+  const l2TokenAddress = '0x...'; // L2 token address
+  const amount = 100000000000000000000n; // 100 tokens (in wei)
+
+  try {
+    const { hash, wait } = await withdrawToken(l2TokenAddress, amount);
+
+    console.log('L2 TX Hash:', hash);
+
+    const receipt = await wait();
+    console.log('Confirmed:', receipt.status);
+  } catch (error) {
+    console.error('Withdrawal failed:', error.message);
+  }
+};
+```
+
+## Challenge Period
+
+:::warning 7-Day Waiting Period
+L2 → L1 withdrawals require approximately **7 days** of Challenge Period for security reasons. During this period, validators verify the validity of the withdrawal request.
+
+This is a security feature of the OP Stack architecture, not a limitation of this SDK.
 :::
 
-## Fee Estimation
-
 ```tsx
-const checkFees = async () => {
-  const fees = await estimateFees({
-    direction: 'deposit', // 'deposit' | 'withdraw'
-    amount: '0.1',
-    token: 'ETH',
-  });
-
-  console.log('L1 gas fee:', fees.l1GasFee);
-  console.log('L2 gas fee:', fees.l2GasFee);
-  console.log('Total estimated fee:', fees.totalFee);
-};
+// Get estimated withdrawal time in seconds
+const time = getEstimatedWithdrawalTime();
+console.log('Estimated time:', time / 86400, 'days'); // ~7 days
 ```
 
-## Status Check
+## Pending Transactions
 
-### Deposit Status
-
-```tsx
-const checkDepositStatus = async (l1TxHash: string) => {
-  const status = await getDepositStatus(l1TxHash);
-
-  switch (status.state) {
-    case 'pending':
-      console.log('Processing on L1...');
-      break;
-    case 'l1_confirmed':
-      console.log('L1 confirmed, waiting for L2...');
-      break;
-    case 'completed':
-      console.log('Complete! L2 TX:', status.l2TxHash);
-      break;
-    case 'failed':
-      console.log('Failed:', status.error);
-      break;
-  }
-};
-```
-
-### Withdrawal Status
+Track pending bridge transactions:
 
 ```tsx
-const checkWithdrawStatus = async (l2TxHash: string) => {
-  const status = await getWithdrawStatus(l2TxHash);
+const pendingTxs = getPendingTransactions();
 
-  switch (status.state) {
-    case 'pending':
-      console.log('Processing on L2...');
-      break;
-    case 'waiting_for_proof':
-      console.log('Waiting for proof...');
-      break;
-    case 'ready_to_prove':
-      console.log('Ready to prove');
-      break;
-    case 'in_challenge':
-      console.log('In Challenge period...', status.remainingTime);
-      break;
-    case 'ready_to_finalize':
-      console.log('Ready to finalize');
-      break;
-    case 'completed':
-      console.log('Complete! L1 TX:', status.l1TxHash);
-      break;
-  }
-};
+pendingTxs.forEach((tx) => {
+  console.log('Hash:', tx.l2TxHash);
+  console.log('Amount:', tx.amount);
+  console.log('Status:', tx.status);
+});
 ```
 
-## ERC-20 Token Bridge
-
-```tsx
-// L1 → L2 token deposit
-const depositToken = async () => {
-  const tokenAddress = '0x...'; // L1 token address
-
-  // First, approve tokens to bridge contract
-  await approveToken(tokenAddress, BRIDGE_ADDRESS, '100');
-
-  const result = await deposit({
-    amount: '100',
-    token: tokenAddress,
-  });
-};
-
-// L2 → L1 token withdrawal
-const withdrawToken = async () => {
-  const l2TokenAddress = '0x...'; // L2 token address
-
-  const result = await withdraw({
-    amount: '100',
-    token: l2TokenAddress,
-  });
-};
-```
-
-## Complete Example: Bridge Screen
+## Complete Example
 
 ```tsx
 import { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, SegmentedButtons } from 'react-native';
+import { View, Text, TextInput, Button, Alert, Linking } from 'react-native';
 import { useBridge, useBalance } from '@giwa/react-native-wallet';
 
 export function BridgeScreen() {
-  const [direction, setDirection] = useState<'deposit' | 'withdraw'>('deposit');
   const [amount, setAmount] = useState('');
+  const { withdrawETH, getEstimatedWithdrawalTime, isLoading } = useBridge();
+  const { formattedBalance } = useBalance();
 
-  const { deposit, withdraw, estimateFees, isLoading } = useBridge();
-  const { formattedBalance: l2Balance } = useBalance();
-
-  const handleBridge = async () => {
+  const handleWithdraw = async () => {
     if (!amount) return;
 
-    try {
-      // Check fees
-      const fees = await estimateFees({ direction, amount, token: 'ETH' });
+    const days = Math.round(getEstimatedWithdrawalTime() / 86400);
 
-      Alert.alert(
-        'Fee Confirmation',
-        `Estimated fee: ${fees.totalFee} ETH\nDo you want to proceed?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Confirm',
-            onPress: async () => {
-              if (direction === 'deposit') {
-                const result = await deposit({ amount, token: 'ETH' });
-                Alert.alert('Deposit Started', `TX: ${result.l1TxHash}`);
-              } else {
-                const result = await withdraw({ amount, token: 'ETH' });
-                Alert.alert(
-                  'Withdrawal Started',
-                  `TX: ${result.l2TxHash}\n\nWithdrawals take approximately 7 days.`
-                );
-              }
-            },
+    Alert.alert(
+      'Confirm Withdrawal',
+      `Withdraw ${amount} ETH to L1?\n\nThis will take approximately ${days} days.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: async () => {
+            try {
+              const { hash } = await withdrawETH(amount);
+              Alert.alert('Withdrawal Started', `TX: ${hash}`);
+            } catch (error) {
+              Alert.alert('Error', error.message);
+            }
           },
-        ]
-      );
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    }
+        },
+      ]
+    );
+  };
+
+  const openSuperbridge = () => {
+    Linking.openURL('https://superbridge.app');
   };
 
   return (
     <View style={{ padding: 20 }}>
-      <Text style={{ fontSize: 18, marginBottom: 20 }}>Bridge</Text>
+      <Text style={{ fontSize: 18, marginBottom: 10 }}>Bridge</Text>
 
-      <View style={{ flexDirection: 'row', marginBottom: 20 }}>
-        <Button
-          title="Deposit (L1→L2)"
-          onPress={() => setDirection('deposit')}
-          color={direction === 'deposit' ? 'blue' : 'gray'}
-        />
-        <Button
-          title="Withdraw (L2→L1)"
-          onPress={() => setDirection('withdraw')}
-          color={direction === 'withdraw' ? 'blue' : 'gray'}
-        />
-      </View>
+      {/* Deposit Link */}
+      <Button
+        title="Deposit (L1→L2) via Superbridge"
+        onPress={openSuperbridge}
+      />
 
-      <Text style={{ marginBottom: 5 }}>
-        {direction === 'deposit'
-          ? 'L1 (Ethereum) → L2 (GIWA)'
-          : 'L2 (GIWA) → L1 (Ethereum)'}
+      <Text style={{ marginTop: 20, marginBottom: 10 }}>
+        Withdraw (L2→L1)
       </Text>
-
-      {direction === 'withdraw' && (
-        <Text style={{ marginBottom: 10, color: '#666' }}>
-          L2 Balance: {l2Balance} ETH
-        </Text>
-      )}
+      <Text style={{ color: '#666', marginBottom: 10 }}>
+        Balance: {formattedBalance} ETH
+      </Text>
 
       <TextInput
         placeholder="Amount (ETH)"
@@ -261,15 +181,13 @@ export function BridgeScreen() {
         }}
       />
 
-      {direction === 'withdraw' && (
-        <Text style={{ color: 'orange', marginBottom: 10 }}>
-          Warning: Withdrawals take approximately 7 days due to Challenge Period
-        </Text>
-      )}
+      <Text style={{ color: 'orange', marginBottom: 10, fontSize: 12 }}>
+        ⚠️ Withdrawals take approximately 7 days
+      </Text>
 
       <Button
-        title={isLoading ? 'Processing...' : direction === 'deposit' ? 'Deposit' : 'Withdraw'}
-        onPress={handleBridge}
+        title={isLoading ? 'Processing...' : 'Withdraw'}
+        onPress={handleWithdraw}
         disabled={isLoading || !amount}
       />
     </View>

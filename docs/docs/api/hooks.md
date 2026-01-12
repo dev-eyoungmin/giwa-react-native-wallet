@@ -178,17 +178,22 @@ interface AllowanceResult {
 
 ## useBridge
 
-L1↔L2 Bridge Hook
+L2→L1 Bridge Withdrawal Hook
+
+:::info L1→L2 Deposit
+For deposits (L1→L2), use the official [GIWA Superbridge](https://superbridge.app). This SDK only supports L2→L1 withdrawals.
+
+See: [GIWA Bridge Documentation](https://docs.giwa.io/tools/bridges)
+:::
 
 ```tsx
 import { useBridge } from '@giwa/react-native-wallet';
 
 const {
-  deposit,           // (params: BridgeParams) => Promise<DepositResult>
-  withdraw,          // (params: BridgeParams) => Promise<WithdrawResult>
-  getDepositStatus,  // (l1TxHash: string) => Promise<DepositStatus>
-  getWithdrawStatus, // (l2TxHash: string) => Promise<WithdrawStatus>
-  estimateFees,      // (params: EstimateParams) => Promise<FeeEstimate>
+  withdrawETH,       // (amount: string, to?: Address) => Promise<TransactionResult>
+  withdrawToken,     // (tokenAddress: Address, amount: bigint, to?: Address) => Promise<TransactionResult>
+  getPendingTransactions, // () => BridgeTransaction[]
+  getEstimatedWithdrawalTime, // () => number (seconds)
   isLoading,         // boolean
 } = useBridge();
 ```
@@ -196,33 +201,29 @@ const {
 ### Types
 
 ```tsx
-interface BridgeParams {
-  amount: string;
-  token: 'ETH' | string; // 'ETH' or token address
+interface TransactionResult {
+  hash: string;
+  wait: () => Promise<TransactionReceipt>;
 }
 
-interface DepositResult {
-  l1TxHash: string;
-  estimatedTime: number; // in seconds
-}
-
-interface WithdrawResult {
+interface BridgeTransaction {
+  direction: 'withdraw';
+  amount: bigint;
+  token?: Address;
   l2TxHash: string;
-  estimatedTime: number;
+  status: 'pending' | 'confirmed';
 }
+```
 
-type DepositStatus = {
-  state: 'pending' | 'l1_confirmed' | 'completed' | 'failed';
-  l2TxHash?: string;
-  error?: string;
-};
+### Usage Example
 
-type WithdrawStatus = {
-  state: 'pending' | 'waiting_for_proof' | 'ready_to_prove' |
-         'in_challenge' | 'ready_to_finalize' | 'completed';
-  remainingTime?: number;
-  l1TxHash?: string;
-};
+```tsx
+// Withdraw 0.1 ETH to L1
+const { hash, wait } = await withdrawETH('0.1');
+const receipt = await wait();
+
+// Estimated withdrawal time (~7 days for OP Stack)
+const time = getEstimatedWithdrawalTime(); // 604800 seconds
 ```
 
 ---
@@ -270,18 +271,23 @@ interface Preconfirmation {
 
 ## useGiwaId
 
-GIWA ID (ENS) Hook
+GIWA ID (ENS-based Naming) Hook
+
+:::info Registration
+GIWA ID (up.id) registration is only available through Upbit's Verified Address service. This SDK provides read-only access for resolving names and addresses.
+
+See: [GIWA ID Documentation](https://docs.giwa.io/giwa-ecosystem/giwa-id)
+:::
 
 ```tsx
 import { useGiwaId } from '@giwa/react-native-wallet';
 
 const {
-  resolveAddress,    // (name: string) => Promise<string | null>
-  resolveName,       // (address: string) => Promise<string | null>
-  isNameAvailable,   // (name: string) => Promise<boolean>
-  register,          // (name: string, options: RegisterOptions) => Promise<RegisterResult>
-  getProfile,        // (name: string) => Promise<Profile>
-  setProfile,        // (profile: Partial<Profile>) => Promise<string>
+  resolveAddress,    // (name: string) => Promise<Address | null>
+  resolveName,       // (address: Address) => Promise<string | null>
+  getGiwaId,         // (name: string) => Promise<GiwaId | null>
+  getTextRecord,     // (name: string, key: string) => Promise<string | null>
+  isAvailable,       // (name: string) => Promise<boolean>
   isLoading,         // boolean
 } = useGiwaId();
 ```
@@ -289,69 +295,93 @@ const {
 ### Types
 
 ```tsx
-interface RegisterOptions {
-  duration: number; // in days
-}
-
-interface RegisterResult {
-  txHash: string;
-  name: string;
-}
-
-interface Profile {
+interface GiwaId {
+  name: string;      // e.g., "alice.giwa.id"
+  address: Address;
   avatar?: string;
-  description?: string;
-  twitter?: string;
-  email?: string;
-  url?: string;
 }
+```
+
+### Usage Example
+
+```tsx
+// Resolve name to address
+const address = await resolveAddress('alice'); // or 'alice.giwa.id'
+
+// Reverse resolve address to name
+const name = await resolveName('0x1234...');
+
+// Get avatar
+const avatar = await getTextRecord('alice', 'avatar');
 ```
 
 ---
 
 ## useDojang
 
-Dojang (attestation) Hook
+Dojang (EAS Attestation) Hook
+
+:::info Attestation Creation
+Attestations can only be created by official issuers (e.g., Upbit Korea). This SDK provides read-only access for verifying attestations.
+
+See: [Dojang Documentation](https://docs.giwa.io/giwa-ecosystem/dojang)
+:::
 
 ```tsx
 import { useDojang } from '@giwa/react-native-wallet';
 
 const {
-  getAttestation,     // (id: string) => Promise<Attestation>
-  getAttestations,    // (filter: AttestationFilter) => Promise<Attestation[]>
-  verifyAttestation,  // (id: string) => Promise<boolean>
-  createAttestation,  // (params: CreateAttestationParams) => Promise<AttestationResult>
-  revokeAttestation,  // (id: string) => Promise<string>
-  isLoading,          // boolean
+  getAttestation,       // (uid: Hex) => Promise<Attestation | null>
+  isAttestationValid,   // (uid: Hex) => Promise<boolean>
+  getVerifiedBalance,   // (uid: Hex) => Promise<VerifiedBalance | null>
+  getSchema,            // (schemaUid: Hex) => Promise<Schema | null>
+  isLoading,            // boolean
 } = useDojang();
 ```
+
+### Attestation Types
+
+| Type | Description |
+|------|-------------|
+| `verified_address` | KYC-verified wallet address |
+| `balance_root` | Merkle tree summary of balances |
+| `verified_balance` | Balance attestation at specific time |
+| `verified_code` | On-chain verification of off-chain codes |
 
 ### Types
 
 ```tsx
 interface Attestation {
-  id: string;
-  schemaId: string;
-  attester: string;
-  recipient: string;
-  data: Record<string, any>;
-  time: number;
-  expirationTime: number;
+  uid: Hex;
+  schema: Hex;
+  attester: Address;
+  recipient: Address;
+  attestationType: AttestationType;
+  data: Hex;
+  time: bigint;
+  expirationTime: bigint;
+  revocable: boolean;
   revoked: boolean;
 }
 
-interface AttestationFilter {
-  recipient?: string;
-  attester?: string;
-  schemaId?: string;
+interface VerifiedBalance {
+  balance: bigint;
+  timestamp: bigint;
 }
 
-interface CreateAttestationParams {
-  schemaId: string;
-  recipient: string;
-  data: Record<string, any>;
-  expirationTime?: number;
-  revocable?: boolean;
+type AttestationType = 'verified_address' | 'balance_root' | 'verified_balance' | 'verified_code';
+```
+
+### Usage Example
+
+```tsx
+// Check if attestation is valid
+const isValid = await isAttestationValid('0x1234...');
+
+// Get attestation details
+const attestation = await getAttestation('0x1234...');
+if (attestation && !attestation.revoked) {
+  console.log('Attester:', attestation.attester);
 }
 ```
 
@@ -361,24 +391,43 @@ interface CreateAttestationParams {
 
 Testnet Faucet Hook
 
+:::tip Testnet Only
+The faucet is only available on testnet. It opens the official GIWA faucet website in the browser.
+
+See: [GIWA Faucet](https://faucet.giwa.io)
+:::
+
 ```tsx
 import { useFaucet } from '@giwa/react-native-wallet';
 
 const {
-  requestFaucet,  // () => Promise<FaucetResult>
-  isLoading,      // boolean
-  error,          // GiwaError | null
+  requestFaucet,    // (address?: Address) => Promise<void>
+  getFaucetUrl,     // () => string
+  isInitializing,   // boolean
+  isLoading,        // boolean
+  error,            // Error | null
 } = useFaucet();
 ```
 
-### Types
+### Usage Example
 
 ```tsx
-interface FaucetResult {
-  txHash: string;
-  amount: string; // ETH units
+function FaucetButton() {
+  const { requestFaucet, isLoading } = useFaucet();
+
+  return (
+    <Button
+      title="Get Testnet ETH"
+      onPress={() => requestFaucet()}
+      disabled={isLoading}
+    />
+  );
 }
 ```
+
+:::note
+`requestFaucet()` opens the faucet website in the device's browser. The user must complete the faucet request on the website.
+:::
 
 ---
 
