@@ -10,36 +10,43 @@ sidebar_position: 1
 
 ```bash
 # npm
-npm install @giwa/react-native-wallet expo-secure-store
+npm install @giwa/react-native-wallet expo-secure-store expo-local-authentication react-native-get-random-values
 
 # yarn
-yarn add @giwa/react-native-wallet expo-secure-store
+yarn add @giwa/react-native-wallet expo-secure-store expo-local-authentication react-native-get-random-values
 
 # pnpm
-pnpm add @giwa/react-native-wallet expo-secure-store
+pnpm add @giwa/react-native-wallet expo-secure-store expo-local-authentication react-native-get-random-values
 ```
 
 :::tip
-You can also use `npx expo install` for automatic Expo SDK version compatibility.
+You can also use `npx expo install` for automatic Expo SDK version compatibility:
+```bash
+npx expo install @giwa/react-native-wallet expo-secure-store expo-local-authentication react-native-get-random-values
+```
 :::
 
 ## React Native CLI Projects
 
 ```bash
 # npm
-npm install @giwa/react-native-wallet react-native-keychain
+npm install @giwa/react-native-wallet react-native-keychain react-native-get-random-values
 
 # yarn
-yarn add @giwa/react-native-wallet react-native-keychain
+yarn add @giwa/react-native-wallet react-native-keychain react-native-get-random-values
 
 # pnpm
-pnpm add @giwa/react-native-wallet react-native-keychain
+pnpm add @giwa/react-native-wallet react-native-keychain react-native-get-random-values
 ```
 
 ```bash
 # iOS additional setup
 cd ios && pod install && cd ..
 ```
+
+:::note Biometric Authentication
+`react-native-keychain` provides both secure storage and biometric authentication for React Native CLI projects.
+:::
 
 ## Dependency Overview
 
@@ -57,7 +64,14 @@ The SDK uses minimal dependencies:
 | Platform | Package | Purpose |
 |----------|---------|---------|
 | Expo | `expo-secure-store` | iOS Keychain / Android Keystore |
-| RN CLI | `react-native-keychain` | iOS Keychain / Android Keystore |
+| Expo | `expo-local-authentication` | Biometric authentication (Face ID, Touch ID) |
+| RN CLI | `react-native-keychain` | iOS Keychain / Android Keystore + Biometrics |
+
+### Required for All Projects
+
+| Package | Purpose |
+|---------|---------|
+| `react-native-get-random-values` | Cryptographic random number generation |
 
 ## Secure Storage Required
 
@@ -74,7 +88,9 @@ This SDK requires secure storage (iOS Keychain / Android Keystore). It does not 
     "react-native": ">=0.77.0",
     "expo": ">=53.0.0",
     "expo-secure-store": ">=15.0.0",
-    "react-native-keychain": ">=9.2.0"
+    "expo-local-authentication": ">=14.0.0",
+    "react-native-keychain": ">=9.2.0",
+    "react-native-get-random-values": ">=1.11.0"
   }
 }
 ```

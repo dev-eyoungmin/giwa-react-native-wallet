@@ -525,6 +525,117 @@ interface NetworkStatus {
 
 ---
 
+## useBiometricAuth
+
+Biometric authentication Hook
+
+```tsx
+import { useBiometricAuth } from '@giwa/react-native-wallet';
+
+const {
+  isAvailable,       // boolean - Whether biometric hardware is available
+  isEnrolled,        // boolean - Whether biometrics are enrolled
+  biometricType,     // BiometricType - 'fingerprint' | 'face' | 'iris' | 'none'
+  capability,        // BiometricCapability | null
+  isLoading,         // boolean
+  error,             // Error | null
+  authenticate,      // (promptMessage?: string) => Promise<boolean>
+  refreshCapability, // () => Promise<void>
+} = useBiometricAuth(options?: UseBiometricAuthOptions);
+```
+
+### Options
+
+```tsx
+interface UseBiometricAuthOptions {
+  /** Default prompt message for authentication */
+  defaultPromptMessage?: string;
+}
+```
+
+### Types
+
+```tsx
+type BiometricType = 'fingerprint' | 'face' | 'iris' | 'none';
+
+interface BiometricCapability {
+  isAvailable: boolean;
+  biometricType: BiometricType;
+  isEnrolled: boolean;
+}
+```
+
+### Usage Example
+
+```tsx
+import { useBiometricAuth } from '@giwa/react-native-wallet';
+import { Alert, Button, View, Text } from 'react-native';
+
+function SecureActionScreen() {
+  const {
+    isAvailable,
+    isEnrolled,
+    biometricType,
+    authenticate,
+    isLoading,
+  } = useBiometricAuth({
+    defaultPromptMessage: 'Authenticate to continue',
+  });
+
+  const handleSecureAction = async () => {
+    if (!isAvailable) {
+      Alert.alert('Error', 'Biometric authentication not available');
+      return;
+    }
+
+    if (!isEnrolled) {
+      Alert.alert('Error', 'No biometrics enrolled on device');
+      return;
+    }
+
+    try {
+      const success = await authenticate('Confirm your identity');
+      if (success) {
+        Alert.alert('Success', 'Authentication successful!');
+        // Perform secure action
+      }
+    } catch (error) {
+      Alert.alert('Failed', 'Authentication failed');
+    }
+  };
+
+  if (isLoading) {
+    return <Text>Checking biometric capability...</Text>;
+  }
+
+  return (
+    <View>
+      <Text>Biometric Type: {biometricType}</Text>
+      <Text>Available: {isAvailable ? 'Yes' : 'No'}</Text>
+      <Text>Enrolled: {isEnrolled ? 'Yes' : 'No'}</Text>
+      <Button
+        title={`Authenticate with ${biometricType}`}
+        onPress={handleSecureAction}
+        disabled={!isAvailable || !isEnrolled}
+      />
+    </View>
+  );
+}
+```
+
+### Biometric Types by Platform
+
+| Platform | Types |
+|----------|-------|
+| iOS | Face ID, Touch ID |
+| Android | Fingerprint, Face, Iris |
+
+:::tip Auto-authentication
+The SDK automatically requests biometric authentication for sensitive operations like `exportMnemonic` and `exportPrivateKey` when `requireBiometric: true` is set.
+:::
+
+---
+
 ## Common Types
 
 ### GiwaError

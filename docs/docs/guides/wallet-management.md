@@ -13,14 +13,18 @@ import { useGiwaWallet } from '@giwa/react-native-wallet';
 
 function WalletScreen() {
   const {
-    wallet,           // Current wallet information
-    isLoading,        // Loading state
-    error,            // Error information
-    createWallet,     // Create new wallet
-    recoverWallet,    // Recover with mnemonic
-    importPrivateKey, // Import with private key
-    exportPrivateKey, // Export private key
-    disconnect,       // Disconnect wallet
+    wallet,              // Current wallet information (GiwaWallet | null)
+    isLoading,           // Loading state
+    isInitializing,      // Whether SDK is initializing
+    hasWallet,           // Convenience: wallet !== null
+    error,               // Error information
+    createWallet,        // Create new wallet
+    recoverWallet,       // Recover with mnemonic
+    importFromPrivateKey, // Import with private key
+    loadWallet,          // Load saved wallet
+    deleteWallet,        // Delete wallet
+    exportMnemonic,      // Export mnemonic (rate-limited)
+    exportPrivateKey,    // Export private key (rate-limited)
   } = useGiwaWallet();
 
   // ...
@@ -75,7 +79,7 @@ const handleImport = async () => {
   const privateKey = '0x...'; // 64-character hex string
 
   try {
-    const wallet = await importPrivateKey(privateKey);
+    const wallet = await importFromPrivateKey(privateKey);
     console.log('Imported address:', wallet.address);
   } catch (error) {
     Alert.alert('Error', 'Invalid private key');
@@ -83,25 +87,58 @@ const handleImport = async () => {
 };
 ```
 
-## Export Private Key
+## Export Sensitive Data
 
-:::danger Warning
-Exporting a private key is a sensitive operation. Always require biometric authentication or additional confirmation before proceeding.
+:::danger Security Warning
+Exporting mnemonic or private key is a sensitive operation. These functions have **Rate Limiting** applied (3 times per minute, 5-minute cooldown when exceeded).
 :::
 
-```tsx
-const handleExport = async () => {
-  try {
-    // Biometric authentication is automatically requested if configured
-    const privateKey = await exportPrivateKey();
+### Export Mnemonic
 
-    // Display private key securely (consider using a modal with auto-dismiss)
-    Alert.alert(
-      'Private Key',
-      privateKey,
-      [{ text: 'OK' }],
-      { cancelable: false }
-    );
+```tsx
+const handleExportMnemonic = async () => {
+  try {
+    // Rate-limited: 3 times per minute
+    const mnemonic = await exportMnemonic({ requireBiometric: true });
+
+    if (mnemonic) {
+      // Display mnemonic securely
+      Alert.alert(
+        'Recovery Phrase',
+        mnemonic,
+        [{ text: 'OK' }],
+        { cancelable: false }
+      );
+    } else {
+      Alert.alert('Error', 'Mnemonic not available');
+    }
+  } catch (error) {
+    if (error.code === 'RATE_LIMIT_EXCEEDED') {
+      Alert.alert('Rate Limited', 'Please try again in 5 minutes');
+    } else if (error.code === 'BIOMETRIC_FAILED') {
+      Alert.alert('Authentication Failed', 'Biometric authentication failed');
+    }
+  }
+};
+```
+
+### Export Private Key
+
+```tsx
+const handleExportPrivateKey = async () => {
+  try {
+    // Rate-limited: 3 times per minute
+    const privateKey = await exportPrivateKey({ requireBiometric: true });
+
+    if (privateKey) {
+      // Display private key securely (consider using a modal with auto-dismiss)
+      Alert.alert(
+        'Private Key',
+        privateKey,
+        [{ text: 'OK' }],
+        { cancelable: false }
+      );
+    }
   } catch (error) {
     if (error.code === 'BIOMETRIC_FAILED') {
       Alert.alert('Authentication Failed', 'Biometric authentication failed');
@@ -110,20 +147,20 @@ const handleExport = async () => {
 };
 ```
 
-## Disconnect Wallet
+## Delete Wallet
 
 ```tsx
-const handleDisconnect = async () => {
+const handleDelete = async () => {
   Alert.alert(
-    'Disconnect Wallet',
-    'Are you sure you want to disconnect? You cannot recover the wallet without the recovery phrase.',
+    'Delete Wallet',
+    'Are you sure you want to delete? You cannot recover the wallet without the recovery phrase.',
     [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Disconnect',
+        text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          await disconnect();
+          await deleteWallet();
         },
       },
     ]
@@ -135,7 +172,12 @@ const handleDisconnect = async () => {
 
 ```tsx
 function WalletStatus() {
-  const { wallet, isLoading, error } = useGiwaWallet();
+  const { wallet, isLoading, isInitializing, hasWallet, error } = useGiwaWallet();
+
+  // Wait for SDK initialization
+  if (isInitializing) {
+    return <ActivityIndicator />;
+  }
 
   if (isLoading) {
     return <ActivityIndicator />;
@@ -145,14 +187,13 @@ function WalletStatus() {
     return <Text>Error: {error.message}</Text>;
   }
 
-  if (!wallet) {
+  if (!hasWallet) {
     return <Text>No wallet connected</Text>;
   }
 
   return (
     <View>
       <Text>Address: {wallet.address}</Text>
-      <Text>Connected: {wallet.isConnected ? 'Yes' : 'No'}</Text>
     </View>
   );
 }
@@ -162,23 +203,39 @@ function WalletStatus() {
 
 ```tsx
 import { useState } from 'react';
-import { View, Text, Button, TextInput, Alert } from 'react-native';
+import { View, Text, Button, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { useGiwaWallet } from '@giwa/react-native-wallet';
 
 export function WalletManager() {
   const {
     wallet,
+    hasWallet,
+    isInitializing,
+    isLoading,
     createWallet,
     recoverWallet,
+    importFromPrivateKey,
+    exportMnemonic,
     exportPrivateKey,
-    disconnect,
-    isLoading,
+    deleteWallet,
   } = useGiwaWallet();
 
   const [mnemonicInput, setMnemonicInput] = useState('');
+  const [privateKeyInput, setPrivateKeyInput] = useState('');
   const [showRecover, setShowRecover] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
-  if (wallet) {
+  // Wait for SDK initialization
+  if (isInitializing) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+        <Text>Initializing SDK...</Text>
+      </View>
+    );
+  }
+
+  if (hasWallet) {
     return (
       <View style={{ padding: 20 }}>
         <Text style={{ fontSize: 16, marginBottom: 10 }}>Wallet Connected</Text>
@@ -186,8 +243,50 @@ export function WalletManager() {
           {wallet.address}
         </Text>
 
-        <Button title="Export Private Key" onPress={exportPrivateKey} />
-        <Button title="Disconnect" onPress={disconnect} color="red" />
+        <View style={{ gap: 10 }}>
+          <Button
+            title="Export Mnemonic"
+            onPress={async () => {
+              try {
+                const mnemonic = await exportMnemonic({ requireBiometric: true });
+                if (mnemonic) {
+                  Alert.alert('Recovery Phrase', mnemonic);
+                }
+              } catch (e) {
+                Alert.alert('Error', e.message);
+              }
+            }}
+            disabled={isLoading}
+          />
+          <Button
+            title="Export Private Key"
+            onPress={async () => {
+              try {
+                const pk = await exportPrivateKey({ requireBiometric: true });
+                if (pk) {
+                  Alert.alert('Private Key', pk);
+                }
+              } catch (e) {
+                Alert.alert('Error', e.message);
+              }
+            }}
+            disabled={isLoading}
+          />
+          <Button
+            title="Delete Wallet"
+            onPress={() => {
+              Alert.alert(
+                'Delete Wallet',
+                'This action cannot be undone.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Delete', style: 'destructive', onPress: deleteWallet },
+                ]
+              );
+            }}
+            color="red"
+          />
+        </View>
       </View>
     );
   }
@@ -197,42 +296,112 @@ export function WalletManager() {
       <Button
         title="Create New Wallet"
         onPress={async () => {
-          const { mnemonic } = await createWallet();
-          Alert.alert('Backup Required', `Recovery phrase:\n\n${mnemonic}`);
+          try {
+            const { mnemonic } = await createWallet();
+            Alert.alert(
+              'Backup Required',
+              `Please save your recovery phrase:\n\n${mnemonic}\n\nThis will not be shown again.`
+            );
+          } catch (e) {
+            Alert.alert('Error', e.message);
+          }
         }}
         disabled={isLoading}
       />
 
-      <Button
-        title="Recover Existing Wallet"
-        onPress={() => setShowRecover(!showRecover)}
-      />
+      <View style={{ marginTop: 20 }}>
+        <Button
+          title={showRecover ? 'Hide Recover' : 'Recover with Mnemonic'}
+          onPress={() => {
+            setShowRecover(!showRecover);
+            setShowImport(false);
+          }}
+        />
 
-      {showRecover && (
-        <>
-          <TextInput
-            placeholder="Enter 12-word recovery phrase"
-            value={mnemonicInput}
-            onChangeText={setMnemonicInput}
-            multiline
-            style={{
-              borderWidth: 1,
-              borderColor: '#ccc',
-              padding: 10,
-              marginVertical: 10,
-            }}
-          />
-          <Button
-            title="Recover"
-            onPress={() => recoverWallet(mnemonicInput)}
-            disabled={isLoading || !mnemonicInput}
-          />
-        </>
-      )}
+        {showRecover && (
+          <>
+            <TextInput
+              placeholder="Enter 12-word recovery phrase"
+              value={mnemonicInput}
+              onChangeText={setMnemonicInput}
+              multiline
+              style={{
+                borderWidth: 1,
+                borderColor: '#ccc',
+                padding: 10,
+                marginVertical: 10,
+                borderRadius: 8,
+              }}
+            />
+            <Button
+              title="Recover"
+              onPress={async () => {
+                try {
+                  await recoverWallet(mnemonicInput);
+                  setMnemonicInput('');
+                  setShowRecover(false);
+                } catch (e) {
+                  Alert.alert('Error', e.message);
+                }
+              }}
+              disabled={isLoading || !mnemonicInput.trim()}
+            />
+          </>
+        )}
+      </View>
+
+      <View style={{ marginTop: 20 }}>
+        <Button
+          title={showImport ? 'Hide Import' : 'Import with Private Key'}
+          onPress={() => {
+            setShowImport(!showImport);
+            setShowRecover(false);
+          }}
+        />
+
+        {showImport && (
+          <>
+            <TextInput
+              placeholder="Enter private key (0x...)"
+              value={privateKeyInput}
+              onChangeText={setPrivateKeyInput}
+              secureTextEntry
+              style={{
+                borderWidth: 1,
+                borderColor: '#ccc',
+                padding: 10,
+                marginVertical: 10,
+                borderRadius: 8,
+              }}
+            />
+            <Button
+              title="Import"
+              onPress={async () => {
+                try {
+                  await importFromPrivateKey(privateKeyInput);
+                  setPrivateKeyInput('');
+                  setShowImport(false);
+                } catch (e) {
+                  Alert.alert('Error', e.message);
+                }
+              }}
+              disabled={isLoading || !privateKeyInput.trim()}
+            />
+          </>
+        )}
+      </View>
     </View>
   );
 }
 ```
+
+## Security Best Practices
+
+1. **Mnemonic Backup**: Always guide users to backup their mnemonic phrase securely
+2. **Biometric Authentication**: Use `requireBiometric: true` for sensitive operations
+3. **Rate Limiting**: Be aware of rate limits on export functions (3 times/minute)
+4. **Secure Display**: Use secure UI components when displaying sensitive data
+5. **Confirmation**: Always confirm before destructive actions like wallet deletion
 
 ## Next Steps
 

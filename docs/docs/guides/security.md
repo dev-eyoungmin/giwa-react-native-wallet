@@ -104,24 +104,29 @@ const handleExportPrivateKey = async () => {
 import { useBiometricAuth } from '@giwa/react-native-wallet';
 
 function SecureAction() {
-  const { authenticate, isAvailable, biometryType } = useBiometricAuth();
+  const { authenticate, isAvailable, isEnrolled, biometricType } = useBiometricAuth();
 
   const handleSensitiveAction = async () => {
-    if (!isAvailable) {
+    if (!isAvailable || !isEnrolled) {
       // Use alternative authentication like PIN when biometrics unavailable
       const pinValid = await verifyPin();
       if (!pinValid) return;
     } else {
       // Biometric authentication
-      const success = await authenticate({
-        promptMessage: 'Authenticate to approve transaction',
-      });
+      const success = await authenticate('Authenticate to approve transaction');
       if (!success) return;
     }
 
     // Execute sensitive action
     await performSensitiveAction();
   };
+
+  return (
+    <Button
+      title={`Authenticate with ${biometricType}`}
+      onPress={handleSensitiveAction}
+    />
+  );
 }
 ```
 

@@ -64,7 +64,9 @@ function WalletScreen() {
 - React Native >= 0.77.0
 - Expo SDK >= 53 (Expo projects)
 - expo-secure-store >= 15.0.0 (Expo)
+- expo-local-authentication >= 14.0.0 (Expo, for biometrics)
 - react-native-keychain >= 9.2.0 (React Native CLI)
+- react-native-get-random-values >= 1.11.0
 
 ## GIWA Official Resources
 

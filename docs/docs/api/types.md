@@ -282,6 +282,42 @@ const DOJANG_SCHEMAS = {
 };
 ```
 
+## Biometric Types
+
+```tsx
+type BiometricType = 'fingerprint' | 'face' | 'iris' | 'none';
+
+interface BiometricCapability {
+  isAvailable: boolean;
+  biometricType: BiometricType;
+  isEnrolled: boolean;
+}
+
+interface UseBiometricAuthOptions {
+  /** Default prompt message for authentication */
+  defaultPromptMessage?: string;
+}
+
+interface UseBiometricAuthReturn {
+  /** Whether biometric hardware is available */
+  isAvailable: boolean;
+  /** Whether biometrics are enrolled on the device */
+  isEnrolled: boolean;
+  /** Type of biometric available */
+  biometricType: BiometricType;
+  /** Full capability information */
+  capability: BiometricCapability | null;
+  /** Whether capability check is in progress */
+  isLoading: boolean;
+  /** Error if capability check failed */
+  error: Error | null;
+  /** Authenticate using biometrics */
+  authenticate: (promptMessage?: string) => Promise<boolean>;
+  /** Refresh capability information */
+  refreshCapability: () => Promise<void>;
+}
+```
+
 ## Adapter Interfaces
 
 ```tsx
@@ -294,20 +330,12 @@ interface ISecureStorage {
 
 interface SecureStorageOptions {
   requireBiometric?: boolean;
+  accessibleWhenUnlocked?: boolean;
 }
 
 interface IBiometricAuth {
-  isAvailable(): Promise<boolean>;
-  getBiometryType(): Promise<BiometryType | null>;
-  authenticate(options?: BiometricOptions): Promise<boolean>;
-}
-
-type BiometryType = 'FaceID' | 'TouchID' | 'Fingerprint' | 'Iris';
-
-interface BiometricOptions {
-  promptMessage?: string;
-  cancelLabel?: string;
-  fallbackLabel?: string;
+  getCapability(): Promise<BiometricCapability>;
+  authenticate(promptMessage: string): Promise<boolean>;
 }
 ```
 

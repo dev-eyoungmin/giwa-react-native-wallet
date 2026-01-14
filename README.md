@@ -19,13 +19,13 @@ GIWA Chain SDK for React Native - Expo and React Native CLI compatible
 
 ```bash
 # npm
-npm install @giwa/react-native-wallet expo-secure-store
+npm install @giwa/react-native-wallet expo-secure-store expo-local-authentication react-native-get-random-values
 
 # yarn
-yarn add @giwa/react-native-wallet expo-secure-store
+yarn add @giwa/react-native-wallet expo-secure-store expo-local-authentication react-native-get-random-values
 
 # pnpm
-pnpm add @giwa/react-native-wallet expo-secure-store
+pnpm add @giwa/react-native-wallet expo-secure-store expo-local-authentication react-native-get-random-values
 ```
 
 > **Tip**: You can also use `npx expo install` for automatic Expo SDK version compatibility.
@@ -34,13 +34,13 @@ pnpm add @giwa/react-native-wallet expo-secure-store
 
 ```bash
 # npm
-npm install @giwa/react-native-wallet react-native-keychain
+npm install @giwa/react-native-wallet react-native-keychain react-native-get-random-values
 
 # yarn
-yarn add @giwa/react-native-wallet react-native-keychain
+yarn add @giwa/react-native-wallet react-native-keychain react-native-get-random-values
 
 # pnpm
-pnpm add @giwa/react-native-wallet react-native-keychain
+pnpm add @giwa/react-native-wallet react-native-keychain react-native-get-random-values
 ```
 
 ```bash
@@ -201,6 +201,7 @@ function GiwaIdScreen() {
 | `useDojang` | Attestation verification |
 | `useFaucet` | Testnet faucet |
 | `useNetworkInfo` | Network status and feature availability |
+| `useBiometricAuth` | Biometric authentication (Face ID, Touch ID, Fingerprint) |
 
 ### Configuration
 
@@ -606,7 +607,9 @@ npm test -- --watch
 - React Native >= 0.77.0
 - Expo SDK >= 53 (for Expo projects)
 - expo-secure-store >= 15.0.0 (Expo)
+- expo-local-authentication >= 14.0.0 (Expo, for biometrics)
 - react-native-keychain >= 9.2.0 (React Native CLI)
+- react-native-get-random-values >= 1.11.0
 
 ## License
 
