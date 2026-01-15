@@ -38,9 +38,9 @@ const GIWA_NETWORKS: Record<NetworkType, NetworkInfo> = {
   },
   mainnet: {
     name: 'GIWA Mainnet',
-    chainId: 91341,
-    rpcUrl: 'https://rpc.giwa.io/',
-    explorerUrl: 'https://explorer.giwa.io',
+    chainId: -,
+    rpcUrl: -,
+    explorerUrl: -,
     nativeCurrency: {
       name: 'GIWA ETH',
       symbol: 'ETH',
@@ -84,7 +84,7 @@ interface TransactionReceipt {
   blockHash: string;
   from: string;
   to: string;
-  status: 'success' | 'reverted';
+  status: "success" | "reverted";
   gasUsed: bigint;
   effectiveGasPrice: bigint;
   logs: Log[];
@@ -128,7 +128,7 @@ interface AllowanceResult {
 ```tsx
 interface BridgeParams {
   amount: string;
-  token: 'ETH' | string;
+  token: "ETH" | string;
 }
 
 interface DepositResult {
@@ -142,7 +142,7 @@ interface WithdrawResult {
 }
 
 interface DepositStatus {
-  state: 'pending' | 'l1_confirmed' | 'completed' | 'failed';
+  state: "pending" | "l1_confirmed" | "completed" | "failed";
   l1TxHash: string;
   l2TxHash?: string;
   error?: string;
@@ -150,12 +150,12 @@ interface DepositStatus {
 
 interface WithdrawStatus {
   state:
-    | 'pending'
-    | 'waiting_for_proof'
-    | 'ready_to_prove'
-    | 'in_challenge'
-    | 'ready_to_finalize'
-    | 'completed';
+    | "pending"
+    | "waiting_for_proof"
+    | "ready_to_prove"
+    | "in_challenge"
+    | "ready_to_finalize"
+    | "completed";
   l2TxHash: string;
   l1TxHash?: string;
   remainingTime?: number;
@@ -274,11 +274,11 @@ interface AttestationResult {
 
 // Default Schemas
 const DOJANG_SCHEMAS = {
-  KYC: '0x...',
-  MEMBERSHIP: '0x...',
-  ACHIEVEMENT: '0x...',
-  CREDENTIAL: '0x...',
-  VERIFICATION: '0x...',
+  KYC: "0x...",
+  MEMBERSHIP: "0x...",
+  ACHIEVEMENT: "0x...",
+  CREDENTIAL: "0x...",
+  VERIFICATION: "0x...",
 };
 ```
 
@@ -286,7 +286,11 @@ const DOJANG_SCHEMAS = {
 
 ```tsx
 interface ISecureStorage {
-  setItem(key: string, value: string, options?: SecureStorageOptions): Promise<void>;
+  setItem(
+    key: string,
+    value: string,
+    options?: SecureStorageOptions
+  ): Promise<void>;
   getItem(key: string, options?: SecureStorageOptions): Promise<string | null>;
   removeItem(key: string): Promise<void>;
   getAllKeys(): Promise<string[]>;
@@ -302,7 +306,7 @@ interface IBiometricAuth {
   authenticate(options?: BiometricOptions): Promise<boolean>;
 }
 
-type BiometryType = 'FaceID' | 'TouchID' | 'Fingerprint' | 'Iris';
+type BiometryType = "FaceID" | "TouchID" | "Fingerprint" | "Iris";
 
 interface BiometricOptions {
   promptMessage?: string;
@@ -328,48 +332,48 @@ class GiwaTransactionError extends GiwaError {}
 
 const ErrorCodes = {
   // General
-  UNKNOWN_ERROR: 'UNKNOWN_ERROR',
-  INVALID_PARAMS: 'INVALID_PARAMS',
+  UNKNOWN_ERROR: "UNKNOWN_ERROR",
+  INVALID_PARAMS: "INVALID_PARAMS",
 
   // Security
-  SECURE_STORAGE_ERROR: 'SECURE_STORAGE_ERROR',
-  BIOMETRIC_FAILED: 'BIOMETRIC_FAILED',
-  BIOMETRIC_NOT_AVAILABLE: 'BIOMETRIC_NOT_AVAILABLE',
+  SECURE_STORAGE_ERROR: "SECURE_STORAGE_ERROR",
+  BIOMETRIC_FAILED: "BIOMETRIC_FAILED",
+  BIOMETRIC_NOT_AVAILABLE: "BIOMETRIC_NOT_AVAILABLE",
 
   // Network
-  NETWORK_ERROR: 'NETWORK_ERROR',
-  RPC_ERROR: 'RPC_ERROR',
-  TIMEOUT: 'TIMEOUT',
+  NETWORK_ERROR: "NETWORK_ERROR",
+  RPC_ERROR: "RPC_ERROR",
+  TIMEOUT: "TIMEOUT",
 
   // Wallet
-  WALLET_NOT_FOUND: 'WALLET_NOT_FOUND',
-  INVALID_MNEMONIC: 'INVALID_MNEMONIC',
-  INVALID_PRIVATE_KEY: 'INVALID_PRIVATE_KEY',
+  WALLET_NOT_FOUND: "WALLET_NOT_FOUND",
+  INVALID_MNEMONIC: "INVALID_MNEMONIC",
+  INVALID_PRIVATE_KEY: "INVALID_PRIVATE_KEY",
 
   // Transaction
-  INVALID_ADDRESS: 'INVALID_ADDRESS',
-  INSUFFICIENT_FUNDS: 'INSUFFICIENT_FUNDS',
-  GAS_TOO_LOW: 'GAS_TOO_LOW',
-  NONCE_TOO_LOW: 'NONCE_TOO_LOW',
-  TRANSACTION_FAILED: 'TRANSACTION_FAILED',
-  TRANSACTION_REVERTED: 'TRANSACTION_REVERTED',
+  INVALID_ADDRESS: "INVALID_ADDRESS",
+  INSUFFICIENT_FUNDS: "INSUFFICIENT_FUNDS",
+  GAS_TOO_LOW: "GAS_TOO_LOW",
+  NONCE_TOO_LOW: "NONCE_TOO_LOW",
+  TRANSACTION_FAILED: "TRANSACTION_FAILED",
+  TRANSACTION_REVERTED: "TRANSACTION_REVERTED",
 
   // Token
-  INVALID_TOKEN: 'INVALID_TOKEN',
-  INSUFFICIENT_ALLOWANCE: 'INSUFFICIENT_ALLOWANCE',
+  INVALID_TOKEN: "INVALID_TOKEN",
+  INSUFFICIENT_ALLOWANCE: "INSUFFICIENT_ALLOWANCE",
 
   // Bridge
-  BRIDGE_ERROR: 'BRIDGE_ERROR',
-  BRIDGE_TIMEOUT: 'BRIDGE_TIMEOUT',
+  BRIDGE_ERROR: "BRIDGE_ERROR",
+  BRIDGE_TIMEOUT: "BRIDGE_TIMEOUT",
 
   // GIWA ID
-  NAME_NOT_AVAILABLE: 'NAME_NOT_AVAILABLE',
-  NAME_NOT_FOUND: 'NAME_NOT_FOUND',
+  NAME_NOT_AVAILABLE: "NAME_NOT_AVAILABLE",
+  NAME_NOT_FOUND: "NAME_NOT_FOUND",
 
   // Dojang
-  ATTESTATION_NOT_FOUND: 'ATTESTATION_NOT_FOUND',
-  ATTESTATION_REVOKED: 'ATTESTATION_REVOKED',
-  NOT_AUTHORIZED: 'NOT_AUTHORIZED',
+  ATTESTATION_NOT_FOUND: "ATTESTATION_NOT_FOUND",
+  ATTESTATION_REVOKED: "ATTESTATION_REVOKED",
+  NOT_AUTHORIZED: "NOT_AUTHORIZED",
 } as const;
 ```
 
@@ -400,13 +404,13 @@ interface GiwaConfig {
   /** Enable Flashblocks */
   enableFlashblocks?: boolean;
   /** Force environment type */
-  forceEnvironment?: 'expo' | 'react-native';
+  forceEnvironment?: "expo" | "react-native";
 }
 
 // GiwaProvider Props (Recommended)
 interface GiwaProviderProps {
   /** Network type */
-  network?: 'testnet' | 'mainnet';
+  network?: "testnet" | "mainnet";
   /** Initialization timeout (ms, default: 10000) */
   initTimeout?: number;
   /** Callback when error occurs */
@@ -463,11 +467,19 @@ interface UseGiwaWalletReturn {
   /** Error object */
   error: Error | null;
   /** Create new wallet */
-  createWallet: (options?: SecureStorageOptions) => Promise<WalletCreationResult>;
+  createWallet: (
+    options?: SecureStorageOptions
+  ) => Promise<WalletCreationResult>;
   /** Recover wallet from mnemonic */
-  recoverWallet: (mnemonic: string, options?: SecureStorageOptions) => Promise<GiwaWallet>;
+  recoverWallet: (
+    mnemonic: string,
+    options?: SecureStorageOptions
+  ) => Promise<GiwaWallet>;
   /** Import wallet from private key */
-  importFromPrivateKey: (privateKey: Hex, options?: SecureStorageOptions) => Promise<GiwaWallet>;
+  importFromPrivateKey: (
+    privateKey: Hex,
+    options?: SecureStorageOptions
+  ) => Promise<GiwaWallet>;
   /** Load saved wallet */
   loadWallet: (options?: SecureStorageOptions) => Promise<GiwaWallet | null>;
   /** Delete wallet */
@@ -495,7 +507,7 @@ interface UseBalanceReturn {
 // useNetworkInfo return type
 interface UseNetworkInfoReturn {
   /** Current network */
-  network: 'testnet' | 'mainnet';
+  network: "testnet" | "mainnet";
   /** Network configuration */
   networkConfig: GiwaNetwork;
   /** Network status */
@@ -548,18 +560,18 @@ const DEFAULT_RATE_LIMITS: Record<string, RateLimitConfig> = {
 
 // Security Event Types
 type SecurityEventType =
-  | 'WALLET_CREATED'
-  | 'WALLET_RECOVERED'
-  | 'WALLET_DELETED'
-  | 'WALLET_CONNECTED'
-  | 'WALLET_DISCONNECTED'
-  | 'MNEMONIC_EXPORT_ATTEMPT'
-  | 'PRIVATE_KEY_EXPORT_ATTEMPT'
-  | 'RATE_LIMIT_TRIGGERED'
-  | 'SECURITY_VIOLATION'
-  | 'BIOMETRIC_AUTH_ATTEMPT'
-  | 'BIOMETRIC_AUTH_SUCCESS'
-  | 'BIOMETRIC_AUTH_FAILED';
+  | "WALLET_CREATED"
+  | "WALLET_RECOVERED"
+  | "WALLET_DELETED"
+  | "WALLET_CONNECTED"
+  | "WALLET_DISCONNECTED"
+  | "MNEMONIC_EXPORT_ATTEMPT"
+  | "PRIVATE_KEY_EXPORT_ATTEMPT"
+  | "RATE_LIMIT_TRIGGERED"
+  | "SECURITY_VIOLATION"
+  | "BIOMETRIC_AUTH_ATTEMPT"
+  | "BIOMETRIC_AUTH_SUCCESS"
+  | "BIOMETRIC_AUTH_FAILED";
 
 // Security Event Log
 interface SecurityEvent {
@@ -576,7 +588,7 @@ interface SecurityEvent {
 // Memory Security Configuration
 interface MemorySecurityConfig {
   /** Sensitive data auto-cleanup time (ms) */
-  accountCleanupDelay: number;    // Default: 300000 (5 minutes)
+  accountCleanupDelay: number; // Default: 300000 (5 minutes)
 }
 ```
 

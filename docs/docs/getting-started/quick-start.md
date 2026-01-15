@@ -10,10 +10,10 @@ Create your first wallet with GIWA SDK in 5 minutes.
 
 ```bash
 # Expo
-npx expo install giwa-react-native-wallet expo-secure-store
+npx expo install giwa-react-native-wallet expo-secure-store expo-local-authentication react-native-get-random-values
 
 # React Native CLI
-npm install giwa-react-native-wallet react-native-keychain
+npm install giwa-react-native-wallet react-native-keychain react-native-get-random-values
 cd ios && pod install
 ```
 
@@ -24,39 +24,38 @@ import { GiwaProvider } from 'giwa-react-native-wallet';
 
 export default function App() {
   return (
-    <GiwaProvider
-      network="testnet"
-      initTimeout={10000}
-      onError={(error) => console.error('SDK Error:', error)}
-    >
+    <GiwaProvider>  {/* All props are optional */}
       <WalletDemo />
     </GiwaProvider>
   );
 }
 ```
 
-### GiwaProvider Props
+:::tip All Props Are Optional
+`GiwaProvider` can be used without any props. It connects to testnet by default.
+:::
+
+### GiwaProvider Props (All Optional)
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `network` | `'testnet' \| 'mainnet'` | `'testnet'` | Network to connect to |
-| `config.endpoints` | `CustomEndpoints` | - | Custom RPC and explorer URLs |
-| `config.customContracts` | `CustomContracts` | - | Custom contract addresses |
+| `network` | `'testnet' \| 'mainnet'` | `'testnet'` | Network to connect (mainnet: 🚧 Under Development) |
 | `initTimeout` | `number` | `10000` | Initialization timeout (ms) |
-| `onError` | `(error: Error) => void` | - | Callback when error occurs |
+| `onError` | `(error: Error) => void` | - | Error callback |
 
-### Custom Contract Addresses
-
-The SDK uses OP Stack standard predeploy addresses by default. Override them if needed:
+<details>
+<summary>Advanced Configuration (Custom Endpoints, Contract Addresses)</summary>
 
 ```tsx
 <GiwaProvider
+  network="testnet"
+  onError={(error) => console.error('SDK Error:', error)}
   config={{
-    network: 'testnet',
+    endpoints: {
+      rpcUrl: 'https://my-rpc.example.com',
+    },
     customContracts: {
       eas: '0x...', // Custom EAS address
-      schemaRegistry: '0x...', // Custom Schema Registry
-      ensRegistry: '0x...', // Custom ENS Registry
     },
   }}
 >
@@ -65,6 +64,7 @@ The SDK uses OP Stack standard predeploy addresses by default. Override them if 
 ```
 
 See [Core API - Contract Addresses](/docs/api/core#default-contract-addresses) for default addresses.
+</details>
 
 ## 3. Create Wallet
 

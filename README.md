@@ -1,5 +1,9 @@
 # giwa-react-native-wallet
 
+[![npm version](https://img.shields.io/npm/v/giwa-react-native-wallet.svg)](https://www.npmjs.com/package/giwa-react-native-wallet)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://dev-eyoungmin.github.io/giwa-react-native-wallet/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 GIWA Chain SDK for React Native - Expo and React Native CLI compatible
 
 ## Features
@@ -53,11 +57,13 @@ cd ios && pod install
 ### 1. Wrap your app with GiwaProvider
 
 ```tsx
-import { GiwaProvider } from 'giwa-react-native-wallet';
+import { GiwaProvider } from "giwa-react-native-wallet";
 
 export default function App() {
   return (
-    <GiwaProvider config={{ network: 'testnet' }}>
+    <GiwaProvider>
+      {" "}
+      {/* config is optional, defaults to testnet */}
       <YourApp />
     </GiwaProvider>
   );
@@ -67,21 +73,16 @@ export default function App() {
 ### 2. Create or recover a wallet
 
 ```tsx
-import { useGiwaWallet } from 'giwa-react-native-wallet';
+import { useGiwaWallet } from "giwa-react-native-wallet";
 
 function WalletScreen() {
-  const { wallet, createWallet, recoverWallet, isLoading } = useGiwaWallet();
+  const { wallet, createWallet, recoverWallet } = useGiwaWallet();
 
+  // createWallet() - no parameters required
   const handleCreate = async () => {
     const { wallet, mnemonic } = await createWallet();
-    console.log('Address:', wallet.address);
-    console.log('Mnemonic:', mnemonic); // Save this securely!
-  };
-
-  const handleRecover = async () => {
-    const mnemonic = 'your twelve word mnemonic phrase here...';
-    const recoveredWallet = await recoverWallet(mnemonic);
-    console.log('Recovered:', recoveredWallet.address);
+    console.log("Address:", wallet.address);
+    // Save mnemonic securely!
   };
 
   return (
@@ -89,10 +90,7 @@ function WalletScreen() {
       {wallet ? (
         <Text>Address: {wallet.address}</Text>
       ) : (
-        <>
-          <Button title="Create Wallet" onPress={handleCreate} />
-          <Button title="Recover Wallet" onPress={handleRecover} />
-        </>
+        <Button title="Create Wallet" onPress={handleCreate} />
       )}
     </View>
   );
@@ -102,10 +100,11 @@ function WalletScreen() {
 ### 3. Check balance
 
 ```tsx
-import { useBalance } from 'giwa-react-native-wallet';
+import { useBalance } from "giwa-react-native-wallet";
 
 function BalanceScreen() {
-  const { balance, formattedBalance, isLoading, refetch } = useBalance();
+  // useBalance() - no parameters required, uses connected wallet
+  const { formattedBalance, refetch } = useBalance();
 
   return (
     <View>
@@ -119,44 +118,46 @@ function BalanceScreen() {
 ### 4. Send transactions
 
 ```tsx
-import { useTransaction } from 'giwa-react-native-wallet';
+import { useTransaction } from "giwa-react-native-wallet";
 
 function SendScreen() {
   const { sendTransaction, waitForReceipt, isLoading } = useTransaction();
 
   const handleSend = async () => {
     const hash = await sendTransaction({
-      to: '0x...',
-      value: '0.1', // ETH
+      to: "0x...",
+      value: "0.1", // ETH
     });
 
     const receipt = await waitForReceipt(hash);
-    console.log('Confirmed in block:', receipt.blockNumber);
+    console.log("Confirmed in block:", receipt.blockNumber);
   };
 
-  return <Button title="Send 0.1 ETH" onPress={handleSend} disabled={isLoading} />;
+  return (
+    <Button title="Send 0.1 ETH" onPress={handleSend} disabled={isLoading} />
+  );
 }
 ```
 
 ### 5. Use Flashblocks for fast confirmations
 
 ```tsx
-import { useFlashblocks } from 'giwa-react-native-wallet';
+import { useFlashblocks } from "giwa-react-native-wallet";
 
 function FastTransactionScreen() {
   const { sendTransaction, getAverageLatency } = useFlashblocks();
 
   const handleSend = async () => {
     const { preconfirmation, result } = await sendTransaction({
-      to: '0x...',
-      value: BigInt('100000000000000000'), // 0.1 ETH in wei
+      to: "0x...",
+      value: BigInt("100000000000000000"), // 0.1 ETH in wei
     });
 
-    console.log('Preconfirmed at:', preconfirmation.preconfirmedAt);
+    console.log("Preconfirmed at:", preconfirmation.preconfirmedAt);
 
     const receipt = await result.wait();
-    console.log('Confirmed at:', receipt.blockNumber);
-    console.log('Average latency:', getAverageLatency(), 'ms');
+    console.log("Confirmed at:", receipt.blockNumber);
+    console.log("Average latency:", getAverageLatency(), "ms");
   };
 
   return <Button title="Fast Send" onPress={handleSend} />;
@@ -166,19 +167,19 @@ function FastTransactionScreen() {
 ### 6. Resolve GIWA ID
 
 ```tsx
-import { useGiwaId } from 'giwa-react-native-wallet';
+import { useGiwaId } from "giwa-react-native-wallet";
 
 function GiwaIdScreen() {
   const { resolveAddress, resolveName } = useGiwaId();
 
   const handleResolve = async () => {
     // GIWA ID to address
-    const address = await resolveAddress('alice.giwa.id');
-    console.log('Address:', address);
+    const address = await resolveAddress("alice.giwa.id");
+    console.log("Address:", address);
 
     // Address to GIWA ID
-    const name = await resolveName('0x...');
-    console.log('Name:', name);
+    const name = await resolveName("0x...");
+    console.log("Name:", name);
   };
 
   return <Button title="Resolve" onPress={handleResolve} />;
@@ -189,30 +190,36 @@ function GiwaIdScreen() {
 
 ### Hooks
 
-| Hook | Description |
-|------|-------------|
-| `useGiwaWallet` | Wallet management (create, recover, import, export) |
-| `useBalance` | ETH balance queries |
-| `useTransaction` | Send ETH transactions |
-| `useTokens` | ERC-20 token operations |
-| `useBridge` | L1↔L2 bridge operations |
-| `useFlashblocks` | Fast preconfirmation transactions |
-| `useGiwaId` | GIWA ID (ENS) resolution |
-| `useDojang` | Attestation verification |
-| `useFaucet` | Testnet faucet |
-| `useNetworkInfo` | Network status and feature availability |
+| Hook               | Description                                               |
+| ------------------ | --------------------------------------------------------- |
+| `useGiwaWallet`    | Wallet management (create, recover, import, export)       |
+| `useBalance`       | ETH balance queries                                       |
+| `useTransaction`   | Send ETH transactions                                     |
+| `useTokens`        | ERC-20 token operations                                   |
+| `useBridge`        | L1↔L2 bridge operations                                   |
+| `useFlashblocks`   | Fast preconfirmation transactions                         |
+| `useGiwaId`        | GIWA ID (ENS) resolution                                  |
+| `useDojang`        | Attestation verification                                  |
+| `useFaucet`        | Testnet faucet                                            |
+| `useNetworkInfo`   | Network status and feature availability                   |
 | `useBiometricAuth` | Biometric authentication (Face ID, Touch ID, Fingerprint) |
 
-### Configuration
+### Configuration (All Optional)
 
 ```tsx
+// Minimal - all defaults
+<GiwaProvider>
+  <App />
+</GiwaProvider>
+
+// With options (all optional)
 <GiwaProvider
-  config={{
-    network: 'testnet', // 'testnet' | 'mainnet'
-    autoConnect: true, // Auto-load wallet on startup
-    enableFlashblocks: true, // Enable fast confirmations
-  }}
+  network="testnet"           // optional, default: 'testnet'
+  initTimeout={10000}         // optional, default: 10000 (ms)
+  onError={(e) => console.error(e)}  // optional
 >
+  <App />
+</GiwaProvider>
 ```
 
 ### Custom Endpoints
@@ -236,10 +243,11 @@ You can override default network endpoints:
 Access endpoints at runtime:
 
 ```tsx
-import { useNetworkInfo } from 'giwa-react-native-wallet';
+import { useNetworkInfo } from "giwa-react-native-wallet";
 
 function MyComponent() {
-  const { rpcUrl, flashblocksRpcUrl, flashblocksWsUrl, explorerUrl } = useNetworkInfo();
+  const { rpcUrl, flashblocksRpcUrl, flashblocksWsUrl, explorerUrl } =
+    useNetworkInfo();
   // Use the resolved endpoints
 }
 ```
@@ -249,7 +257,7 @@ function MyComponent() {
 ### Check Network Status and Feature Availability
 
 ```tsx
-import { useNetworkInfo } from 'giwa-react-native-wallet';
+import { useNetworkInfo } from "giwa-react-native-wallet";
 
 function NetworkStatus() {
   const {
@@ -265,18 +273,20 @@ function NetworkStatus() {
   return (
     <View>
       <Text>Network: {network}</Text>
-      <Text>Testnet: {isTestnet ? 'Yes' : 'No'}</Text>
-      <Text>Ready: {isReady ? 'Yes' : 'No'}</Text>
+      <Text>Testnet: {isTestnet ? "Yes" : "No"}</Text>
+      <Text>Ready: {isReady ? "Yes" : "No"}</Text>
 
       {hasWarnings && (
         <View>
           <Text>Warnings:</Text>
-          {warnings.map((w, i) => <Text key={i}>- {w}</Text>)}
+          {warnings.map((w, i) => (
+            <Text key={i}>- {w}</Text>
+          ))}
         </View>
       )}
 
       {/* Check specific feature availability */}
-      {!isFeatureAvailable('giwaId') && (
+      {!isFeatureAvailable("giwaId") && (
         <Text>GIWA ID is not available on this network</Text>
       )}
     </View>
@@ -301,27 +311,25 @@ When using mainnet with TBD (not yet deployed) contracts, the SDK will log warni
 
 ### Testnet (GIWA Sepolia)
 
-| Property | Value |
-|----------|-------|
-| Chain ID | 91342 |
-| RPC URL | `https://sepolia-rpc.giwa.io` |
-| Flashblocks RPC | `https://sepolia-rpc-flashblocks.giwa.io` |
-| Flashblocks WebSocket | `wss://sepolia-rpc-flashblocks.giwa.io` |
-| Block Explorer | `https://sepolia-explorer.giwa.io` |
-| Currency | ETH |
+| Property              | Value                                     |
+| --------------------- | ----------------------------------------- |
+| Chain ID              | 91342                                     |
+| RPC URL               | `https://sepolia-rpc.giwa.io`             |
+| Flashblocks RPC       | `https://sepolia-rpc-flashblocks.giwa.io` |
+| Flashblocks WebSocket | `wss://sepolia-rpc-flashblocks.giwa.io`   |
+| Block Explorer        | `https://sepolia-explorer.giwa.io`        |
+| Currency              | ETH                                       |
 
-### Mainnet (Coming Soon)
+### Mainnet (🚧 Under Development)
 
-| Property | Value |
-|----------|-------|
-| Chain ID | 91341 (TBD) |
-| RPC URL | `https://rpc.giwa.io` |
-| Flashblocks RPC | `https://rpc-flashblocks.giwa.io` |
-| Flashblocks WebSocket | `wss://rpc-flashblocks.giwa.io` |
-| Block Explorer | `https://explorer.giwa.io` |
-| Currency | ETH |
+> ⚠️ **Mainnet is currently under development.** Please use testnet.
 
-> **Note**: Mainnet contracts are not yet deployed. Use `testnet` for development.
+| Property       | Value                |
+| -------------- | -------------------- |
+| Chain ID       | -                    |
+| RPC URL        | -                    |
+| Block Explorer | -                    |
+| Status         | 🚧 Under Development |
 
 ## Security
 
@@ -346,13 +354,14 @@ npm install --save-dev @types/jest ts-jest
 ```javascript
 // jest.config.js
 module.exports = {
-  preset: 'react-native',
-  setupFilesAfterEnv: ['./jest.setup.js'],
+  preset: "react-native",
+  setupFilesAfterEnv: ["./jest.setup.js"],
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|giwa-react-native-wallet)/)',
+    "node_modules/(?!(react-native|@react-native|giwa-react-native-wallet)/)",
   ],
   moduleNameMapper: {
-    '^giwa-react-native-wallet$': '<rootDir>/node_modules/giwa-react-native-wallet/dist/index.js',
+    "^giwa-react-native-wallet$":
+      "<rootDir>/node_modules/giwa-react-native-wallet/dist/index.js",
   },
 };
 ```
@@ -361,22 +370,22 @@ module.exports = {
 
 ```typescript
 // jest.setup.js
-jest.mock('expo-secure-store', () => ({
+jest.mock("expo-secure-store", () => ({
   setItemAsync: jest.fn(),
   getItemAsync: jest.fn(),
   deleteItemAsync: jest.fn(),
   isAvailableAsync: jest.fn(() => Promise.resolve(true)),
-  WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WHEN_UNLOCKED_THIS_DEVICE_ONLY',
+  WHEN_UNLOCKED_THIS_DEVICE_ONLY: "WHEN_UNLOCKED_THIS_DEVICE_ONLY",
 }));
 
-jest.mock('react-native-keychain', () => ({
+jest.mock("react-native-keychain", () => ({
   setGenericPassword: jest.fn(() => Promise.resolve(true)),
-  getGenericPassword: jest.fn(() => Promise.resolve({ password: 'test' })),
+  getGenericPassword: jest.fn(() => Promise.resolve({ password: "test" })),
   resetGenericPassword: jest.fn(() => Promise.resolve(true)),
-  getSupportedBiometryType: jest.fn(() => Promise.resolve('FaceID')),
-  ACCESS_CONTROL: { BIOMETRY_CURRENT_SET_OR_DEVICE_PASSCODE: 'BIOMETRY' },
-  ACCESSIBLE: { WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WHEN_UNLOCKED' },
-  BIOMETRY_TYPE: { FACE_ID: 'FaceID', TOUCH_ID: 'TouchID' },
+  getSupportedBiometryType: jest.fn(() => Promise.resolve("FaceID")),
+  ACCESS_CONTROL: { BIOMETRY_CURRENT_SET_OR_DEVICE_PASSCODE: "BIOMETRY" },
+  ACCESSIBLE: { WHEN_UNLOCKED_THIS_DEVICE_ONLY: "WHEN_UNLOCKED" },
+  BIOMETRY_TYPE: { FACE_ID: "FaceID", TOUCH_ID: "TouchID" },
 }));
 ```
 
@@ -386,43 +395,42 @@ jest.mock('react-native-keychain', () => ({
 
 ```typescript
 // __tests__/wallet.test.ts
-import { renderHook, act } from '@testing-library/react-hooks';
-import { useGiwaWallet } from 'giwa-react-native-wallet';
-import { GiwaProvider } from 'giwa-react-native-wallet';
+import { renderHook, act } from "@testing-library/react-hooks";
+import { useGiwaWallet } from "giwa-react-native-wallet";
+import { GiwaProvider } from "giwa-react-native-wallet";
 
 const wrapper = ({ children }) => (
-  <GiwaProvider config={{ network: 'testnet' }}>
-    {children}
-  </GiwaProvider>
+  <GiwaProvider config={{ network: "testnet" }}>{children}</GiwaProvider>
 );
 
-describe('useGiwaWallet', () => {
-  it('should create a new wallet', async () => {
+describe("useGiwaWallet", () => {
+  it("should create a new wallet", async () => {
     const { result } = renderHook(() => useGiwaWallet(), { wrapper });
 
     await act(async () => {
       const { wallet, mnemonic } = await result.current.createWallet();
       expect(wallet.address).toMatch(/^0x[a-fA-F0-9]{40}$/);
-      expect(mnemonic.split(' ')).toHaveLength(12);
+      expect(mnemonic.split(" ")).toHaveLength(12);
     });
   });
 
-  it('should recover wallet from mnemonic', async () => {
+  it("should recover wallet from mnemonic", async () => {
     const { result } = renderHook(() => useGiwaWallet(), { wrapper });
-    const testMnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+    const testMnemonic =
+      "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
     await act(async () => {
       const wallet = await result.current.recoverWallet(testMnemonic);
-      expect(wallet.address).toBe('0x9858EfFD232B4033E47d90003D41EC34EcaEda94');
+      expect(wallet.address).toBe("0x9858EfFD232B4033E47d90003D41EC34EcaEda94");
     });
   });
 
-  it('should throw error for invalid mnemonic', async () => {
+  it("should throw error for invalid mnemonic", async () => {
     const { result } = renderHook(() => useGiwaWallet(), { wrapper });
 
     await expect(
-      result.current.recoverWallet('invalid mnemonic phrase')
-    ).rejects.toThrow('Invalid recovery phrase.');
+      result.current.recoverWallet("invalid mnemonic phrase")
+    ).rejects.toThrow("Invalid recovery phrase.");
   });
 });
 ```
@@ -431,27 +439,27 @@ describe('useGiwaWallet', () => {
 
 ```typescript
 // __tests__/balance.test.ts
-import { renderHook, waitFor } from '@testing-library/react-hooks';
-import { useBalance } from 'giwa-react-native-wallet';
+import { renderHook, waitFor } from "@testing-library/react-hooks";
+import { useBalance } from "giwa-react-native-wallet";
 
 // Mock viem client
-jest.mock('viem', () => ({
-  ...jest.requireActual('viem'),
+jest.mock("viem", () => ({
+  ...jest.requireActual("viem"),
   createPublicClient: () => ({
-    getBalance: jest.fn(() => Promise.resolve(BigInt('1000000000000000000'))),
+    getBalance: jest.fn(() => Promise.resolve(BigInt("1000000000000000000"))),
   }),
 }));
 
-describe('useBalance', () => {
-  it('should fetch ETH balance', async () => {
-    const { result } = renderHook(() => useBalance('0x1234...'), { wrapper });
+describe("useBalance", () => {
+  it("should fetch ETH balance", async () => {
+    const { result } = renderHook(() => useBalance("0x1234..."), { wrapper });
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    expect(result.current.formattedBalance).toBe('1.0');
-    expect(result.current.balance).toBe(BigInt('1000000000000000000'));
+    expect(result.current.formattedBalance).toBe("1.0");
+    expect(result.current.balance).toBe(BigInt("1000000000000000000"));
   });
 });
 ```
@@ -460,28 +468,28 @@ describe('useBalance', () => {
 
 ```typescript
 // __tests__/tokens.test.ts
-import { renderHook, act } from '@testing-library/react-hooks';
-import { useTokens } from 'giwa-react-native-wallet';
+import { renderHook, act } from "@testing-library/react-hooks";
+import { useTokens } from "giwa-react-native-wallet";
 
-describe('useTokens', () => {
-  it('should transfer tokens', async () => {
+describe("useTokens", () => {
+  it("should transfer tokens", async () => {
     const { result } = renderHook(() => useTokens(), { wrapper });
 
     await act(async () => {
       const hash = await result.current.transfer(
-        '0xTokenAddress...',
-        '0xRecipient...',
-        '100'
+        "0xTokenAddress...",
+        "0xRecipient...",
+        "100"
       );
       expect(hash).toMatch(/^0x[a-fA-F0-9]{64}$/);
     });
   });
 
-  it('should get token balance', async () => {
+  it("should get token balance", async () => {
     const { result } = renderHook(() => useTokens(), { wrapper });
 
     await act(async () => {
-      const balance = await result.current.getBalance('0xTokenAddress...');
+      const balance = await result.current.getBalance("0xTokenAddress...");
       expect(balance.token.symbol).toBeDefined();
       expect(balance.formattedBalance).toBeDefined();
     });
@@ -493,24 +501,26 @@ describe('useTokens', () => {
 
 ```typescript
 // __tests__/giwaId.test.ts
-import { renderHook, act } from '@testing-library/react-hooks';
-import { useGiwaId } from 'giwa-react-native-wallet';
+import { renderHook, act } from "@testing-library/react-hooks";
+import { useGiwaId } from "giwa-react-native-wallet";
 
-describe('useGiwaId', () => {
-  it('should resolve GIWA ID to address', async () => {
+describe("useGiwaId", () => {
+  it("should resolve GIWA ID to address", async () => {
     const { result } = renderHook(() => useGiwaId(), { wrapper });
 
     await act(async () => {
-      const address = await result.current.resolveAddress('alice.giwa.id');
+      const address = await result.current.resolveAddress("alice.giwa.id");
       expect(address).toMatch(/^0x[a-fA-F0-9]{40}$/);
     });
   });
 
-  it('should return null for non-existent GIWA ID', async () => {
+  it("should return null for non-existent GIWA ID", async () => {
     const { result } = renderHook(() => useGiwaId(), { wrapper });
 
     await act(async () => {
-      const address = await result.current.resolveAddress('nonexistent.giwa.id');
+      const address = await result.current.resolveAddress(
+        "nonexistent.giwa.id"
+      );
       expect(address).toBeNull();
     });
   });
@@ -521,17 +531,19 @@ describe('useGiwaId', () => {
 
 ```typescript
 // __tests__/integration/fullFlow.test.ts
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from "@testing-library/react-hooks";
 import {
   useGiwaWallet,
   useBalance,
   useTransaction,
-} from 'giwa-react-native-wallet';
+} from "giwa-react-native-wallet";
 
-describe('Full Wallet Flow', () => {
-  it('should complete full transaction flow', async () => {
+describe("Full Wallet Flow", () => {
+  it("should complete full transaction flow", async () => {
     // 1. Create wallet
-    const { result: walletResult } = renderHook(() => useGiwaWallet(), { wrapper });
+    const { result: walletResult } = renderHook(() => useGiwaWallet(), {
+      wrapper,
+    });
 
     let walletAddress: string;
     await act(async () => {
@@ -551,12 +563,14 @@ describe('Full Wallet Flow', () => {
 
     // 3. Send transaction (if balance > 0)
     if (balanceResult.current.balance > 0n) {
-      const { result: txResult } = renderHook(() => useTransaction(), { wrapper });
+      const { result: txResult } = renderHook(() => useTransaction(), {
+        wrapper,
+      });
 
       await act(async () => {
         const hash = await txResult.current.sendTransaction({
-          to: '0xRecipient...',
-          value: '0.001',
+          to: "0xRecipient...",
+          value: "0.001",
         });
         expect(hash).toBeDefined();
       });
@@ -569,18 +583,18 @@ describe('Full Wallet Flow', () => {
 
 ```typescript
 // e2e/wallet.e2e.ts
-describe('Wallet E2E', () => {
+describe("Wallet E2E", () => {
   beforeAll(async () => {
     await device.launchApp();
   });
 
-  it('should create wallet and show address', async () => {
-    await element(by.id('create-wallet-button')).tap();
-    await expect(element(by.id('wallet-address'))).toBeVisible();
+  it("should create wallet and show address", async () => {
+    await element(by.id("create-wallet-button")).tap();
+    await expect(element(by.id("wallet-address"))).toBeVisible();
   });
 
-  it('should show balance after wallet creation', async () => {
-    await expect(element(by.id('balance-display'))).toBeVisible();
+  it("should show balance after wallet creation", async () => {
+    await expect(element(by.id("balance-display"))).toBeVisible();
   });
 });
 ```
@@ -610,6 +624,17 @@ npm test -- --watch
 - expo-local-authentication >= 14.0.0 (Expo, for biometrics)
 - react-native-keychain >= 9.2.0 (React Native CLI)
 - react-native-get-random-values >= 1.11.0
+
+## GIWA Official Resources
+
+| Resource                 | URL                                                       |
+| ------------------------ | --------------------------------------------------------- |
+| GIWA Documentation       | https://docs.giwa.io                                      |
+| SDK Documentation        | https://dev-eyoungmin.github.io/giwa-react-native-wallet/ |
+| Testnet Faucet           | https://faucet.giwa.io                                    |
+| Block Explorer (Testnet) | https://sepolia-explorer.giwa.io                          |
+| Block Explorer (Mainnet) | -                                                         |
+| Bridge (Superbridge)     | https://superbridge.app                                   |
 
 ## License
 

@@ -20,24 +20,28 @@ React Native SDK for GIWA Chain. Works with both Expo and React Native CLI proje
 
 ## Network Information
 
-| Network | Chain ID | RPC URL |
-|---------|----------|---------|
-| Testnet | 91342 | https://sepolia-rpc.giwa.io/ |
-| Mainnet | 91341 | https://rpc.giwa.io/ |
+| Network | Chain ID | RPC URL                      | Status               |
+| ------- | -------- | ---------------------------- | -------------------- |
+| Testnet | 91342    | https://sepolia-rpc.giwa.io/ | ✅ Available         |
+| Mainnet | -        | -                            | 🚧 Under Development |
+
+:::caution Mainnet Under Development
+Mainnet is currently under development. Please use **Testnet** for development and testing.
+:::
 
 ## Quick Start
 
 ```bash
 # Expo
-npx expo install giwa-react-native-wallet expo-secure-store
+npx expo install giwa-react-native-wallet expo-secure-store expo-local-authentication react-native-get-random-values
 
 # React Native CLI
-npm install giwa-react-native-wallet react-native-keychain
+npm install giwa-react-native-wallet react-native-keychain react-native-get-random-values
 cd ios && pod install
 ```
 
 ```tsx
-import { GiwaProvider, useGiwaWallet } from 'giwa-react-native-wallet';
+import { GiwaProvider, useGiwaWallet } from "giwa-react-native-wallet";
 
 export default function App() {
   return (
@@ -70,12 +74,12 @@ function WalletScreen() {
 
 ## GIWA Official Resources
 
-| Resource | URL |
-|----------|-----|
-| GIWA Documentation | [docs.giwa.io](https://docs.giwa.io) |
-| Bridge (Superbridge) | [superbridge.app](https://superbridge.app) |
-| Faucet | [faucet.giwa.io](https://faucet.giwa.io) |
-| Block Explorer | [sepolia-explorer.giwa.io](https://sepolia-explorer.giwa.io) |
+| Resource             | URL                                                          |
+| -------------------- | ------------------------------------------------------------ |
+| GIWA Documentation   | [docs.giwa.io](https://docs.giwa.io)                         |
+| Bridge (Superbridge) | [superbridge.app](https://superbridge.app)                   |
+| Faucet               | [faucet.giwa.io](https://faucet.giwa.io)                     |
+| Block Explorer       | [sepolia-explorer.giwa.io](https://sepolia-explorer.giwa.io) |
 
 ## Next Steps
 

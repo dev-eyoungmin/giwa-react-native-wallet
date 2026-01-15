@@ -20,10 +20,10 @@ GIWA Chain을 위한 React Native SDK입니다. Expo와 React Native CLI 프로�
 
 ## Network Information
 
-| 네트워크 | Chain ID | RPC URL |
-|---------|----------|---------|
-| Testnet | 91342 | https://sepolia-rpc.giwa.io/ |
-| Mainnet | 91341 | https://rpc.giwa.io/ |
+| 네트워크 | Chain ID | RPC URL                      |
+| -------- | -------- | ---------------------------- |
+| Testnet  | 91342    | https://sepolia-rpc.giwa.io/ |
+| Mainnet  | -        | -                            |
 
 ## Quick Start
 
@@ -37,7 +37,7 @@ cd ios && pod install
 ```
 
 ```tsx
-import { GiwaProvider, useGiwaWallet } from 'giwa-react-native-wallet';
+import { GiwaProvider, useGiwaWallet } from "giwa-react-native-wallet";
 
 export default function App() {
   return (
@@ -68,12 +68,12 @@ function WalletScreen() {
 
 ## GIWA Official Resources
 
-| 리소스 | URL |
-|--------|-----|
-| GIWA 문서 | [docs.giwa.io](https://docs.giwa.io) |
-| Bridge (Superbridge) | [superbridge.app](https://superbridge.app) |
-| Faucet | [faucet.giwa.io](https://faucet.giwa.io) |
-| Block Explorer | [sepolia-explorer.giwa.io](https://sepolia-explorer.giwa.io) |
+| 리소스               | URL                                                          |
+| -------------------- | ------------------------------------------------------------ |
+| GIWA 문서            | [docs.giwa.io](https://docs.giwa.io)                         |
+| Bridge (Superbridge) | [superbridge.app](https://superbridge.app)                   |
+| Faucet               | [faucet.giwa.io](https://faucet.giwa.io)                     |
+| Block Explorer       | [sepolia-explorer.giwa.io](https://sepolia-explorer.giwa.io) |
 
 ## Next Steps
 

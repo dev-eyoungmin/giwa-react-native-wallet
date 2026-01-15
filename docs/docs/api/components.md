@@ -13,17 +13,42 @@ Root Provider component for the GIWA SDK.
 ```tsx
 import { GiwaProvider } from 'giwa-react-native-wallet';
 
-<GiwaProvider config={config}>
-  {children}
+// Minimal usage - no props required (uses defaults)
+<GiwaProvider>
+  <App />
+</GiwaProvider>
+
+// With options
+<GiwaProvider network="testnet" onError={(e) => console.error(e)}>
+  <App />
 </GiwaProvider>
 ```
 
-### Props
+### Props (All Optional except children)
 
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| `config` | `GiwaConfig` | Yes | SDK configuration |
-| `children` | `ReactNode` | Yes | Child components |
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `children` | `ReactNode` | Yes | - | Child components |
+| `config` | `GiwaConfig` | No | `{}` | SDK configuration |
+| `network` | `'testnet' \| 'mainnet'` | No | `'testnet'` | Network type (mainnet: 🚧 Under Development) |
+| `initTimeout` | `number` | No | `10000` | Initialization timeout in milliseconds |
+| `onError` | `(error: Error) => void` | No | - | Error callback for initialization failures |
+| `adapterFactory` | `AdapterFactory` | No | auto-detect | Custom adapter factory for advanced use cases |
+
+:::tip Direct Props vs Config
+You can use direct props instead of the config object for cleaner syntax:
+```tsx
+// Using direct props (recommended)
+<GiwaProvider network="testnet" initTimeout={10000}>
+  <App />
+</GiwaProvider>
+
+// Using config object
+<GiwaProvider config={{ network: 'testnet' }}>
+  <App />
+</GiwaProvider>
+```
+:::
 
 ### GiwaConfig
 
@@ -58,6 +83,34 @@ interface GiwaConfig {
   /** Force environment setting (optional) */
   forceEnvironment?: 'expo' | 'react-native';
 }
+```
+
+### forceEnvironment Usage
+
+The SDK auto-detects the environment (Expo or React Native CLI) based on available secure storage packages. Use `forceEnvironment` only when:
+
+| Scenario | Setting | Description |
+|----------|---------|-------------|
+| Testing | `'expo'` or `'react-native'` | Force specific adapter in test environment |
+| Auto-detection failure | `'expo'` or `'react-native'` | Manual override when detection fails |
+| Custom adapter | - | Use `adapterFactory` prop instead |
+
+:::warning
+Setting `forceEnvironment` incorrectly will cause secure storage errors:
+- Setting `'expo'` without `expo-secure-store` installed
+- Setting `'react-native'` without `react-native-keychain` installed
+:::
+
+```tsx
+// Force Expo environment (for testing)
+<GiwaProvider config={{ forceEnvironment: 'expo' }}>
+  <App />
+</GiwaProvider>
+
+// Force React Native CLI environment
+<GiwaProvider config={{ forceEnvironment: 'react-native' }}>
+  <App />
+</GiwaProvider>
 ```
 
 ### Usage Examples

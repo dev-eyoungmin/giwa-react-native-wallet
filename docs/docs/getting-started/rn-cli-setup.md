@@ -9,8 +9,17 @@ This guide explains how to set up the GIWA SDK in a React Native CLI project.
 ## Installation
 
 ```bash
-npm install giwa-react-native-wallet react-native-keychain
+# npm
+npm install giwa-react-native-wallet react-native-keychain react-native-get-random-values
 
+# yarn
+yarn add giwa-react-native-wallet react-native-keychain react-native-get-random-values
+
+# pnpm
+pnpm add giwa-react-native-wallet react-native-keychain react-native-get-random-values
+```
+
+```bash
 # Install iOS dependencies
 cd ios && pod install && cd ..
 ```
@@ -118,14 +127,9 @@ export default function App() {
 >
 ```
 
-## Biometric Authentication Setup (Optional)
+## Biometric Authentication
 
-To use biometric authentication, install the additional package:
-
-```bash
-npm install react-native-biometrics
-cd ios && pod install && cd ..
-```
+`react-native-keychain` (already included in the installation) provides both secure storage and biometric authentication.
 
 ## Build and Run
 

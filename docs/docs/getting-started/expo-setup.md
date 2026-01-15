@@ -10,17 +10,20 @@ This guide explains how to set up the GIWA SDK in an Expo project.
 
 ```bash
 # npm
-npm install giwa-react-native-wallet expo-secure-store
+npm install giwa-react-native-wallet expo-secure-store expo-local-authentication react-native-get-random-values
 
 # yarn
-yarn add giwa-react-native-wallet expo-secure-store
+yarn add giwa-react-native-wallet expo-secure-store expo-local-authentication react-native-get-random-values
 
 # pnpm
-pnpm add giwa-react-native-wallet expo-secure-store
+pnpm add giwa-react-native-wallet expo-secure-store expo-local-authentication react-native-get-random-values
 ```
 
 :::tip
-You can also use `npx expo install` for automatic Expo SDK version compatibility.
+You can also use `npx expo install` for automatic Expo SDK version compatibility:
+```bash
+npx expo install giwa-react-native-wallet expo-secure-store expo-local-authentication react-native-get-random-values
+```
 :::
 
 ## Basic Setup
@@ -84,20 +87,9 @@ export default function RootLayout() {
 >
 ```
 
-## Biometric Authentication Setup (Optional)
+## Biometric Authentication Setup
 
-To use biometric authentication, install the additional package:
-
-```bash
-# npm
-npm install expo-local-authentication
-
-# yarn
-yarn add expo-local-authentication
-
-# pnpm
-pnpm add expo-local-authentication
-```
+`expo-local-authentication` is already included in the installation above. You just need to configure app.json:
 
 ### app.json Configuration
 

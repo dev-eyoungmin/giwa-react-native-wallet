@@ -34,6 +34,7 @@ const sidebars = {
         'api/components',
         'api/core',
         'api/types',
+        'api/utilities',
       ],
     },
     {

@@ -6,6 +6,21 @@ sidebar_position: 1
 
 API reference for all React Hooks provided by GIWA SDK.
 
+:::tip All Parameters Are Optional
+Most hooks can be used without any parameters. They automatically use the connected wallet address.
+
+```tsx
+// Use without parameters (recommended)
+const { balance } = useBalance();
+const { wallet, createWallet } = useGiwaWallet();
+const { sendTransaction } = useTransaction();
+
+// Specify options when needed
+const { balance } = useBalance('0x...');  // Query specific address
+await createWallet({ requireBiometric: true });  // Require biometric auth
+```
+:::
+
 ## useGiwaWallet
 
 Wallet management Hook
@@ -55,6 +70,23 @@ interface SecureStorageOptions {
 }
 ```
 
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `wallet` | `GiwaWallet \| null` | Connected wallet or null |
+| `isLoading` | `boolean` | Loading state for wallet operations |
+| `isInitializing` | `boolean` | Whether SDK is initializing |
+| `hasWallet` | `boolean` | Convenience property: `wallet !== null` |
+| `error` | `Error \| null` | Error if operation failed |
+| `createWallet` | `(options?) => Promise<WalletCreationResult>` | Create new wallet |
+| `recoverWallet` | `(mnemonic, options?) => Promise<GiwaWallet>` | Recover from mnemonic |
+| `importFromPrivateKey` | `(privateKey, options?) => Promise<GiwaWallet>` | Import from private key |
+| `loadWallet` | `(options?) => Promise<GiwaWallet \| null>` | Load saved wallet |
+| `deleteWallet` | `() => Promise<void>` | Delete wallet from storage |
+| `exportMnemonic` | `(options?) => Promise<string \| null>` | Export recovery phrase |
+| `exportPrivateKey` | `(options?) => Promise<Hex \| null>` | Export private key |
+
 ### Security Notes
 
 - `exportMnemonic` and `exportPrivateKey` have **Rate Limiting** applied (3 times per minute, 5-minute cooldown when exceeded)
@@ -85,9 +117,19 @@ The initial value is `0n`, and null checks are not required.
 
 ### Parameters
 
-| Name | Type | Description |
-|------|------|-------------|
-| `address` | `string` (optional) | Address to query. Uses connected wallet address if not specified |
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `address` | `string` | No | `wallet.address` | Address to query balance for |
+
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `balance` | `bigint` | Balance in wei (default: `0n`) |
+| `formattedBalance` | `string` | Balance in ETH (default: `'0'`) |
+| `isLoading` | `boolean` | Loading state |
+| `error` | `Error \| null` | Error if query failed |
+| `refetch` | `() => Promise<void>` | Manually refresh balance |
 
 ---
 
@@ -132,6 +174,17 @@ interface WaitOptions {
 }
 ```
 
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `sendTransaction` | `(tx: TransactionRequest) => Promise<string>` | Send transaction, returns tx hash |
+| `waitForReceipt` | `(hash, options?) => Promise<Receipt>` | Wait for confirmation |
+| `estimateGas` | `(tx: TransactionRequest) => Promise<GasEstimate>` | Estimate gas for transaction |
+| `getTransaction` | `(hash: string) => Promise<Transaction \| null>` | Get transaction details |
+| `isLoading` | `boolean` | Loading state |
+| `error` | `GiwaError \| null` | Error if operation failed |
+
 ---
 
 ## useTokens
@@ -174,6 +227,17 @@ interface AllowanceResult {
 }
 ```
 
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `getBalance` | `(tokenAddress) => Promise<TokenBalance>` | Get token balance |
+| `transfer` | `(tokenAddress, to, amount) => Promise<string>` | Transfer tokens |
+| `approve` | `(tokenAddress, spender, amount) => Promise<string>` | Approve spender |
+| `allowance` | `(tokenAddress, spender) => Promise<AllowanceResult>` | Check allowance |
+| `getTokenInfo` | `(tokenAddress) => Promise<TokenInfo>` | Get token metadata |
+| `isLoading` | `boolean` | Loading state |
+
 ---
 
 ## useBridge
@@ -214,6 +278,19 @@ interface BridgeTransaction {
   status: 'pending' | 'confirmed';
 }
 ```
+
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `withdrawETH` | `(amount, to?) => Promise<Hash>` | Withdraw ETH to L1 |
+| `withdrawToken` | `(l2TokenAddress, amount, to?) => Promise<Hash>` | Withdraw ERC-20 to L1 |
+| `getPendingTransactions` | `() => BridgeTransaction[]` | Get pending withdrawals |
+| `getTransaction` | `(hash) => BridgeTransaction \| undefined` | Get transaction by hash |
+| `getEstimatedWithdrawalTime` | `() => number` | Get withdrawal time (seconds) |
+| `isLoading` | `boolean` | Loading state |
+| `isInitializing` | `boolean` | Whether bridge is initializing |
+| `error` | `Error \| null` | Error if operation failed |
 
 ### Usage Example
 
@@ -271,6 +348,15 @@ interface Preconfirmation {
 }
 ```
 
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `sendTransaction` | `(tx: FlashblocksTx) => Promise<FlashblocksResult>` | Send with preconfirmation |
+| `getAverageLatency` | `() => number` | Get average latency (ms) |
+| `isAvailable` | `boolean` | Whether Flashblocks is available |
+| `isLoading` | `boolean` | Loading state |
+
 ---
 
 ## useGiwaId
@@ -308,6 +394,20 @@ interface GiwaId {
   avatar?: string;
 }
 ```
+
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `resolveAddress` | `(giwaId) => Promise<Address \| null>` | Resolve name to address |
+| `resolveName` | `(address) => Promise<string \| null>` | Resolve address to name |
+| `getGiwaId` | `(giwaId) => Promise<GiwaId \| null>` | Get full GIWA ID info |
+| `getTextRecord` | `(giwaId, key) => Promise<string \| null>` | Get text record |
+| `setTextRecord` | `(giwaId, key, value) => Promise<Hash>` | Set text record |
+| `isAvailable` | `(giwaId) => Promise<boolean>` | Check name availability |
+| `isLoading` | `boolean` | Loading state |
+| `isInitializing` | `boolean` | Whether service is initializing |
+| `error` | `Error \| null` | Error if operation failed |
 
 ### Usage Example
 
@@ -384,6 +484,18 @@ interface VerifiedBalance {
 type AttestationType = 'verified_address' | 'balance_root' | 'verified_balance' | 'verified_code';
 ```
 
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `getAttestation` | `(uid) => Promise<Attestation \| null>` | Get attestation by UID |
+| `isAttestationValid` | `(uid) => Promise<boolean>` | Check if attestation is valid |
+| `hasVerifiedAddress` | `(address) => Promise<boolean>` | Check if address is verified |
+| `getVerifiedBalance` | `(uid) => Promise<VerifiedBalance \| null>` | Get verified balance |
+| `isLoading` | `boolean` | Loading state |
+| `isInitializing` | `boolean` | Whether service is initializing |
+| `error` | `Error \| null` | Error if operation failed |
+
 ### Usage Example
 
 ```tsx
@@ -424,6 +536,16 @@ const {
   error,            // Error | null
 } = useFaucet();
 ```
+
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `requestFaucet` | `(address?) => Promise<void>` | Open faucet website |
+| `getFaucetUrl` | `() => string` | Get faucet URL |
+| `isInitializing` | `boolean` | Whether faucet is initializing |
+| `isLoading` | `boolean` | Loading state |
+| `error` | `Error \| null` | Error if operation failed |
 
 ### Usage Example
 
@@ -472,6 +594,26 @@ const {
   explorerUrl,          // string
 } = useNetworkInfo();
 ```
+
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `network` | `'testnet' \| 'mainnet'` | Current network (mainnet: 🚧 Under Development) |
+| `networkConfig` | `GiwaNetwork` | Network configuration |
+| `status` | `NetworkStatus` | Full network status |
+| `isTestnet` | `boolean` | Whether current network is testnet |
+| `isReady` | `boolean` | Whether network is ready for use |
+| `hasWarnings` | `boolean` | Whether there are warnings |
+| `warnings` | `string[]` | List of warning messages |
+| `isFeatureAvailable` | `(feature) => boolean` | Check feature availability |
+| `getFeatureInfo` | `(feature) => FeatureAvailability` | Get feature details |
+| `unavailableFeatures` | `FeatureName[]` | List of unavailable features |
+| `chainId` | `number` | Network chain ID |
+| `rpcUrl` | `string` | RPC endpoint URL |
+| `flashblocksRpcUrl` | `string` | Flashblocks RPC URL |
+| `flashblocksWsUrl` | `string` | Flashblocks WebSocket URL |
+| `explorerUrl` | `string` | Block explorer URL |
 
 ### Usage Example
 
@@ -544,14 +686,25 @@ const {
 } = useBiometricAuth(options?: UseBiometricAuthOptions);
 ```
 
-### Options
+### Parameters
 
-```tsx
-interface UseBiometricAuthOptions {
-  /** Default prompt message for authentication */
-  defaultPromptMessage?: string;
-}
-```
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `options` | `UseBiometricAuthOptions` | No | `{}` | Hook configuration |
+| `options.defaultPromptMessage` | `string` | No | `'Authenticate'` | Default prompt message |
+
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `isAvailable` | `boolean` | Whether biometric hardware is available |
+| `isEnrolled` | `boolean` | Whether biometrics are enrolled |
+| `biometricType` | `BiometricType` | Type: `'fingerprint' \| 'face' \| 'iris' \| 'none'` |
+| `capability` | `BiometricCapability \| null` | Full capability info |
+| `isLoading` | `boolean` | Whether capability check is in progress |
+| `error` | `Error \| null` | Error if check failed |
+| `authenticate` | `(promptMessage?) => Promise<boolean>` | Authenticate user |
+| `refreshCapability` | `() => Promise<void>` | Refresh capability info |
 
 ### Types
 

@@ -6,6 +6,10 @@ sidebar_position: 1
 
 giwa-react-native-wallet supports both Expo and React Native CLI projects.
 
+:::tip Crypto Polyfill
+`react-native-get-random-values` is automatically handled by the SDK internally. No separate import is needed.
+:::
+
 ## Expo Projects
 
 ```bash
@@ -50,28 +54,31 @@ cd ios && pod install && cd ..
 
 ## Dependency Overview
 
-### Core Dependencies
+:::info Peer Dependencies
+Platform-specific packages are defined as **peer dependencies**. This is the standard approach in the React Native ecosystem.
+- Expo users: Install `expo-secure-store` + `expo-local-authentication`
+- RN CLI users: Install `react-native-keychain`
 
-The SDK uses minimal dependencies:
+Both platforms require `react-native-get-random-values`.
+:::
+
+### Core Dependencies (Auto-installed)
 
 | Package | Purpose |
 |---------|---------|
 | `viem` | Ethereum client library |
 | `@scure/bip39` | Mnemonic generation and validation |
 
-### Platform-Specific Dependencies
+### Platform-Specific Peer Dependencies
 
-| Platform | Package | Purpose |
-|----------|---------|---------|
-| Expo | `expo-secure-store` | iOS Keychain / Android Keystore |
-| Expo | `expo-local-authentication` | Biometric authentication (Face ID, Touch ID) |
-| RN CLI | `react-native-keychain` | iOS Keychain / Android Keystore + Biometrics |
+| Platform | Package | Required | Purpose |
+|----------|---------|----------|---------|
+| Expo | `expo-secure-store` | Yes | iOS Keychain / Android Keystore |
+| Expo | `expo-local-authentication` | Optional* | Biometric authentication |
+| RN CLI | `react-native-keychain` | Yes | Secure storage + Biometrics |
+| All | `react-native-get-random-values` | Yes | Crypto polyfill |
 
-### Required for All Projects
-
-| Package | Purpose |
-|---------|---------|
-| `react-native-get-random-values` | Cryptographic random number generation |
+*`expo-local-authentication`: Only required when using biometric authentication features
 
 ## Secure Storage Required
 

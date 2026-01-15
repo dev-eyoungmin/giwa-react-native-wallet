@@ -40,23 +40,25 @@ sidebar_position: 1
 
 ### 1.2 Key Characteristics
 
-| 특성 | 설명 |
-|------|------|
-| **Decentralization** | 단일 권한이 아닌 네트워크 참여자들이 공동으로 데이터를 관리 |
-| **Immutability** | 한 번 기록된 데이터는 수정하거나 삭제할 수 없음 |
-| **Transparency** | 모든 거래 이력이 공개되어 누구나 검증 가능 |
-| **Consensus Mechanism** | 네트워크 참여자들이 데이터의 유효성에 동의하는 방법 |
+| 특성                    | 설명                                                        |
+| ----------------------- | ----------------------------------------------------------- |
+| **Decentralization**    | 단일 권한이 아닌 네트워크 참여자들이 공동으로 데이터를 관리 |
+| **Immutability**        | 한 번 기록된 데이터는 수정하거나 삭제할 수 없음             |
+| **Transparency**        | 모든 거래 이력이 공개되어 누구나 검증 가능                  |
+| **Consensus Mechanism** | 네트워크 참여자들이 데이터의 유효성에 동의하는 방법         |
 
 ### 1.3 Consensus Mechanism
 
 블록체인 네트워크가 새로운 블록을 생성하고 트랜잭션을 검증하는 방법입니다.
 
 #### Proof of Work (PoW)
+
 - 비트코인에서 사용
 - 복잡한 수학 문제를 풀어 블록 생성 권한을 획득
 - 높은 에너지 소비가 단점
 
 #### Proof of Stake (PoS)
+
 - 이더리움 2.0에서 사용
 - 암호화폐를 담보로 스테이킹하여 블록 생성 권한을 획득
 - 에너지 효율적이지만 "부익부" 구조에 대한 우려
@@ -67,13 +69,13 @@ sidebar_position: 1
 
 ```typescript
 interface Transaction {
-  from: string;      // 발신자 주소
-  to: string;        // 수신자 주소
-  value: bigint;     // 전송 금액 (wei 단위)
-  data: string;      // 스마트 컨트랙트 호출 데이터
-  nonce: number;     // 발신자의 트랜잭션 순번
-  gasLimit: bigint;  // 최대 가스 사용량
-  gasPrice: bigint;  // 가스당 가격
+  from: string; // 발신자 주소
+  to: string; // 수신자 주소
+  value: bigint; // 전송 금액 (wei 단위)
+  data: string; // 스마트 컨트랙트 호출 데이터
+  nonce: number; // 발신자의 트랜잭션 순번
+  gasLimit: bigint; // 최대 가스 사용량
+  gasPrice: bigint; // 가스당 가격
 }
 ```
 
@@ -130,13 +132,13 @@ contract SimpleToken {
 
 가스는 이더리움에서 연산을 수행하는 데 필요한 비용 단위입니다.
 
-| 연산 | 가스 비용 |
-|------|-----------|
-| Addition/Subtraction | 3 gas |
-| Multiplication/Division | 5 gas |
-| Storage Read | 200 gas |
-| Storage Write | 20,000 gas |
-| Contract Deployment | 32,000+ gas |
+| 연산                    | 가스 비용   |
+| ----------------------- | ----------- |
+| Addition/Subtraction    | 3 gas       |
+| Multiplication/Division | 5 gas       |
+| Storage Read            | 200 gas     |
+| Storage Write           | 20,000 gas  |
+| Contract Deployment     | 32,000+ gas |
 
 ```
 Transaction Cost = Gas Used × Gas Price
@@ -148,11 +150,11 @@ Example: 21,000 gas × 20 Gwei = 0.00042 ETH
 
 이더리움 메인넷 (Layer 1)은 다음과 같은 한계가 있습니다:
 
-| 문제 | 설명 |
-|------|------|
-| **Low TPS** | 초당 약 15-30건의 트랜잭션만 처리 가능 |
-| **High Gas Fees** | 네트워크 혼잡 시 가스 비용이 수십~수백 달러에 달함 |
-| **Long Finality Time** | 블록 생성에 약 12초, 최종 확인에 수 분 소요 |
+| 문제                   | 설명                                               |
+| ---------------------- | -------------------------------------------------- |
+| **Low TPS**            | 초당 약 15-30건의 트랜잭션만 처리 가능             |
+| **High Gas Fees**      | 네트워크 혼잡 시 가스 비용이 수십~수백 달러에 달함 |
+| **Long Finality Time** | 블록 생성에 약 12초, 최종 확인에 수 분 소요        |
 
 이러한 문제를 해결하기 위해 **Layer 2 솔루션**이 등장했습니다.
 
@@ -189,12 +191,14 @@ Example: 21,000 gas × 20 Gwei = 0.00042 ETH
 ### 3.2 Types of Layer 2
 
 #### Optimistic Rollup
+
 - **원리**: 트랜잭션이 유효하다고 "낙관적으로" 가정하고 처리
 - **챌린지 기간**: 약 7일간 부정한 트랜잭션에 대해 누구나 이의 제기 가능
 - **대표 프로젝트**: Optimism, Arbitrum, Base, **GIWA**
 - **장점**: 뛰어난 EVM 호환성, 개발 편의성
 
 #### ZK (Zero-Knowledge) Rollup
+
 - **원리**: 암호학적 증명을 통해 트랜잭션 유효성을 즉시 증명
 - **대표 프로젝트**: zkSync, StarkNet, Polygon zkEVM
 - **장점**: 빠른 최종성, 높은 보안성
@@ -237,12 +241,12 @@ Example: 21,000 gas × 20 Gwei = 0.00042 ETH
 
 ### 3.4 Advantages of Layer 2
 
-| 항목 | Layer 1 (Ethereum) | Layer 2 (GIWA) |
-|------|-------------------|----------------|
-| TPS | ~15-30 | ~2,000+ |
-| Gas Fee | $5-100+ | $0.001-0.01 |
-| Block Time | ~12s | ~1s |
-| Finality | 수 분 | 수 초 (Flashblocks: 200ms) |
+| 항목       | Layer 1 (Ethereum) | Layer 2 (GIWA)             |
+| ---------- | ------------------ | -------------------------- |
+| TPS        | ~15-30             | ~2,000+                    |
+| Gas Fee    | $5-100+            | $0.001-0.01                |
+| Block Time | ~12s               | ~1s                        |
+| Finality   | 수 분              | 수 초 (Flashblocks: 200ms) |
 
 ---
 
@@ -287,14 +291,14 @@ OP Stack은 Optimism에서 개발한 **모듈식 오픈소스 블록체인 개�
 
 ### 4.3 Major OP Stack Based Chains
 
-| 체인 | 개발사 | 특징 |
-|------|--------|------|
-| **OP Mainnet** | Optimism | 오리지널 OP Stack |
-| **Base** | Coinbase | 1억+ 사용자 기반 |
-| **GIWA** | Upbit | 한국 최대 거래소 연동 |
-| **Zora** | Zora | NFT 특화 |
-| **Mode** | Mode Network | DeFi 특화 |
-| **Worldchain** | World (Worldcoin) | 신원 인증 특화 |
+| 체인           | 개발사            | 특징                  |
+| -------------- | ----------------- | --------------------- |
+| **OP Mainnet** | Optimism          | 오리지널 OP Stack     |
+| **Base**       | Coinbase          | 1억+ 사용자 기반      |
+| **GIWA**       | Upbit             | 한국 최대 거래소 연동 |
+| **Zora**       | Zora              | NFT 특화              |
+| **Mode**       | Mode Network      | DeFi 특화             |
+| **Worldchain** | World (Worldcoin) | 신원 인증 특화        |
 
 ### 4.4 Superchain Vision
 
@@ -331,12 +335,12 @@ Superchain은 OP Stack 기반 체인들이 상호운용 가능한 네트워크�
 
 ### 5.2 Core Values of GIWA
 
-| 가치 | 설명 |
-|------|------|
-| **Accessibility** | Web3가 어렵게 느껴지는 장벽을 허물고, 누구나 사용할 수 있는 인프라 제공 |
-| **Openness** | 특정 주체에 의존하지 않는 오픈 Layer 2, 전 세계적으로 사용 가능 |
-| **Builder Friendly** | 한국어와 영어 문서, 개발자 온보딩 지원 |
-| **Institution Integration** | 업비트와의 연결로 사용자, 데이터, 풍부한 유동성을 Web3 생태계로 |
+| 가치                        | 설명                                                                    |
+| --------------------------- | ----------------------------------------------------------------------- |
+| **Accessibility**           | Web3가 어렵게 느껴지는 장벽을 허물고, 누구나 사용할 수 있는 인프라 제공 |
+| **Openness**                | 특정 주체에 의존하지 않는 오픈 Layer 2, 전 세계적으로 사용 가능         |
+| **Builder Friendly**        | 한국어와 영어 문서, 개발자 온보딩 지원                                  |
+| **Institution Integration** | 업비트와의 연결로 사용자, 데이터, 풍부한 유동성을 Web3 생태계로         |
 
 ### 5.3 Technical Architecture
 
@@ -375,40 +379,40 @@ Superchain은 OP Stack 기반 체인들이 상호운용 가능한 네트워크�
 
 ### 5.4 Technical Features of GIWA
 
-| 특징 | 설명 |
-|------|------|
-| **Fast Block Creation** | 매 1초마다 새 블록 (이더리움: 12초) |
-| **EVM Compatible** | 기존 Solidity 스마트 컨트랙트를 수정 없이 배포 가능 |
-| **Low Fees** | 이더리움 대비 약 90% 이상 저렴한 가스 비용 |
-| **Flashblocks** | ~200ms 사전 확인 제공 |
-| **GIWA ID** | ENS 기반 사람이 읽을 수 있는 주소 시스템 |
-| **Dojang** | EAS 기반 증명 시스템 |
+| 특징                    | 설명                                                |
+| ----------------------- | --------------------------------------------------- |
+| **Fast Block Creation** | 매 1초마다 새 블록 (이더리움: 12초)                 |
+| **EVM Compatible**      | 기존 Solidity 스마트 컨트랙트를 수정 없이 배포 가능 |
+| **Low Fees**            | 이더리움 대비 약 90% 이상 저렴한 가스 비용          |
+| **Flashblocks**         | ~200ms 사전 확인 제공                               |
+| **GIWA ID**             | ENS 기반 사람이 읽을 수 있는 주소 시스템            |
+| **Dojang**              | EAS 기반 증명 시스템                                |
 
 ### 5.5 Network Information
 
 #### Testnet (GIWA Sepolia)
 
-| 항목 | 값 |
-|------|-----|
-| Chain ID | `91342` |
-| Network Name | GIWA Sepolia |
-| RPC URL | `https://sepolia-rpc.giwa.io` |
-| Flashblocks RPC | `https://sepolia-rpc-flashblocks.giwa.io` |
-| Flashblocks WebSocket | `wss://sepolia-rpc-flashblocks.giwa.io` |
-| Block Explorer | `https://sepolia-explorer.giwa.io` |
-| Currency | ETH |
-| Base Layer | Ethereum Sepolia |
+| 항목                  | 값                                        |
+| --------------------- | ----------------------------------------- |
+| Chain ID              | `91342`                                   |
+| Network Name          | GIWA Sepolia                              |
+| RPC URL               | `https://sepolia-rpc.giwa.io`             |
+| Flashblocks RPC       | `https://sepolia-rpc-flashblocks.giwa.io` |
+| Flashblocks WebSocket | `wss://sepolia-rpc-flashblocks.giwa.io`   |
+| Block Explorer        | `https://sepolia-explorer.giwa.io`        |
+| Currency              | ETH                                       |
+| Base Layer            | Ethereum Sepolia                          |
 
 #### Mainnet (Coming Soon)
 
-| 항목 | 값 |
-|------|-----|
-| Chain ID | `91341` (잠정) |
-| Network Name | GIWA Mainnet |
-| RPC URL | `https://rpc.giwa.io` |
-| Block Explorer | `https://explorer.giwa.io` |
-| Currency | ETH |
-| Base Layer | Ethereum Mainnet |
+| 항목           | 값               |
+| -------------- | ---------------- |
+| Chain ID       | -                |
+| Network Name   | GIWA Mainnet     |
+| RPC URL        | -                |
+| Block Explorer | -                |
+| Currency       | ETH              |
+| Base Layer     | Ethereum Mainnet |
 
 ---
 
@@ -447,12 +451,12 @@ Flashblocks는 Flashbots에서 개발한 **스트리밍 블록 구성 레이어*
 
 ### 6.3 Flashblocks vs Standard Confirmation
 
-| 항목 | Standard Confirmation | Flashblocks |
-|------|----------------------|-------------|
-| Confirmation Time | 2s | ~200ms |
-| Trust Level | Final | Preconfirmation (높은 신뢰) |
-| Final Confirmation | 동일 시간 | 2초 후 최종 |
-| Use Cases | 일반 트랜잭션 | 실시간 UX가 필요한 앱 |
+| 항목               | Standard Confirmation | Flashblocks                 |
+| ------------------ | --------------------- | --------------------------- |
+| Confirmation Time  | 2s                    | ~200ms                      |
+| Trust Level        | Final                 | Preconfirmation (높은 신뢰) |
+| Final Confirmation | 동일 시간             | 2초 후 최종                 |
+| Use Cases          | 일반 트랜잭션         | 실시간 UX가 필요한 앱       |
 
 ### 6.4 Flashblocks Use Cases
 
@@ -464,7 +468,7 @@ const receipt = await sendTransaction(tx);
 // Flashblocks 사용 (~200ms)
 const { preconfirmation, result } = await flashblocks.sendTransaction(tx);
 // ~200ms 후 사전 확인
-console.log('Preconfirmed!', preconfirmation.preconfirmedAt);
+console.log("Preconfirmed!", preconfirmation.preconfirmedAt);
 
 // 2초 후 최종 확인
 const finalReceipt = await result.wait();
@@ -472,12 +476,12 @@ const finalReceipt = await result.wait();
 
 ### 6.5 Advantages of Flashblocks
 
-| 장점 | 설명 |
-|------|------|
-| **Instant Feedback** | 사용자에게 거의 즉각적인 트랜잭션 확인 제공 |
-| **Enhanced UX** | 게임, DEX와 같이 실시간 응답이 필요한 앱에 적합 |
+| 장점                   | 설명                                             |
+| ---------------------- | ------------------------------------------------ |
+| **Instant Feedback**   | 사용자에게 거의 즉각적인 트랜잭션 확인 제공      |
+| **Enhanced UX**        | 게임, DEX와 같이 실시간 응답이 필요한 앱에 적합  |
 | **Maintains Security** | 최종 확인은 여전히 2초 후 State Root와 함께 완료 |
-| **EVM Compatible** | 기존 코드를 수정하지 않고 사용 가능 |
+| **EVM Compatible**     | 기존 코드를 수정하지 않고 사용 가능              |
 
 ---
 
@@ -488,11 +492,13 @@ const finalReceipt = await result.wait();
 #### Problem Recognition
 
 1. **Web3 모바일 개발의 어려움**
+
    - React Native에서 블록체인 통합은 복잡한 설정이 필요
    - React Native에서 viem, ethers와 같은 웹 라이브러리의 호환성 문제
    - 보안 저장소 (Keychain/Keystore) 통합의 복잡성
 
 2. **GIWA Chain 특화 기능 부재**
+
    - Flashblocks, GIWA ID, Dojang과 같은 GIWA 특화 기능 지원 필요
    - 네트워크 설정의 복잡성
 
@@ -573,16 +579,17 @@ const finalReceipt = await result.wait();
 
 #### Core Design Principles
 
-| 원칙 | 적용 |
-|------|------|
+| 원칙                            | 적용                                                          |
+| ------------------------------- | ------------------------------------------------------------- |
 | **DRY (Don't Repeat Yourself)** | 공통 비동기 패턴을 `useAsyncAction`, `useAsyncQuery`로 추상화 |
-| **SRP (Single Responsibility)** | 각 Manager와 Hook이 단일 책임만 처리 |
-| **DIP (Dependency Inversion)** | Adapter 인터페이스를 통한 플랫폼 추상화 |
-| **OCP (Open-Closed Principle)** | 확장에는 열려있고, 수정에는 닫혀있는 구조 |
+| **SRP (Single Responsibility)** | 각 Manager와 Hook이 단일 책임만 처리                          |
+| **DIP (Dependency Inversion)**  | Adapter 인터페이스를 통한 플랫폼 추상화                       |
+| **OCP (Open-Closed Principle)** | 확장에는 열려있고, 수정에는 닫혀있는 구조                     |
 
 ### 7.3 SDK Key Features
 
 #### Wallet Management
+
 ```tsx
 const { wallet, createWallet, recoverWallet } = useGiwaWallet();
 
@@ -594,6 +601,7 @@ const recoveredWallet = await recoverWallet(mnemonic);
 ```
 
 #### Balance Query
+
 ```tsx
 const { balance, formattedBalance, refetch } = useBalance();
 // balance: 1000000000000000000n (wei)
@@ -601,24 +609,26 @@ const { balance, formattedBalance, refetch } = useBalance();
 ```
 
 #### Flashblocks Transaction
+
 ```tsx
 const { sendTransaction } = useFlashblocks();
 
 const { preconfirmation, result } = await sendTransaction({
-  to: '0x...',
-  value: parseEther('0.1'),
+  to: "0x...",
+  value: parseEther("0.1"),
 });
 
 // ~200ms 후
-console.log('Preconfirmed!', preconfirmation.preconfirmedAt);
+console.log("Preconfirmed!", preconfirmation.preconfirmedAt);
 ```
 
 #### GIWA ID Resolution
+
 ```tsx
 const { resolveAddress, resolveName } = useGiwaId();
 
-const address = await resolveAddress('alice.giwa.id');
-const name = await resolveName('0x...');
+const address = await resolveAddress("alice.giwa.id");
+const name = await resolveName("0x...");
 ```
 
 ### 7.4 Platform Compatibility
@@ -646,9 +656,9 @@ const name = await resolveName('0x...');
 
 SDK는 실행 환경을 자동으로 감지하고 적절한 네이티브 모듈을 사용합니다:
 
-| 기능 | Expo | React Native CLI |
-|------|------|------------------|
-| Secure Storage | expo-secure-store | react-native-keychain |
+| 기능           | Expo                      | React Native CLI        |
+| -------------- | ------------------------- | ----------------------- |
+| Secure Storage | expo-secure-store         | react-native-keychain   |
 | Biometric Auth | expo-local-authentication | react-native-biometrics |
 
 ### 7.5 Security Considerations

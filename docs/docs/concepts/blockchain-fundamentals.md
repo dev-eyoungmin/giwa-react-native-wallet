@@ -36,23 +36,25 @@ Blockchain is a form of **Distributed Ledger Technology (DLT)** where data is re
 
 ### 1.2 Key Characteristics
 
-| Characteristic | Description |
-|----------------|-------------|
-| **Decentralization** | Data is managed collectively by network participants rather than a single authority |
-| **Immutability** | Once recorded, data cannot be modified or deleted |
-| **Transparency** | All transaction history is public and verifiable by anyone |
-| **Consensus Mechanism** | The way network participants agree on data validity |
+| Characteristic          | Description                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------- |
+| **Decentralization**    | Data is managed collectively by network participants rather than a single authority |
+| **Immutability**        | Once recorded, data cannot be modified or deleted                                   |
+| **Transparency**        | All transaction history is public and verifiable by anyone                          |
+| **Consensus Mechanism** | The way network participants agree on data validity                                 |
 
 ### 1.3 Consensus Mechanism
 
 The method by which blockchain networks create new blocks and verify transactions.
 
 #### Proof of Work (PoW)
+
 - Used by Bitcoin
 - Obtains block creation rights by solving complex mathematical problems
 - High energy consumption is a drawback
 
 #### Proof of Stake (PoS)
+
 - Used by Ethereum 2.0
 - Obtains block creation rights by staking cryptocurrency as collateral
 - Energy efficient but concerns about "rich get richer" structure
@@ -63,13 +65,13 @@ The unit that records all state changes occurring on the blockchain.
 
 ```typescript
 interface Transaction {
-  from: string;      // Sender address
-  to: string;        // Recipient address
-  value: bigint;     // Transfer amount (in wei)
-  data: string;      // Smart contract call data
-  nonce: number;     // Sender's transaction sequence number
-  gasLimit: bigint;  // Maximum gas usage
-  gasPrice: bigint;  // Price per gas
+  from: string; // Sender address
+  to: string; // Recipient address
+  value: bigint; // Transfer amount (in wei)
+  data: string; // Smart contract call data
+  nonce: number; // Sender's transaction sequence number
+  gasLimit: bigint; // Maximum gas usage
+  gasPrice: bigint; // Price per gas
 }
 ```
 
@@ -126,13 +128,13 @@ contract SimpleToken {
 
 Gas is the unit of cost required to perform computations on Ethereum.
 
-| Operation | Gas Cost |
-|-----------|----------|
-| Addition/Subtraction | 3 gas |
-| Multiplication/Division | 5 gas |
-| Storage Read | 200 gas |
-| Storage Write | 20,000 gas |
-| Contract Deployment | 32,000+ gas |
+| Operation               | Gas Cost    |
+| ----------------------- | ----------- |
+| Addition/Subtraction    | 3 gas       |
+| Multiplication/Division | 5 gas       |
+| Storage Read            | 200 gas     |
+| Storage Write           | 20,000 gas  |
+| Contract Deployment     | 32,000+ gas |
 
 ```
 Transaction Cost = Gas Used × Gas Price
@@ -144,10 +146,10 @@ Example: 21,000 gas × 20 Gwei = 0.00042 ETH
 
 Ethereum mainnet (Layer 1) has the following limitations:
 
-| Problem | Description |
-|---------|-------------|
-| **Low TPS** | Can only process about 15-30 transactions per second |
-| **High Gas Fees** | Gas fees can reach tens to hundreds of dollars during network congestion |
+| Problem                | Description                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| **Low TPS**            | Can only process about 15-30 transactions per second                            |
+| **High Gas Fees**      | Gas fees can reach tens to hundreds of dollars during network congestion        |
 | **Long Finality Time** | Block creation takes about 12 seconds, final confirmation takes several minutes |
 
 **Layer 2 solutions** emerged to solve these problems.
@@ -185,12 +187,14 @@ Ethereum mainnet (Layer 1) has the following limitations:
 ### 3.2 Types of Layer 2
 
 #### Optimistic Rollup
+
 - **Principle**: Processes transactions "optimistically" assuming they are valid
 - **Challenge Period**: Anyone can challenge fraudulent transactions for about 7 days
 - **Representative Projects**: Optimism, Arbitrum, Base, **GIWA**
 - **Advantages**: Excellent EVM compatibility, development convenience
 
 #### ZK (Zero-Knowledge) Rollup
+
 - **Principle**: Immediately proves transaction validity through cryptographic proofs
 - **Representative Projects**: zkSync, StarkNet, Polygon zkEVM
 - **Advantages**: Fast finality, high security
@@ -233,12 +237,12 @@ Ethereum mainnet (Layer 1) has the following limitations:
 
 ### 3.4 Advantages of Layer 2
 
-| Item | Layer 1 (Ethereum) | Layer 2 (GIWA) |
-|------|-------------------|----------------|
-| TPS | ~15-30 | ~2,000+ |
-| Gas Fee | $5-100+ | $0.001-0.01 |
-| Block Time | ~12s | ~1s |
-| Finality | Minutes | Seconds (Flashblocks: 200ms) |
+| Item       | Layer 1 (Ethereum) | Layer 2 (GIWA)               |
+| ---------- | ------------------ | ---------------------------- |
+| TPS        | ~15-30             | ~2,000+                      |
+| Gas Fee    | $5-100+            | $0.001-0.01                  |
+| Block Time | ~12s               | ~1s                          |
+| Finality   | Minutes            | Seconds (Flashblocks: 200ms) |
 
 ---
 
@@ -283,14 +287,14 @@ OP Stack is a **modular open-source blockchain development framework** developed
 
 ### 4.3 Major OP Stack Based Chains
 
-| Chain | Developer | Features |
-|-------|-----------|----------|
-| **OP Mainnet** | Optimism | Original OP Stack |
-| **Base** | Coinbase | 100M+ user base |
-| **GIWA** | Upbit | Korea's largest exchange integration |
-| **Zora** | Zora | NFT specialized |
-| **Mode** | Mode Network | DeFi specialized |
-| **Worldchain** | World (Worldcoin) | Identity verification specialized |
+| Chain          | Developer         | Features                             |
+| -------------- | ----------------- | ------------------------------------ |
+| **OP Mainnet** | Optimism          | Original OP Stack                    |
+| **Base**       | Coinbase          | 100M+ user base                      |
+| **GIWA**       | Upbit             | Korea's largest exchange integration |
+| **Zora**       | Zora              | NFT specialized                      |
+| **Mode**       | Mode Network      | DeFi specialized                     |
+| **Worldchain** | World (Worldcoin) | Identity verification specialized    |
 
 ### 4.4 Superchain Vision
 
@@ -327,12 +331,12 @@ The name "GIWA" is derived from traditional Korean roof tiles (기와). Just as 
 
 ### 5.2 Core Values of GIWA
 
-| Value | Description |
-|-------|-------------|
-| **Accessibility** | Breaking down barriers that make Web3 feel difficult, providing infrastructure anyone can use |
-| **Openness** | An open Layer 2 not dependent on any specific entity, usable worldwide |
-| **Builder Friendly** | Documentation in Korean and English, developer onboarding support |
-| **Institution Integration** | Connection with Upbit brings users, data, and rich liquidity to the Web3 ecosystem |
+| Value                       | Description                                                                                   |
+| --------------------------- | --------------------------------------------------------------------------------------------- |
+| **Accessibility**           | Breaking down barriers that make Web3 feel difficult, providing infrastructure anyone can use |
+| **Openness**                | An open Layer 2 not dependent on any specific entity, usable worldwide                        |
+| **Builder Friendly**        | Documentation in Korean and English, developer onboarding support                             |
+| **Institution Integration** | Connection with Upbit brings users, data, and rich liquidity to the Web3 ecosystem            |
 
 ### 5.3 Technical Architecture
 
@@ -371,40 +375,43 @@ The name "GIWA" is derived from traditional Korean roof tiles (기와). Just as 
 
 ### 5.4 Technical Features of GIWA
 
-| Feature | Description |
-|---------|-------------|
-| **Fast Block Creation** | New block every 1 second (Ethereum: 12 seconds) |
-| **EVM Compatible** | Deploy existing Solidity smart contracts without modification |
-| **Low Fees** | Gas fees approximately 90%+ cheaper than Ethereum |
-| **Flashblocks** | ~200ms preconfirmation provided |
-| **GIWA ID** | ENS-based human-readable address system |
-| **Dojang** | EAS-based attestation system |
+| Feature                 | Description                                                   |
+| ----------------------- | ------------------------------------------------------------- |
+| **Fast Block Creation** | New block every 1 second (Ethereum: 12 seconds)               |
+| **EVM Compatible**      | Deploy existing Solidity smart contracts without modification |
+| **Low Fees**            | Gas fees approximately 90%+ cheaper than Ethereum             |
+| **Flashblocks**         | ~200ms preconfirmation provided                               |
+| **GIWA ID**             | ENS-based human-readable address system                       |
+| **Dojang**              | EAS-based attestation system                                  |
 
 ### 5.5 Network Information
 
 #### Testnet (GIWA Sepolia)
 
-| Item | Value |
-|------|-------|
-| Chain ID | `91342` |
-| Network Name | GIWA Sepolia |
-| RPC URL | `https://sepolia-rpc.giwa.io` |
-| Flashblocks RPC | `https://sepolia-rpc-flashblocks.giwa.io` |
-| Flashblocks WebSocket | `wss://sepolia-rpc-flashblocks.giwa.io` |
-| Block Explorer | `https://sepolia-explorer.giwa.io` |
-| Currency | ETH |
-| Base Layer | Ethereum Sepolia |
+| Item                  | Value                                     |
+| --------------------- | ----------------------------------------- |
+| Chain ID              | `91342`                                   |
+| Network Name          | GIWA Sepolia                              |
+| RPC URL               | `https://sepolia-rpc.giwa.io`             |
+| Flashblocks RPC       | `https://sepolia-rpc-flashblocks.giwa.io` |
+| Flashblocks WebSocket | `wss://sepolia-rpc-flashblocks.giwa.io`   |
+| Block Explorer        | `https://sepolia-explorer.giwa.io`        |
+| Currency              | ETH                                       |
+| Base Layer            | Ethereum Sepolia                          |
 
-#### Mainnet (Coming Soon)
+#### Mainnet (🚧 Under Development)
 
-| Item | Value |
-|------|-------|
-| Chain ID | `91341` (tentative) |
-| Network Name | GIWA Mainnet |
-| RPC URL | `https://rpc.giwa.io` |
-| Block Explorer | `https://explorer.giwa.io` |
-| Currency | ETH |
-| Base Layer | Ethereum Mainnet |
+:::caution
+Mainnet is currently under development. Please use **Testnet** for development and testing.
+:::
+
+| Item           | Value                |
+| -------------- | -------------------- |
+| Chain ID       | -                    |
+| Network Name   | GIWA Mainnet         |
+| RPC URL        | -                    |
+| Block Explorer | -                    |
+| Status         | 🚧 Under Development |
 
 ---
 
@@ -443,12 +450,12 @@ Flashblocks is a **streaming block composition layer** developed by Flashbots th
 
 ### 6.3 Flashblocks vs Standard Confirmation
 
-| Item | Standard Confirmation | Flashblocks |
-|------|----------------------|-------------|
-| Confirmation Time | 2s | ~200ms |
-| Trust Level | Final | Preconfirmation (high trust) |
-| Final Confirmation | Same time | Final after 2s |
-| Use Cases | General transactions | Apps requiring real-time UX |
+| Item               | Standard Confirmation | Flashblocks                  |
+| ------------------ | --------------------- | ---------------------------- |
+| Confirmation Time  | 2s                    | ~200ms                       |
+| Trust Level        | Final                 | Preconfirmation (high trust) |
+| Final Confirmation | Same time             | Final after 2s               |
+| Use Cases          | General transactions  | Apps requiring real-time UX  |
 
 ### 6.4 Flashblocks Use Cases
 
@@ -460,7 +467,7 @@ const receipt = await sendTransaction(tx);
 // Flashblocks usage (~200ms)
 const { preconfirmation, result } = await flashblocks.sendTransaction(tx);
 // Preconfirmation received after ~200ms
-console.log('Preconfirmed!', preconfirmation.preconfirmedAt);
+console.log("Preconfirmed!", preconfirmation.preconfirmedAt);
 
 // Final confirmation after 2s
 const finalReceipt = await result.wait();
@@ -468,12 +475,12 @@ const finalReceipt = await result.wait();
 
 ### 6.5 Advantages of Flashblocks
 
-| Advantage | Description |
-|-----------|-------------|
-| **Instant Feedback** | Provides almost immediate transaction confirmation to users |
-| **Enhanced UX** | Suitable for apps requiring real-time response like games, DEX |
-| **Maintains Security** | Final confirmation still completes after 2s with State Root |
-| **EVM Compatible** | Can be used without modifying existing code |
+| Advantage              | Description                                                    |
+| ---------------------- | -------------------------------------------------------------- |
+| **Instant Feedback**   | Provides almost immediate transaction confirmation to users    |
+| **Enhanced UX**        | Suitable for apps requiring real-time response like games, DEX |
+| **Maintains Security** | Final confirmation still completes after 2s with State Root    |
+| **EVM Compatible**     | Can be used without modifying existing code                    |
 
 ---
 
@@ -484,11 +491,13 @@ const finalReceipt = await result.wait();
 #### Problem Recognition
 
 1. **Difficulty of Web3 Mobile Development**
+
    - Blockchain integration in React Native requires complex setup
    - Compatibility issues with web libraries like viem, ethers in React Native
    - Complexity of secure storage (Keychain/Keystore) integration
 
 2. **Lack of GIWA Chain Specific Features**
+
    - Need to support GIWA-specific features like Flashblocks, GIWA ID, Dojang
    - Network configuration complexity
 
@@ -569,16 +578,17 @@ const finalReceipt = await result.wait();
 
 #### Core Design Principles
 
-| Principle | Application |
-|-----------|-------------|
+| Principle                       | Application                                                           |
+| ------------------------------- | --------------------------------------------------------------------- |
 | **DRY (Don't Repeat Yourself)** | Abstract common async patterns into `useAsyncAction`, `useAsyncQuery` |
-| **SRP (Single Responsibility)** | Each Manager and Hook handles only a single responsibility |
-| **DIP (Dependency Inversion)** | Platform abstraction through Adapter interfaces |
-| **OCP (Open-Closed Principle)** | Structure open for extension, closed for modification |
+| **SRP (Single Responsibility)** | Each Manager and Hook handles only a single responsibility            |
+| **DIP (Dependency Inversion)**  | Platform abstraction through Adapter interfaces                       |
+| **OCP (Open-Closed Principle)** | Structure open for extension, closed for modification                 |
 
 ### 7.3 SDK Key Features
 
 #### Wallet Management
+
 ```tsx
 const { wallet, createWallet, recoverWallet } = useGiwaWallet();
 
@@ -590,6 +600,7 @@ const recoveredWallet = await recoverWallet(mnemonic);
 ```
 
 #### Balance Query
+
 ```tsx
 const { balance, formattedBalance, refetch } = useBalance();
 // balance: 1000000000000000000n (wei)
@@ -597,24 +608,26 @@ const { balance, formattedBalance, refetch } = useBalance();
 ```
 
 #### Flashblocks Transaction
+
 ```tsx
 const { sendTransaction } = useFlashblocks();
 
 const { preconfirmation, result } = await sendTransaction({
-  to: '0x...',
-  value: parseEther('0.1'),
+  to: "0x...",
+  value: parseEther("0.1"),
 });
 
 // After ~200ms
-console.log('Preconfirmed!', preconfirmation.preconfirmedAt);
+console.log("Preconfirmed!", preconfirmation.preconfirmedAt);
 ```
 
 #### GIWA ID Resolution
+
 ```tsx
 const { resolveAddress, resolveName } = useGiwaId();
 
-const address = await resolveAddress('alice.giwa.id');
-const name = await resolveName('0x...');
+const address = await resolveAddress("alice.giwa.id");
+const name = await resolveName("0x...");
 ```
 
 ### 7.4 Platform Compatibility
@@ -642,9 +655,9 @@ const name = await resolveName('0x...');
 
 The SDK automatically detects the execution environment and uses the appropriate native modules:
 
-| Feature | Expo | React Native CLI |
-|---------|------|------------------|
-| Secure Storage | expo-secure-store | react-native-keychain |
+| Feature        | Expo                      | React Native CLI        |
+| -------------- | ------------------------- | ----------------------- |
+| Secure Storage | expo-secure-store         | react-native-keychain   |
 | Biometric Auth | expo-local-authentication | react-native-biometrics |
 
 ### 7.5 Security Considerations
