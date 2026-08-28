@@ -28,7 +28,7 @@ export { WalletManager } from './core/WalletManager';
 export { TokenManager } from './core/TokenManager';
 export { BridgeManager } from './core/BridgeManager';
 export { FlashblocksManager } from './core/FlashblocksManager';
-export { GiwaIdManager } from './core/GiwaIdManager';
+export { GiwaIdManager, UP_ID_DOMAIN } from './core/GiwaIdManager';
 export { DojangManager } from './core/DojangManager';
 
 // Core Base (for extending managers)

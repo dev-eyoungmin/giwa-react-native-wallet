@@ -1,77 +1,98 @@
-import {
-  type Address,
-  namehash,
-} from 'viem';
+import { BaseError, ContractFunctionRevertedError, keccak256, stringToHex, toHex, type Address } from 'viem';
 import { normalize } from 'viem/ens';
 import type { GiwaClient } from './GiwaClient';
-import type { GiwaId, TransactionResult } from '../types';
-import { GiwaError, safeLog } from '../utils/errors';
+import type { GiwaId } from '../types';
+import { safeLog } from '../utils/errors';
+import { isTbdAddress } from '../utils/networkValidator';
 
-// ENS Public Resolver ABI (simplified)
-const ENS_RESOLVER_ABI = [
-  {
-    name: 'addr',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: 'node', type: 'bytes32' }],
-    outputs: [{ type: 'address' }],
-  },
-  {
-    name: 'name',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: 'node', type: 'bytes32' }],
-    outputs: [{ type: 'string' }],
-  },
-  {
-    name: 'text',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'node', type: 'bytes32' },
-      { name: 'key', type: 'string' },
-    ],
-    outputs: [{ type: 'string' }],
-  },
-  {
-    name: 'setText',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'node', type: 'bytes32' },
-      { name: 'key', type: 'string' },
-      { name: 'value', type: 'string' },
-    ],
-    outputs: [],
-  },
-] as const;
-
-// ENS Registry ABI (simplified)
-const ENS_REGISTRY_ABI = [
-  {
-    name: 'resolver',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: 'node', type: 'bytes32' }],
-    outputs: [{ type: 'address' }],
-  },
-  {
-    name: 'owner',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: 'node', type: 'bytes32' }],
-    outputs: [{ type: 'address' }],
-  },
-] as const;
-
-// GIWA ID domain
-const GIWA_ID_DOMAIN = 'giwa.id';
+/** GIWA up.id domain suffix. */
+export const UP_ID_DOMAIN = 'up.id';
 
 /**
- * GIWA ID Manager - handles ENS-based GIWA ID operations
+ * UpnameRegistry ABI - the L2 "Upbit Web3 Names" ERC-721 registry, plus the
+ * `ERC721NonexistentToken` custom error so viem can decode reverts for
+ * unregistered token ids.
+ */
+const UPNAME_REGISTRY_ABI = [
+  {
+    name: 'ownerOf',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ type: 'address' }],
+  },
+  {
+    name: 'ownedTokenId',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'owner', type: 'address' }],
+    outputs: [{ type: 'uint256' }],
+  },
+  {
+    name: 'getLabel',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'key', type: 'bytes32' }],
+    outputs: [{ type: 'string' }],
+  },
+  {
+    name: 'hasActiveName',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'owner', type: 'address' }],
+    outputs: [{ type: 'bool' }],
+  },
+  {
+    name: 'isClaimable',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'name', type: 'string' }],
+    outputs: [{ type: 'bool' }],
+  },
+  {
+    name: 'tokenURI',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ type: 'string' }],
+  },
+  {
+    type: 'error',
+    name: 'ERC721NonexistentToken',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+  },
+] as const;
+
+/**
+ * Check whether an error thrown by an UpnameRegistry read is the expected
+ * "token does not exist" revert. This is an expected, non-exceptional
+ * outcome (unregistered name) and must not be logged via `safeLog`.
+ */
+function isNonexistentTokenRevert(err: unknown): boolean {
+  if (!(err instanceof BaseError)) {
+    return false;
+  }
+  const revertError = err.walk((e) => e instanceof ContractFunctionRevertedError);
+  if (!(revertError instanceof ContractFunctionRevertedError)) {
+    return false;
+  }
+  return revertError.data?.errorName === 'ERC721NonexistentToken';
+}
+
+/**
+ * Compute the UpnameRegistry token id for a bare label:
+ * `tokenId = uint256(keccak256(bytes(label)))`.
+ */
+function labelToTokenId(label: string): bigint {
+  return BigInt(keccak256(stringToHex(label)));
+}
+
+/**
+ * GIWA ID Manager - resolves `up.id` names via the on-chain `UpnameRegistry`
+ * on GIWA L2 (an ERC-721 registry, symbol `UPNAME`).
  *
- * GIWA ID allows users to have human-readable names like username.giwa.id
- * instead of long hex addresses.
+ * This manager is read-only: `up.id` names are minted/managed elsewhere, not
+ * through this SDK.
  */
 export class GiwaIdManager {
   private client: GiwaClient;
@@ -82,233 +103,199 @@ export class GiwaIdManager {
   }
 
   /**
-   * Resolve GIWA ID to address
-   * @param giwaId - GIWA ID (e.g., "alice" or "alice.giwa.id")
+   * Resolve a `up.id` name to its owner address.
+   * @param name - Name (e.g., "alice" or "alice.up.id")
    */
-  async resolveAddress(giwaId: string): Promise<Address | null> {
-    const publicClient = this.client.getPublicClient();
+  async resolveAddress(name: string): Promise<Address | null> {
     const contracts = this.client.getContractAddresses();
+    if (isTbdAddress(contracts.upnameRegistry)) {
+      return null;
+    }
 
-    // Normalize the name
-    const fullName = this.normalizeGiwaId(giwaId);
-    const node = namehash(fullName);
+    const label = this.normalizeLabel(name);
+    if (!label) {
+      return null;
+    }
+
+    const publicClient = this.client.getPublicClient();
+    const tokenId = labelToTokenId(label);
 
     try {
-      // Get resolver
-      const resolverAddress = await publicClient.readContract({
-        address: contracts.ensRegistry,
-        abi: ENS_REGISTRY_ABI,
-        functionName: 'resolver',
-        args: [node],
+      const owner = await publicClient.readContract({
+        address: contracts.upnameRegistry,
+        abi: UPNAME_REGISTRY_ABI,
+        functionName: 'ownerOf',
+        args: [tokenId],
       });
-
-      if (resolverAddress === '0x0000000000000000000000000000000000000000') {
-        return null;
-      }
-
-      // Get address from resolver
-      const address = await publicClient.readContract({
-        address: resolverAddress as Address,
-        abi: ENS_RESOLVER_ABI,
-        functionName: 'addr',
-        args: [node],
-      });
-
-      return address as Address;
+      return owner;
     } catch (err) {
-      safeLog('GiwaIdManager.resolveAddress', err);
+      if (!isNonexistentTokenRevert(err)) {
+        safeLog('GiwaIdManager.resolveAddress', err);
+      }
       return null;
     }
   }
 
   /**
-   * Reverse resolve address to GIWA ID
+   * Reverse resolve an address to its `up.id` name.
    * @param address - Wallet address
    */
   async resolveName(address: Address): Promise<string | null> {
+    const contracts = this.client.getContractAddresses();
+    if (isTbdAddress(contracts.upnameRegistry)) {
+      return null;
+    }
+
     const publicClient = this.client.getPublicClient();
 
     try {
-      // Create reverse node
-      const reverseNode = namehash(
-        `${address.toLowerCase().slice(2)}.addr.reverse`
-      );
-
-      const contracts = this.client.getContractAddresses();
-
-      // Get resolver for reverse record
-      const resolverAddress = await publicClient.readContract({
-        address: contracts.ensRegistry,
-        abi: ENS_REGISTRY_ABI,
-        functionName: 'resolver',
-        args: [reverseNode],
+      const tokenId = await publicClient.readContract({
+        address: contracts.upnameRegistry,
+        abi: UPNAME_REGISTRY_ABI,
+        functionName: 'ownedTokenId',
+        args: [address],
       });
 
-      if (resolverAddress === '0x0000000000000000000000000000000000000000') {
+      if (tokenId === 0n) {
         return null;
       }
 
-      // Get name from resolver
-      const name = await publicClient.readContract({
-        address: resolverAddress as Address,
-        abi: ENS_RESOLVER_ABI,
-        functionName: 'name',
-        args: [reverseNode],
+      const label = await publicClient.readContract({
+        address: contracts.upnameRegistry,
+        abi: UPNAME_REGISTRY_ABI,
+        functionName: 'getLabel',
+        args: [toHex(tokenId, { size: 32 })],
       });
 
-      return name as string;
+      if (!label) {
+        return null;
+      }
+
+      return `${label}.${UP_ID_DOMAIN}`;
     } catch (err) {
-      safeLog('GiwaIdManager.resolveName', err);
+      if (!isNonexistentTokenRevert(err)) {
+        safeLog('GiwaIdManager.resolveName', err);
+      }
       return null;
     }
   }
 
   /**
-   * Get full GIWA ID info
-   * @param giwaId - GIWA ID
+   * Get full GIWA ID info for a name, including a best-effort avatar image
+   * URL read from the token metadata.
+   * @param name - Name (e.g., "alice" or "alice.up.id")
    */
-  async getGiwaId(giwaId: string): Promise<GiwaId | null> {
-    // Check cache
-    const cached = this.cache.get(giwaId.toLowerCase());
+  async getGiwaId(name: string): Promise<GiwaId | null> {
+    const label = this.normalizeLabel(name);
+    if (!label) {
+      return null;
+    }
+
+    const cached = this.cache.get(label);
     if (cached) {
       return cached;
     }
 
-    const address = await this.resolveAddress(giwaId);
+    const contracts = this.client.getContractAddresses();
+    if (isTbdAddress(contracts.upnameRegistry)) {
+      return null;
+    }
+
+    const address = await this.resolveAddress(label);
     if (!address) {
       return null;
     }
 
-    const fullName = this.normalizeGiwaId(giwaId);
-    const avatar = await this.getTextRecord(giwaId, 'avatar');
+    const publicClient = this.client.getPublicClient();
+    const tokenId = labelToTokenId(label);
 
-    const giwaIdInfo: GiwaId = {
-      name: fullName,
+    let tokenUri: string | undefined;
+    try {
+      tokenUri = await publicClient.readContract({
+        address: contracts.upnameRegistry,
+        abi: UPNAME_REGISTRY_ABI,
+        functionName: 'tokenURI',
+        args: [tokenId],
+      });
+    } catch (err) {
+      if (!isNonexistentTokenRevert(err)) {
+        safeLog('GiwaIdManager.getGiwaId', err);
+      }
+    }
+
+    const avatar = await this.getAvatarFromTokenUri(tokenUri);
+
+    const giwaId: GiwaId = {
+      name: `${label}.${UP_ID_DOMAIN}`,
       address,
-      avatar: avatar || undefined,
+      tokenId,
+      tokenUri,
+      avatar,
     };
 
-    // Cache the result
-    this.cache.set(giwaId.toLowerCase(), giwaIdInfo);
+    this.cache.set(label, giwaId);
 
-    return giwaIdInfo;
+    return giwaId;
   }
 
   /**
-   * Get text record for GIWA ID
-   * @param giwaId - GIWA ID
-   * @param key - Record key (e.g., "avatar", "url", "description")
+   * Check whether a name is available (unclaimed).
+   * @param name - Name (e.g., "alice" or "alice.up.id")
    */
-  async getTextRecord(giwaId: string, key: string): Promise<string | null> {
-    const publicClient = this.client.getPublicClient();
+  async isAvailable(name: string): Promise<boolean> {
     const contracts = this.client.getContractAddresses();
+    if (isTbdAddress(contracts.upnameRegistry)) {
+      return false;
+    }
 
-    const fullName = this.normalizeGiwaId(giwaId);
-    const node = namehash(fullName);
+    const label = this.normalizeLabel(name);
+    if (!label) {
+      return false;
+    }
+
+    const publicClient = this.client.getPublicClient();
 
     try {
-      const resolverAddress = await publicClient.readContract({
-        address: contracts.ensRegistry,
-        abi: ENS_REGISTRY_ABI,
-        functionName: 'resolver',
-        args: [node],
+      return await publicClient.readContract({
+        address: contracts.upnameRegistry,
+        abi: UPNAME_REGISTRY_ABI,
+        functionName: 'isClaimable',
+        args: [label],
       });
-
-      if (resolverAddress === '0x0000000000000000000000000000000000000000') {
-        return null;
-      }
-
-      const value = await publicClient.readContract({
-        address: resolverAddress as Address,
-        abi: ENS_RESOLVER_ABI,
-        functionName: 'text',
-        args: [node, key],
-      });
-
-      return (value as string) || null;
     } catch (err) {
-      safeLog('GiwaIdManager.getTextRecord', err);
-      return null;
+      safeLog('GiwaIdManager.isAvailable', err);
+      return false;
     }
   }
 
   /**
-   * Set text record for GIWA ID (requires ownership)
-   * @param giwaId - GIWA ID
-   * @param key - Record key
-   * @param value - Record value
+   * Best-effort fetch of a token's metadata to extract the `image` field.
+   * Never throws; returns undefined on any failure.
    */
-  async setTextRecord(
-    giwaId: string,
-    key: string,
-    value: string
-  ): Promise<TransactionResult> {
-    const walletClient = this.client.getWalletClient();
-    if (!walletClient) {
-      throw new GiwaError('Wallet is not connected.', 'WALLET_NOT_CONNECTED');
+  private async getAvatarFromTokenUri(tokenUri: string | undefined): Promise<string | undefined> {
+    if (!tokenUri) {
+      return undefined;
     }
-
-    const publicClient = this.client.getPublicClient();
-    const contracts = this.client.getContractAddresses();
-
-    const fullName = this.normalizeGiwaId(giwaId);
-    const node = namehash(fullName);
-
-    // Get resolver
-    const resolverAddress = await publicClient.readContract({
-      address: contracts.ensRegistry,
-      abi: ENS_REGISTRY_ABI,
-      functionName: 'resolver',
-      args: [node],
-    });
-
-    if (resolverAddress === '0x0000000000000000000000000000000000000000') {
-      throw new GiwaError('GIWA ID not found.', 'GIWA_ID_NOT_FOUND');
+    try {
+      const response = await fetch(tokenUri);
+      const metadata = await response.json();
+      return typeof metadata?.image === 'string' ? metadata.image : undefined;
+    } catch {
+      return undefined;
     }
-
-    const hash = await walletClient.writeContract({
-      address: resolverAddress as Address,
-      abi: ENS_RESOLVER_ABI,
-      functionName: 'setText',
-      args: [node, key, value],
-    });
-
-    // Clear cache
-    this.cache.delete(giwaId.toLowerCase());
-
-    return {
-      hash,
-      wait: async () => {
-        const receipt = await publicClient.waitForTransactionReceipt({ hash });
-        return {
-          hash: receipt.transactionHash,
-          blockNumber: receipt.blockNumber,
-          status: receipt.status === 'success' ? 'success' : 'reverted',
-          gasUsed: receipt.gasUsed,
-        };
-      },
-    };
   }
 
   /**
-   * Check if GIWA ID is available
-   * @param giwaId - GIWA ID to check
+   * Normalize a name input to the bare, lower-cased on-chain label:
+   * lower-case, `normalize()` (viem/ens), then strip a trailing `.up.id`.
+   * Returns null for an empty label.
    */
-  async isAvailable(giwaId: string): Promise<boolean> {
-    const address = await this.resolveAddress(giwaId);
-    return address === null;
-  }
-
-  /**
-   * Normalize GIWA ID to full format
-   * @param giwaId - Input (e.g., "alice" or "alice.giwa.id")
-   */
-  private normalizeGiwaId(giwaId: string): string {
-    const normalized = normalize(giwaId.toLowerCase());
-    if (normalized.endsWith(`.${GIWA_ID_DOMAIN}`)) {
-      return normalized;
-    }
-    return `${normalized}.${GIWA_ID_DOMAIN}`;
+  private normalizeLabel(name: string): string | null {
+    const normalized = normalize(name.toLowerCase());
+    const label = normalized.endsWith(`.${UP_ID_DOMAIN}`)
+      ? normalized.slice(0, -`.${UP_ID_DOMAIN}`.length)
+      : normalized;
+    return label.length > 0 ? label : null;
   }
 
   /**

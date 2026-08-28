@@ -16,10 +16,6 @@ export interface ContractAddresses {
   disputeGameFactory: Address;
   // GIWA ID (up.id) – L2 name registry
   upnameRegistry: Address;
-  /** @deprecated ENS lives on L1; removed in Task 3 */
-  ensRegistry: Address;
-  /** @deprecated ENS lives on L1; removed in Task 3 */
-  ensResolver: Address;
   // EAS (Dojang)
   eas: Address;
   schemaRegistry: Address;
@@ -45,10 +41,6 @@ export const CONTRACT_ADDRESSES: Record<NetworkType, ContractAddresses> = {
     // GIWA ID (up.id) - L2 name registry
     upnameRegistry: '0x091D00004f21eb2Fc30964A8a4995692d9b49628' as Address,
 
-    // ENS - deprecated, ENS lives on L1 (removed in Task 3)
-    ensRegistry: ZERO_ADDRESS,
-    ensResolver: ZERO_ADDRESS,
-
     // EAS - Dojang (OP Stack standard predeploy addresses + Dojang contracts)
     eas: '0x4200000000000000000000000000000000000021' as Address,
     schemaRegistry: '0x4200000000000000000000000000000000000020' as Address,
@@ -72,9 +64,6 @@ export const CONTRACT_ADDRESSES: Record<NetworkType, ContractAddresses> = {
     disputeGameFactory: ZERO_ADDRESS, // TBD - GIWA mainnet not launched
 
     upnameRegistry: ZERO_ADDRESS, // TBD - GIWA mainnet not launched
-
-    ensRegistry: ZERO_ADDRESS, // TBD - GIWA mainnet not launched
-    ensResolver: ZERO_ADDRESS, // TBD - GIWA mainnet not launched
 
     eas: '0x4200000000000000000000000000000000000021' as Address,
     schemaRegistry: '0x4200000000000000000000000000000000000020' as Address,

@@ -156,8 +156,6 @@ export const ErrorMessages = {
   GIWA_ID_ADDRESS_FAILED: 'Failed to get GIWA ID address.',
   GIWA_ID_NAME_FAILED: 'Failed to get GIWA ID name.',
   GIWA_ID_INFO_FAILED: 'Failed to get GIWA ID info.',
-  GIWA_ID_TEXT_RECORD_GET_FAILED: 'Failed to get text record.',
-  GIWA_ID_TEXT_RECORD_SET_FAILED: 'Failed to set text record.',
   GIWA_ID_AVAILABILITY_FAILED: 'Failed to check GIWA ID availability.',
 
   // Dojang
