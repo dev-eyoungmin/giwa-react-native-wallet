@@ -196,91 +196,90 @@ interface FlashblocksResult {
 
 ## GIWA ID
 
+`up.id`(Upbit Web3 Names)이며, 온체인 `UpnameRegistry`를 통해 해석됩니다. 읽기 전용입니다 — 이 SDK에는 등록/프로필 쓰기 API가 없고, ENS 스타일 텍스트 레코드도 없습니다.
+
 ```tsx
-interface GiwaIdInfo {
+interface GiwaId {
+  /** Full name, e.g. "alice.up.id" */
   name: string;
-  address: string;
-  owner: string;
-  resolver: string;
-  expiresAt: number;
-}
-
-interface Profile {
+  address: Address;
+  /** ERC-721 token id in UpnameRegistry (= keccak256(label)) */
+  tokenId: bigint;
+  tokenUri?: string;
+  /** Best-effort image URL from token metadata */
   avatar?: string;
-  description?: string;
-  twitter?: string;
-  email?: string;
-  url?: string;
-  github?: string;
-  discord?: string;
-}
-
-interface RegisterOptions {
-  duration: number;
-}
-
-interface RegisterResult {
-  txHash: string;
-  name: string;
-  expiresAt: number;
 }
 ```
 
 ## Dojang
 
+EAS 기반 증명입니다. 읽기 전용입니다 — `Attestation`은 원본 EAS 레코드를 그대로 반영하며, `decodeAttestationData`가 `data` 바이트를 스키마별 페이로드로 디코딩합니다.
+
 ```tsx
+type Hex = `0x${string}`;
+
 interface Attestation {
-  id: string;
-  schemaId: string;
-  schema: Schema;
-  attester: string;
-  recipient: string;
-  data: Record<string, any>;
-  time: number;
-  expirationTime: number;
+  uid: Hex;
+  schema: Hex;
+  attester: Address;
+  recipient: Address;
+  attestationType: AttestationType;
+  data: Hex;
+  time: bigint;
+  expirationTime: bigint;
+  revocable: boolean;
   revoked: boolean;
-  revocationTime?: number;
-  txHash: string;
 }
 
-interface Schema {
-  id: string;
-  name: string;
-  description?: string;
-  schema: string;
-}
+type AttestationType =
+  | 'verified_address'
+  | 'balance_root'
+  | 'verified_balance'
+  | 'verified_code'
+  | 'unknown'; // 위 네 가지 스키마 UID와 일치하지 않는 경우
 
-interface AttestationFilter {
-  recipient?: string;
-  attester?: string;
-  schemaId?: string;
-  fromTime?: number;
-  toTime?: number;
-}
+// decodeAttestationData(attestation)의 반환 타입 - 'unknown'이거나 디코딩 실패 시 null
+type DojangAttestationData =
+  | { type: 'verified_address'; isVerified: boolean }
+  | {
+      type: 'balance_root';
+      coinType: bigint;
+      snapshotAt: bigint;
+      leafCount: bigint;
+      totalAmount: bigint;
+      root: Hex;
+    }
+  | { type: 'verified_balance'; balance: bigint; salt: Hex; proofs: readonly Hex[] }
+  | { type: 'verified_code'; codeHash: Hex; domain: string };
 
-interface CreateAttestationParams {
-  schemaId: string;
-  recipient: string;
-  data: Record<string, any>;
-  expirationTime?: number;
-  revocable?: boolean;
-  refUID?: string;
-}
-
-interface AttestationResult {
-  attestationId: string;
-  txHash: string;
-}
-
-// Default Schemas
+// GIWA Sepolia 스키마 UID
 const DOJANG_SCHEMAS = {
-  KYC: "0x...",
-  MEMBERSHIP: "0x...",
-  ACHIEVEMENT: "0x...",
-  CREDENTIAL: "0x...",
-  VERIFICATION: "0x...",
+  VERIFIED_ADDRESS: '0x072d75e18b2be4f89a13a7147240477481c4b526d5795802acba59046b426e08',
+  BALANCE_ROOT: '0x369faa9c2cd261c45be3db5e230b585f5f1abecf8e12be575bb543e917e6db52',
+  VERIFIED_BALANCE: '0x77bf88ca262cc63e1b185dccd870aacc5320b8987ef6c7169920f265fe6ab5e9',
+  VERIFIED_CODE: '0x55ac1369dac97522d062b89ffdc4e752b48fbeba86915fdb956c7c2d0501d280',
+} as const;
+
+// 알려진 Dojang 발급자와 네트워크별 우선순위
+interface DojangAttester {
+  name: string;
+  id: Hex;
+  address: Address;
+}
+
+const DOJANG_ATTESTERS: {
+  UPBIT_KOREA: DojangAttester;
+  TESTNET_FAUCET: DojangAttester;
 };
+
+// testnet: [UPBIT_KOREA, TESTNET_FAUCET]; mainnet: [UPBIT_KOREA]
+function getDojangAttesters(network?: NetworkType): DojangAttester[];
+
+// = DOJANG_ATTESTERS.UPBIT_KOREA.id
+const DEFAULT_DOJANG_ATTESTER_ID: Hex;
 ```
+
+실제 스키마 UID/발급자 주소와 메서드별 발급자 기본값 동작 방식은 [Dojang 가이드](/docs/guides/dojang)를 참고하세요.
 
 ## Adapter Interfaces
 
@@ -399,12 +398,14 @@ interface GiwaConfig {
   customRpcUrl?: string;
   /** Custom endpoints configuration */
   endpoints?: CustomEndpoints;
+  /** Custom contract addresses (overrides network defaults) */
+  customContracts?: CustomContracts; // Partial<ContractAddresses>, Core API 참고
+  /** Override the built-in network definition (chain id, name, URLs). Use with `endpoints` when pointing the SDK at a non-default chain. */
+  customNetwork?: Partial<GiwaNetwork>;
   /** Auto-connect wallet on app start */
   autoConnect?: boolean;
   /** Enable Flashblocks */
   enableFlashblocks?: boolean;
-  /** Force environment type */
-  forceEnvironment?: "expo" | "react-native";
 }
 
 // GiwaProvider Props (Recommended)

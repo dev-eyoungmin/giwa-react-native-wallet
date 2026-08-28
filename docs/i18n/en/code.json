@@ -32,7 +32,7 @@
     "description": "Title of the GIWA ID feature"
   },
   "homepage.feature.giwaId.description": {
-    "message": "ENS-based naming service. Simply use alice.giwa.id.",
+    "message": "up.id naming service. Simply use alice.up.id.",
     "description": "Description of the GIWA ID feature"
   },
   "homepage.feature.bridge.title": {

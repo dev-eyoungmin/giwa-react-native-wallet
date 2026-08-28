@@ -627,7 +627,7 @@ console.log("Preconfirmed!", preconfirmation.preconfirmedAt);
 ```tsx
 const { resolveAddress, resolveName } = useGiwaId();
 
-const address = await resolveAddress("alice.giwa.id");
+const address = await resolveAddress("alice.up.id");
 const name = await resolveName("0x...");
 ```
 

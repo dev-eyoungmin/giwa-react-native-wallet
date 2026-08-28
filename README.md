@@ -17,24 +17,20 @@ GIWA Chain SDK for React Native - Expo and React Native CLI compatible
 | **Transactions** | `useTransaction` | Send ETH transactions |
 | **Token Operations** | `useTokens` | ERC-20 token transfers and queries |
 | **Flashblocks** | `useFlashblocks` | ~200ms fast preconfirmation |
-| **Dojang (EAS)** | `useDojang` | On-chain attestation service |
+| **GIWA ID (up.id)** | `useGiwaId` | up.id name resolution via on-chain UpnameRegistry |
+| **Dojang (EAS)** | `useDojang` | Verified Address / Balance / Code attestations (read-only) |
 | **Faucet** | `useFaucet` | Testnet ETH faucet |
 | **Network Info** | `useNetworkInfo` | Network status and feature availability |
 | **Biometric Auth** | `useBiometricAuth` | Face ID / Touch ID / Fingerprint |
 | **Secure Storage** | - | iOS Keychain / Android Keystore |
 
-### 🚧 Coming Soon (Contract Deployment Pending)
+### ⚠️ Partial
 
-These features are fully implemented in the SDK, but require smart contract deployment by the GIWA team.
+| Feature | Hook | Description |
+|---------|------|-------------|
+| **Bridge** | `useBridge` | L2→L1 withdrawal initiation (deposit via [Superbridge](https://superbridge.app)); prove and finalize are not implemented |
 
-| Feature | Hook | Status | Official Docs |
-|---------|------|--------|---------------|
-| **L1 Bridge** | `useBridge` | ENS contracts not deployed | [GIWA Docs](https://docs.giwa.io) |
-| **GIWA ID** | `useGiwaId` | L1 Bridge contract not deployed | [GIWA Docs](https://docs.giwa.io) |
-
-> 💡 **Note**: L2 Standard Bridge (`l2StandardBridge`) is available on OP Stack. Full L1↔L2 bridging requires L1 contract deployment.
->
-> For bridge operations, you can use [Superbridge](https://superbridge.app) in the meantime.
+> `useNetworkInfo().getFeatureInfo('bridge')` reports `status: 'partial'` with a `reason` string explaining what is and isn't implemented.
 
 ## Installation
 
@@ -193,7 +189,7 @@ function GiwaIdScreen() {
 
   const handleResolve = async () => {
     // GIWA ID to address
-    const address = await resolveAddress("alice.giwa.id");
+    const address = await resolveAddress("alice.up.id");
     console.log("Address:", address);
 
     // Address to GIWA ID
@@ -215,15 +211,15 @@ function GiwaIdScreen() {
 | `useBalance`       | ETH balance queries                                       | ✅ |
 | `useTransaction`   | Send ETH transactions                                     | ✅ |
 | `useTokens`        | ERC-20 token operations                                   | ✅ |
-| `useBridge`        | L1↔L2 bridge operations                                   | 🚧 |
+| `useBridge`        | L2→L1 withdrawal initiation (deposit via Superbridge)      | ⚠️ |
 | `useFlashblocks`   | Fast preconfirmation transactions                         | ✅ |
-| `useGiwaId`        | GIWA ID (ENS) resolution                                  | 🚧 |
+| `useGiwaId`        | GIWA ID (up.id) resolution                                | ✅ |
 | `useDojang`        | Attestation verification                                  | ✅ |
 | `useFaucet`        | Testnet faucet                                            | ✅ |
 | `useNetworkInfo`   | Network status and feature availability                   | ✅ |
 | `useBiometricAuth` | Biometric authentication (Face ID, Touch ID, Fingerprint) | ✅ |
 
-> 🚧 = Coming soon (contract deployment pending). See [GIWA Docs](https://docs.giwa.io) for updates.
+> ⚠️ = Partial. See `useNetworkInfo().getFeatureInfo('bridge')` for the reason.
 
 ### Configuration (All Optional)
 
@@ -273,6 +269,29 @@ function MyComponent() {
 }
 ```
 
+### Custom Network
+
+`customNetwork` overrides the built-in network definition (chain id, name, currency, URLs) instead of just the endpoints — use it together with `endpoints`/`customContracts` when pointing the SDK at a non-default chain (e.g. a fork or a different GIWA deployment):
+
+```tsx
+<GiwaProvider
+  config={{
+    network: 'testnet',
+    customNetwork: {
+      id: 91342,
+      rpcUrl: 'https://my-custom-rpc.example.com',
+    },
+  }}
+>
+```
+
+On initialization, `GiwaClient` calls `getChainId()` on the configured RPC and compares it to `customNetwork.id` (or the built-in chain id). If they don't match, the SDK logs a console warning (`Chain id mismatch: expected ... but RPC reports ...`) rather than throwing. You can also call this check yourself:
+
+```tsx
+const client = new GiwaClient({ network: 'testnet' });
+const { expected, actual, matches } = await client.verifyChainId();
+```
+
 ## Network Selection
 
 ### Check Network Status and Feature Availability
@@ -317,14 +336,16 @@ function NetworkStatus() {
 
 ### Network Warnings
 
-When using mainnet with TBD (not yet deployed) contracts, the SDK will log warnings:
+`getNetworkWarnings('testnet')` returns no warnings today — every testnet feature is either `available` (`giwaId`, `dojang`, `faucet`, `flashblocks`, `tokens`) or `partial` (`bridge`), and only `unavailable` features produce a warning.
+
+On mainnet, where several contracts are still TBD, the SDK logs warnings on init:
 
 ```
 [GIWA SDK] Network "mainnet" has 4 warning(s):
-  1. [WARNING] Mainnet is not fully ready. 4 feature(s) unavailable.
-  2. [WARNING] bridge: L1 Bridge contract is TBD
-  3. [WARNING] giwaId: ENS Registry/Resolver contracts are TBD
-  4. [WARNING] dojang: EAS/Schema Registry contracts are TBD
+  1. [WARNING] Mainnet is not fully ready. 3 feature(s) unavailable due to TBD contracts.
+  2. [WARNING] giwaId: up.id registry (UpnameRegistry) is TBD on this network
+  3. [WARNING] dojang: Dojang contracts (DojangScroll/AttestationIndexer) are TBD on this network
+  4. [WARNING] faucet: Faucet is only available on testnet
 [GIWA SDK] Consider using "testnet" for development and testing.
 ```
 
@@ -530,7 +551,7 @@ describe("useGiwaId", () => {
     const { result } = renderHook(() => useGiwaId(), { wrapper });
 
     await act(async () => {
-      const address = await result.current.resolveAddress("alice.giwa.id");
+      const address = await result.current.resolveAddress("alice.up.id");
       expect(address).toMatch(/^0x[a-fA-F0-9]{40}$/);
     });
   });
@@ -540,7 +561,7 @@ describe("useGiwaId", () => {
 
     await act(async () => {
       const address = await result.current.resolveAddress(
-        "nonexistent.giwa.id"
+        "nonexistent.up.id"
       );
       expect(address).toBeNull();
     });
@@ -634,6 +655,14 @@ npm test -- wallet.test.ts
 
 # Run in watch mode
 npm test -- --watch
+```
+
+### Verification (Live)
+
+`pnpm verify:live` runs `scripts/verify-live.ts` against live GIWA Sepolia — it exercises `GiwaClient`, `DojangManager`, and `GiwaIdManager` read paths (chain id, feature availability, contract addresses, up.id resolution, Dojang attestations) with no mocks.
+
+```bash
+pnpm verify:live
 ```
 
 ## Requirements

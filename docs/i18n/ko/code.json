@@ -68,7 +68,7 @@
     "description": "Title of the GIWA ID feature"
   },
   "homepage.feature.giwaId.description": {
-    "message": "alice.giwa.id 같은 ENS 기반의 사람이 읽을 수 있는 주소.",
+    "message": "alice.up.id 같은 사람이 읽을 수 있는 up.id 이름.",
     "description": "Description of the GIWA ID feature"
   },
   "homepage.feature.bridge.title": {

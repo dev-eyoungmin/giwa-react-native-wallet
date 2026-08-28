@@ -361,24 +361,22 @@ interface Preconfirmation {
 
 ## useGiwaId
 
-GIWA ID (ENS-based Naming) Hook
+GIWA ID (`up.id`, Upbit Web3 Names) Hook — read-only resolution via the on-chain `UpnameRegistry`
 
 :::info Registration
-GIWA ID (up.id) registration is only available through Upbit's Verified Address service. This SDK provides name resolution and text record management.
+`up.id` names are minted through Upbit / the GIWA playground, not through this SDK. This hook only resolves names, reverse-resolves addresses, and checks availability — `up.id` has no ENS-style text record support.
 
-See: [GIWA ID Documentation](https://docs.giwa.io/giwa-ecosystem/giwa-id)
+See: [GIWA ID Documentation](https://docs.giwa.io/giwa-ecosystem/up-id)
 :::
 
 ```tsx
 import { useGiwaId } from 'giwa-react-native-wallet';
 
 const {
-  resolveAddress,    // (giwaId: string) => Promise<Address | null>
+  resolveAddress,    // (name: string) => Promise<Address | null>
   resolveName,       // (address: Address) => Promise<string | null>
-  getGiwaId,         // (giwaId: string) => Promise<GiwaId | null>
-  getTextRecord,     // (giwaId: string, key: string) => Promise<string | null>
-  setTextRecord,     // (giwaId: string, key: string, value: string) => Promise<Hash>
-  isAvailable,       // (giwaId: string) => Promise<boolean>
+  getGiwaId,         // (name: string) => Promise<GiwaId | null>
+  isAvailable,       // (name: string) => Promise<boolean>
   isLoading,         // boolean
   isInitializing,    // boolean
   error,             // Error | null
@@ -389,8 +387,13 @@ const {
 
 ```tsx
 interface GiwaId {
-  name: string;      // e.g., "alice.giwa.id"
+  /** Full name, e.g. "alice.up.id" */
+  name: string;
   address: Address;
+  /** ERC-721 token id in UpnameRegistry (= keccak256(label)) */
+  tokenId: bigint;
+  tokenUri?: string;
+  /** Best-effort image URL from token metadata */
   avatar?: string;
 }
 ```
@@ -399,12 +402,10 @@ interface GiwaId {
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `resolveAddress` | `(giwaId) => Promise<Address \| null>` | Resolve name to address |
-| `resolveName` | `(address) => Promise<string \| null>` | Resolve address to name |
-| `getGiwaId` | `(giwaId) => Promise<GiwaId \| null>` | Get full GIWA ID info |
-| `getTextRecord` | `(giwaId, key) => Promise<string \| null>` | Get text record |
-| `setTextRecord` | `(giwaId, key, value) => Promise<Hash>` | Set text record |
-| `isAvailable` | `(giwaId) => Promise<boolean>` | Check name availability |
+| `resolveAddress` | `(name) => Promise<Address \| null>` | Resolve `up.id` name to address |
+| `resolveName` | `(address) => Promise<string \| null>` | Reverse-resolve address to `up.id` name |
+| `getGiwaId` | `(name) => Promise<GiwaId \| null>` | Get full GIWA ID info |
+| `isAvailable` | `(name) => Promise<boolean>` | Check name availability (`isClaimable`) |
 | `isLoading` | `boolean` | Loading state |
 | `isInitializing` | `boolean` | Whether service is initializing |
 | `error` | `Error \| null` | Error if operation failed |
@@ -413,16 +414,14 @@ interface GiwaId {
 
 ```tsx
 // Resolve name to address
-const address = await resolveAddress('alice'); // or 'alice.giwa.id'
+const address = await resolveAddress('alice'); // or 'alice.up.id'
 
 // Reverse resolve address to name
 const name = await resolveName('0x1234...');
 
-// Get avatar
-const avatar = await getTextRecord('alice', 'avatar');
-
-// Set text record (requires ownership)
-const hash = await setTextRecord('alice', 'description', 'My profile');
+// Get full info, including a best-effort avatar
+const giwaId = await getGiwaId('alice');
+console.log(giwaId?.avatar);
 ```
 
 ---
@@ -441,15 +440,23 @@ See: [Dojang Documentation](https://docs.giwa.io/giwa-ecosystem/dojang)
 import { useDojang } from 'giwa-react-native-wallet';
 
 const {
-  getAttestation,       // (uid: Hex) => Promise<Attestation | null>
-  isAttestationValid,   // (uid: Hex) => Promise<boolean>
-  hasVerifiedAddress,   // (address: Address) => Promise<boolean>
-  getVerifiedBalance,   // (uid: Hex) => Promise<VerifiedBalance | null>
-  isLoading,            // boolean
-  isInitializing,       // boolean
-  error,                // Error | null
+  getAttestation,                    // (uid: Hex) => Promise<Attestation | null>
+  isAttestationValid,                // (uid: Hex) => Promise<boolean>
+  hasVerifiedAddress,                // (address: Address, attesterId?: Hex) => Promise<boolean>
+  getVerifiedAddressAttestationUid,  // (address: Address, attesterId?: Hex) => Promise<Hex | null>
+  getAttestationsForAddress,         // (address: Address) => Promise<Attestation[]>
+  getVerifiedBalance,                // (recipient: Address, coinType: bigint, snapshotAt: bigint, attesterId?: Hex) => Promise<bigint | null>
+  isVerifiedCode,                    // (codeHash: Hex, domain: string, attesterId?: Hex) => Promise<boolean>
+  decodeAttestationData,             // (attestation: Pick<Attestation, 'attestationType' | 'data'>) => DojangAttestationData | null
+  isLoading,                         // boolean
+  isInitializing,                    // boolean
+  error,                             // Error | null
 } = useDojang();
 ```
+
+:::note Attester defaults
+`hasVerifiedAddress` and `getVerifiedAddressAttestationUid` default to checking **every known attester** for the current network when `attesterId` is omitted. `getVerifiedBalance` and `isVerifiedCode` instead default to a single attester, `DEFAULT_DOJANG_ATTESTER_ID` (Upbit). See the [Dojang guide](/docs/guides/dojang) for the full breakdown and the schema/attester tables.
+:::
 
 ### Attestation Types
 
@@ -459,6 +466,7 @@ const {
 | `balance_root` | Merkle tree summary of balances |
 | `verified_balance` | Balance attestation at specific time |
 | `verified_code` | On-chain verification of off-chain codes |
+| `unknown` | Schema UID that doesn't match any of the four schemas above |
 
 ### Types
 
@@ -476,12 +484,26 @@ interface Attestation {
   revoked: boolean;
 }
 
-interface VerifiedBalance {
-  balance: bigint;
-  timestamp: bigint;
-}
+type AttestationType =
+  | 'verified_address'
+  | 'balance_root'
+  | 'verified_balance'
+  | 'verified_code'
+  | 'unknown';
 
-type AttestationType = 'verified_address' | 'balance_root' | 'verified_balance' | 'verified_code';
+// decodeAttestationData(attestation) return type - null for 'unknown' or on decode failure
+type DojangAttestationData =
+  | { type: 'verified_address'; isVerified: boolean }
+  | {
+      type: 'balance_root';
+      coinType: bigint;
+      snapshotAt: bigint;
+      leafCount: bigint;
+      totalAmount: bigint;
+      root: Hex;
+    }
+  | { type: 'verified_balance'; balance: bigint; salt: Hex; proofs: readonly Hex[] }
+  | { type: 'verified_code'; codeHash: Hex; domain: string };
 ```
 
 ### Returns
@@ -490,8 +512,12 @@ type AttestationType = 'verified_address' | 'balance_root' | 'verified_balance' 
 |----------|------|-------------|
 | `getAttestation` | `(uid) => Promise<Attestation \| null>` | Get attestation by UID |
 | `isAttestationValid` | `(uid) => Promise<boolean>` | Check if attestation is valid |
-| `hasVerifiedAddress` | `(address) => Promise<boolean>` | Check if address is verified |
-| `getVerifiedBalance` | `(uid) => Promise<VerifiedBalance \| null>` | Get verified balance |
+| `hasVerifiedAddress` | `(address, attesterId?) => Promise<boolean>` | Check if any (or one) known attester verified the address |
+| `getVerifiedAddressAttestationUid` | `(address, attesterId?) => Promise<Hex \| null>` | Get the verified-address attestation UID |
+| `getAttestationsForAddress` | `(address) => Promise<Attestation[]>` | Get every attestation across all known schemas/attesters |
+| `getVerifiedBalance` | `(recipient, coinType, snapshotAt, attesterId?) => Promise<bigint \| null>` | Get verified balance |
+| `isVerifiedCode` | `(codeHash, domain, attesterId?) => Promise<boolean>` | Check off-chain code verification |
+| `decodeAttestationData` | `(attestation) => DojangAttestationData \| null` | Decode raw attestation `data` bytes |
 | `isLoading` | `boolean` | Loading state |
 | `isInitializing` | `boolean` | Whether service is initializing |
 | `error` | `Error \| null` | Error if operation failed |
@@ -508,9 +534,12 @@ if (attestation && !attestation.revoked) {
   console.log('Attester:', attestation.attester);
 }
 
-// Check if address has verified attestation
+// Check if address has a verified-address attestation from any known attester
 const hasVerified = await hasVerifiedAddress('0xabcd...');
 console.log('Is verified:', hasVerified);
+
+// Decode a schema-specific payload
+const decoded = decodeAttestationData(attestation);
 ```
 
 ---

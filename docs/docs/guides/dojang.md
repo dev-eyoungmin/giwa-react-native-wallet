@@ -7,9 +7,9 @@ sidebar_position: 7
 This guide explains the Dojang attestation service based on EAS (Ethereum Attestation Service).
 
 :::info Attestation Creation
-Attestations can only be created by official issuers (e.g., Upbit Korea). This SDK provides read-only access for verifying attestations.
+Attestations can only be created by official issuers (e.g., Upbit Korea, or the testnet faucet on GIWA Sepolia). This SDK provides read-only access for verifying attestations.
 
-See: [Dojang Documentation](https://docs.giwa.io/giwa-ecosystem/dojang)
+See: [Dojang Documentation](https://docs.giwa.io/giwa-ecosystem/dojang/contracts)
 :::
 
 ## What is Dojang?
@@ -20,10 +20,57 @@ Dojang is GIWA Chain's attestation service that connects on-chain wallet address
 
 | Type | Description |
 |------|-------------|
-| **Verified Address** | KYC-verified wallet address |
-| **Balance Root** | Merkle tree summary of balances |
-| **Verified Balance** | Balance attestation at specific time |
-| **Verified Code** | On-chain verification of off-chain codes |
+| `verified_address` | KYC-verified wallet address |
+| `balance_root` | Merkle tree summary of balances |
+| `verified_balance` | Balance attestation at specific time |
+| `verified_code` | On-chain verification of off-chain codes |
+| `unknown` | Any attestation whose schema UID doesn't match one of the four schemas above |
+
+## Schemas
+
+`DOJANG_SCHEMAS` (from `giwa-react-native-wallet`) holds the GIWA Sepolia schema UIDs. `decodeAttestationData` decodes an `Attestation`'s raw `data` bytes into a typed payload keyed by schema; it returns `null` for `'unknown'` schemas or on decode failure.
+
+| Schema key | UID | Data fields |
+|------------|-----|-------------|
+| `VERIFIED_ADDRESS` | `0x072d75e18b2be4f89a13a7147240477481c4b526d5795802acba59046b426e08` | `bool isVerified` |
+| `BALANCE_ROOT` | `0x369faa9c2cd261c45be3db5e230b585f5f1abecf8e12be575bb543e917e6db52` | `uint256 coinType, uint64 snapshotAt, uint192 leafCount, uint256 totalAmount, bytes32 root` |
+| `VERIFIED_BALANCE` | `0x77bf88ca262cc63e1b185dccd870aacc5320b8987ef6c7169920f265fe6ab5e9` | `uint256 balance, bytes32 salt, bytes32[] proofs` |
+| `VERIFIED_CODE` | `0x55ac1369dac97522d062b89ffdc4e752b48fbeba86915fdb956c7c2d0501d280` | `bytes32 codeHash, string domain` |
+
+## Attesters
+
+An attester is the address that issued an attestation. `DOJANG_ATTESTERS` holds the known attesters, and `getDojangAttesters(network)` returns them in priority order for a network (`testnet`: `[UPBIT_KOREA, TESTNET_FAUCET]`; `mainnet`: `[UPBIT_KOREA]`).
+
+| Name | `id` | `address` |
+|------|------|-----------|
+| `UPBIT_KOREA` | `0xd99b42e778498aa3c9c1f6a012359130252780511687a35982e8e52735453034` | `0x09B170CA2A006081042992bCE7379B85a02149C6` |
+| `TESTNET_FAUCET` | `0xaa92f8c143657dde575de430aecaea6ca91f2e6072339b16932d426895d8d678` | `0x63CCe2b569A7bC35895ee24306c1512fefc06121` |
+
+`DEFAULT_DOJANG_ATTESTER_ID` is `DOJANG_ATTESTERS.UPBIT_KOREA.id`.
+
+### Attester semantics per method
+
+`attesterId` is optional on every method below, but "omitted" means different things depending on the call:
+
+- **`hasVerifiedAddress(address, attesterId?)`**: if `attesterId` is given, checks only that attester. If omitted, checks **every known attester** for the current network (one multicall) and returns `true` if **any** of them verify the address.
+- **`getVerifiedAddressAttestationUid(address, attesterId?)`**: if given, queries only that attester. If omitted, iterates the known attesters in priority order and returns the **first** non-null UID found.
+- **`getVerifiedBalance(recipient, coinType, snapshotAt, attesterId?)`** and **`isVerifiedCode(codeHash, domain, attesterId?)`**: default to `DEFAULT_DOJANG_ATTESTER_ID` (Upbit) when `attesterId` is omitted — unlike the two methods above, this is **not** "any attester".
+- **`getAttestationsForAddress(address)`**: no `attesterId` parameter — it always queries every known schema against every known attester for the current network.
+
+Pass `DOJANG_ATTESTERS.UPBIT_KOREA.id` explicitly if you need to restrict a query to Upbit only (or `TESTNET_FAUCET.id` for the testnet faucet issuer).
+
+## Contract Addresses (GIWA Sepolia)
+
+| Contract | Address |
+|----------|---------|
+| DojangScroll | `0xd5077b67dcb56caC8b270C7788FC3E6ee03F17B9` |
+| AttestationIndexer | `0x9C9Bf29880448aB39795a11b669e22A0f1d790ec` |
+| EAS | `0x4200000000000000000000000000000000000021` |
+| Schema Registry | `0x4200000000000000000000000000000000000020` |
+| SchemaBook | `0x78cBb3413FBb6aF05EF1D21e646440e56baE3AD6` |
+| DojangAttesterBook | `0xDA282E89244424E297Ce8e78089B54D043FB28B6` |
+
+See [Dojang Contracts Documentation](https://docs.giwa.io/giwa-ecosystem/dojang/contracts) for the canonical, up-to-date list.
 
 ## useDojang Hook
 
@@ -32,10 +79,14 @@ import { useDojang } from 'giwa-react-native-wallet';
 
 function DojangScreen() {
   const {
-    getAttestation,       // Get attestation by UID
-    isAttestationValid,   // Check if attestation is valid
-    hasVerifiedAddress,   // Check if address has verified attestation
-    getVerifiedBalance,   // Get verified balance data
+    getAttestation,                    // (uid: Hex) => Promise<Attestation | null>
+    isAttestationValid,                // (uid: Hex) => Promise<boolean>
+    hasVerifiedAddress,                // (address: Address, attesterId?: Hex) => Promise<boolean>
+    getVerifiedAddressAttestationUid,  // (address: Address, attesterId?: Hex) => Promise<Hex | null>
+    getAttestationsForAddress,         // (address: Address) => Promise<Attestation[]>
+    getVerifiedBalance,                // (recipient, coinType, snapshotAt, attesterId?) => Promise<bigint | null>
+    isVerifiedCode,                    // (codeHash: Hex, domain: string, attesterId?: Hex) => Promise<boolean>
+    decodeAttestationData,             // (attestation) => DojangAttestationData | null
     isLoading,
     isInitializing,
     error,
@@ -87,26 +138,9 @@ const handleVerify = async () => {
 };
 ```
 
-## Get Verified Balance
-
-For `verified_balance` type attestations:
-
-```tsx
-const handleGetBalance = async () => {
-  const attestationUid = '0x...';
-
-  const result = await getVerifiedBalance(attestationUid);
-
-  if (result) {
-    console.log('Balance:', result.balance);
-    console.log('Timestamp:', result.timestamp);
-  }
-};
-```
-
 ## Check Verified Address
 
-Check if a wallet address has a verified attestation:
+Check if a wallet address has a verified-address attestation from any known attester:
 
 ```tsx
 const handleCheckVerified = async () => {
@@ -118,6 +152,46 @@ const handleCheckVerified = async () => {
     console.log('Address is verified');
   } else {
     console.log('Address is not verified');
+  }
+};
+
+// Restrict to a single attester
+import { DOJANG_ATTESTERS } from 'giwa-react-native-wallet';
+
+const isVerifiedByUpbit = await hasVerifiedAddress(address, DOJANG_ATTESTERS.UPBIT_KOREA.id);
+```
+
+## Get Verified Balance
+
+`getVerifiedBalance` returns the raw `bigint` balance attested for a recipient/coin type/snapshot (or `null` if no such attestation exists):
+
+```tsx
+const handleGetBalance = async () => {
+  const recipient = '0x742d35Cc6634C0532925a3b844Bc9e7595f...';
+  const coinType = 60n; // SLIP-44 coin type (e.g. 60 = ETH)
+  const snapshotAt = 1735689600n; // unix seconds
+
+  const balance = await getVerifiedBalance(recipient, coinType, snapshotAt);
+
+  if (balance !== null) {
+    console.log('Verified balance:', balance);
+  }
+};
+```
+
+## Get All Attestations for an Address
+
+`getAttestationsForAddress` reads every known schema against every known attester for the current network (via `AttestationIndexer` + `EAS`, batched with multicall) and returns the full `Attestation` list:
+
+```tsx
+const handleGetAll = async () => {
+  const address = '0x742d35Cc6634C0532925a3b844Bc9e7595f...';
+
+  const attestations = await getAttestationsForAddress(address);
+
+  for (const attestation of attestations) {
+    const decoded = decodeAttestationData(attestation);
+    console.log(attestation.attestationType, decoded);
   }
 };
 ```
