@@ -175,17 +175,20 @@ export class GiwaClient {
       explorerUrl: config.endpoints?.explorerUrl || this.resolvedNetwork.explorerUrl,
     };
 
-    // Validate custom endpoints for security
-    if (config.endpoints?.rpcUrl || config.customRpcUrl) {
+    // Validate custom endpoints for security. A custom URL can originate
+    // from `config.endpoints`, the deprecated `config.customRpcUrl`, or
+    // `config.customNetwork` (which feeds into `resolvedNetwork` above) —
+    // any of these paths must go through the same validation.
+    if (config.endpoints?.rpcUrl || config.customRpcUrl || config.customNetwork?.rpcUrl) {
       validateEndpointUrl(this.endpoints.rpcUrl, 'http');
     }
-    if (config.endpoints?.flashblocksRpcUrl) {
+    if (config.endpoints?.flashblocksRpcUrl || config.customNetwork?.flashblocksRpcUrl) {
       validateEndpointUrl(this.endpoints.flashblocksRpcUrl, 'http');
     }
-    if (config.endpoints?.flashblocksWsUrl) {
+    if (config.endpoints?.flashblocksWsUrl || config.customNetwork?.flashblocksWsUrl) {
       validateEndpointUrl(this.endpoints.flashblocksWsUrl, 'ws');
     }
-    if (config.endpoints?.explorerUrl) {
+    if (config.endpoints?.explorerUrl || config.customNetwork?.explorerUrl) {
       validateEndpointUrl(this.endpoints.explorerUrl, 'http');
     }
 

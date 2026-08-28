@@ -153,6 +153,7 @@ export function GiwaProvider({
     client
       .verifyChainId()
       .then((result) => {
+        if (!mounted) return;
         if (!result.matches) {
           // eslint-disable-next-line no-console
           console.warn(
@@ -160,7 +161,10 @@ export function GiwaProvider({
           );
         }
       })
-      .catch((err) => safeLog('GiwaProvider.verifyChainId', err));
+      .catch((err) => {
+        if (!mounted) return;
+        safeLog('GiwaProvider.verifyChainId', err);
+      });
 
     async function initialize() {
       setIsLoading(true);
