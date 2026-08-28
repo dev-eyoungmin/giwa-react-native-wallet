@@ -12,6 +12,7 @@ import {
 import { getNetwork, GIWA_NETWORKS } from '../constants/networks';
 import {
   getContractAddresses as getDefaultContractAddresses,
+  ZERO_ADDRESS,
   type ContractAddresses,
 } from '../constants/contracts';
 import {
@@ -99,6 +100,7 @@ export interface ResolvedEndpoints {
  */
 function createGiwaChain(network: NetworkType): Chain {
   const networkConfig = getNetwork(network);
+  const multicall3 = getDefaultContractAddresses(network).multicall3;
 
   return {
     id: networkConfig.id,
@@ -114,6 +116,9 @@ function createGiwaChain(network: NetworkType): Chain {
         url: networkConfig.explorerUrl,
       },
     },
+    ...(multicall3 !== ZERO_ADDRESS && {
+      contracts: { multicall3: { address: multicall3 } },
+    }),
   };
 }
 
@@ -319,26 +324,15 @@ export class GiwaClient {
       return defaults;
     }
 
-    // Merge custom contracts with defaults (custom takes precedence)
+    // Merge custom contracts with defaults: only defined custom entries
+    // override the corresponding default (custom takes precedence).
+    const definedOverrides = Object.fromEntries(
+      Object.entries(this.customContracts).filter(([, value]) => value !== undefined)
+    );
+
     return {
       ...defaults,
-      ...(this.customContracts.eas && { eas: this.customContracts.eas }),
-      ...(this.customContracts.schemaRegistry && {
-        schemaRegistry: this.customContracts.schemaRegistry,
-      }),
-      ...(this.customContracts.ensRegistry && {
-        ensRegistry: this.customContracts.ensRegistry,
-      }),
-      ...(this.customContracts.ensResolver && {
-        ensResolver: this.customContracts.ensResolver,
-      }),
-      ...(this.customContracts.l2StandardBridge && {
-        l2StandardBridge: this.customContracts.l2StandardBridge,
-      }),
-      ...(this.customContracts.l1StandardBridge && {
-        l1StandardBridge: this.customContracts.l1StandardBridge,
-      }),
-      ...(this.customContracts.weth && { weth: this.customContracts.weth }),
-    };
+      ...definedOverrides,
+    } as ContractAddresses;
   }
 }

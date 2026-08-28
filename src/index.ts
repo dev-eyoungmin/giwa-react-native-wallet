@@ -10,7 +10,16 @@ export * from './types';
 
 // Constants
 export { GIWA_NETWORKS, getNetwork, DEFAULT_NETWORK } from './constants/networks';
-export { CONTRACT_ADDRESSES, getContractAddresses, DOJANG_SCHEMAS } from './constants/contracts';
+export {
+  CONTRACT_ADDRESSES,
+  getContractAddresses,
+  DOJANG_SCHEMAS,
+  DOJANG_ATTESTERS,
+  getDojangAttesters,
+  DEFAULT_DOJANG_ATTESTER_ID,
+  ZERO_ADDRESS,
+} from './constants/contracts';
+export type { ContractAddresses, DojangAttester } from './constants/contracts';
 
 // Core
 export { GiwaClient } from './core/GiwaClient';
