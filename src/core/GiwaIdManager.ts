@@ -4,6 +4,10 @@ import type { GiwaClient } from './GiwaClient';
 import type { GiwaId } from '../types';
 import { safeLog } from '../utils/errors';
 import { isTbdAddress } from '../utils/networkValidator';
+import { validateAndChecksumAddress } from '../utils/validation';
+
+/** Timeout (ms) for the best-effort token metadata fetch in `getGiwaId`. */
+const AVATAR_FETCH_TIMEOUT_MS = 5000;
 
 /** GIWA up.id domain suffix. */
 export const UP_ID_DOMAIN = 'up.id';
@@ -146,6 +150,7 @@ export class GiwaIdManager {
       return null;
     }
 
+    const validated = validateAndChecksumAddress(address, 'address');
     const publicClient = this.client.getPublicClient();
 
     try {
@@ -153,7 +158,7 @@ export class GiwaIdManager {
         address: contracts.upnameRegistry,
         abi: UPNAME_REGISTRY_ABI,
         functionName: 'ownedTokenId',
-        args: [address],
+        args: [validated],
       });
 
       if (tokenId === 0n) {
@@ -168,6 +173,16 @@ export class GiwaIdManager {
       });
 
       if (!label) {
+        return null;
+      }
+
+      // Verify the label round-trips to the same tokenId before trusting it -
+      // a mismatch means unexpected registry state, not user input.
+      if (labelToTokenId(label) !== tokenId) {
+        safeLog(
+          'GiwaIdManager.resolveName',
+          new Error(`label/tokenId mismatch for owner ${validated}`)
+        );
         return null;
       }
 
@@ -270,28 +285,46 @@ export class GiwaIdManager {
 
   /**
    * Best-effort fetch of a token's metadata to extract the `image` field.
-   * Never throws; returns undefined on any failure.
+   * Only fetches `https://` URIs (never `data:`/`ipfs:`/etc, to bound this
+   * to a plain HTTPS request and avoid SSRF via arbitrary schemes), and
+   * bounds the request with a timeout. Never throws; returns undefined on
+   * any failure.
    */
   private async getAvatarFromTokenUri(tokenUri: string | undefined): Promise<string | undefined> {
-    if (!tokenUri) {
+    if (!tokenUri || !/^https:\/\//i.test(tokenUri)) {
       return undefined;
     }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), AVATAR_FETCH_TIMEOUT_MS);
+
     try {
-      const response = await fetch(tokenUri);
+      const response = await fetch(tokenUri, { signal: controller.signal });
       const metadata = await response.json();
-      return typeof metadata?.image === 'string' ? metadata.image : undefined;
+      const image = metadata?.image;
+      return typeof image === 'string' && /^https:\/\//i.test(image) ? image : undefined;
     } catch {
       return undefined;
+    } finally {
+      clearTimeout(timer);
     }
   }
 
   /**
    * Normalize a name input to the bare, lower-cased on-chain label:
    * lower-case, `normalize()` (viem/ens), then strip a trailing `.up.id`.
-   * Returns null for an empty label.
+   * Returns null for an empty label, and also for input `normalize()`
+   * rejects (e.g. disallowed characters, stray underscores, empty labels,
+   * illegal character mixtures) - this is a best-effort resolver over
+   * arbitrary user input, so it never throws.
    */
   private normalizeLabel(name: string): string | null {
-    const normalized = normalize(name.toLowerCase());
+    let normalized: string;
+    try {
+      normalized = normalize(name.toLowerCase());
+    } catch {
+      return null;
+    }
     const label = normalized.endsWith(`.${UP_ID_DOMAIN}`)
       ? normalized.slice(0, -`.${UP_ID_DOMAIN}`.length)
       : normalized;
