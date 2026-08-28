@@ -614,13 +614,14 @@ const {
   hasWarnings,          // boolean
   warnings,             // string[]
   isFeatureAvailable,   // (feature: FeatureName) => boolean
-  getFeatureInfo,       // (feature: FeatureName) => FeatureAvailability
+  getFeatureInfo,       // (feature: FeatureName) => FeatureAvailability | null
   unavailableFeatures,  // FeatureName[]
   chainId,              // number
   rpcUrl,               // string
   flashblocksRpcUrl,    // string - Flashblocks RPC endpoint
   flashblocksWsUrl,     // string - Flashblocks WebSocket endpoint
   explorerUrl,          // string
+  isInitializing,       // boolean
 } = useNetworkInfo();
 ```
 
@@ -636,13 +637,14 @@ const {
 | `hasWarnings` | `boolean` | Whether there are warnings |
 | `warnings` | `string[]` | List of warning messages |
 | `isFeatureAvailable` | `(feature) => boolean` | Check feature availability |
-| `getFeatureInfo` | `(feature) => FeatureAvailability` | Get feature details |
+| `getFeatureInfo` | `(feature) => FeatureAvailability \| null` | Get feature details (`null` while the SDK is still initializing) |
 | `unavailableFeatures` | `FeatureName[]` | List of unavailable features |
 | `chainId` | `number` | Network chain ID |
 | `rpcUrl` | `string` | RPC endpoint URL |
 | `flashblocksRpcUrl` | `string` | Flashblocks RPC URL |
 | `flashblocksWsUrl` | `string` | Flashblocks WebSocket URL |
 | `explorerUrl` | `string` | Block explorer URL |
+| `isInitializing` | `boolean` | Whether the SDK is still initializing |
 
 ### Usage Example
 

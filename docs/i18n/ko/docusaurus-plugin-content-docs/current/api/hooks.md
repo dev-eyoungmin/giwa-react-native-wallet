@@ -518,15 +518,37 @@ const {
   hasWarnings,          // boolean
   warnings,             // string[]
   isFeatureAvailable,   // (feature: FeatureName) => boolean
-  getFeatureInfo,       // (feature: FeatureName) => FeatureAvailability
+  getFeatureInfo,       // (feature: FeatureName) => FeatureAvailability | null
   unavailableFeatures,  // FeatureName[]
   chainId,              // number
   rpcUrl,               // string
   flashblocksRpcUrl,    // string - Flashblocks RPC endpoint
   flashblocksWsUrl,     // string - Flashblocks WebSocket endpoint
   explorerUrl,          // string
+  isInitializing,       // boolean
 } = useNetworkInfo();
 ```
+
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `network` | `'testnet' \| 'mainnet'` | 현재 네트워크 (mainnet: 🚧 개발중) |
+| `networkConfig` | `GiwaNetwork` | 네트워크 설정 |
+| `status` | `NetworkStatus` | 전체 네트워크 상태 |
+| `isTestnet` | `boolean` | 현재 네트워크가 testnet인지 여부 |
+| `isReady` | `boolean` | 네트워크가 사용 준비되었는지 여부 |
+| `hasWarnings` | `boolean` | 경고가 있는지 여부 |
+| `warnings` | `string[]` | 경고 메시지 목록 |
+| `isFeatureAvailable` | `(feature) => boolean` | 기능 가용성 확인 |
+| `getFeatureInfo` | `(feature) => FeatureAvailability \| null` | 기능 상세 정보 조회 (SDK 초기화 중에는 `null`) |
+| `unavailableFeatures` | `FeatureName[]` | 사용 불가능한 기능 목록 |
+| `chainId` | `number` | 네트워크 체인 ID |
+| `rpcUrl` | `string` | RPC 엔드포인트 URL |
+| `flashblocksRpcUrl` | `string` | Flashblocks RPC URL |
+| `flashblocksWsUrl` | `string` | Flashblocks WebSocket URL |
+| `explorerUrl` | `string` | 블록 탐색기 URL |
+| `isInitializing` | `boolean` | SDK 초기화 중인지 여부 |
 
 ### Usage Example
 

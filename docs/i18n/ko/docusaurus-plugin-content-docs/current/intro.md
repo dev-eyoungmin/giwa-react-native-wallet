@@ -18,24 +18,20 @@ GIWA Chain을 위한 React Native SDK입니다. Expo와 React Native CLI 프로�
 | **트랜잭션** | `useTransaction` | ETH 전송 |
 | **토큰 관리** | `useTokens` | ERC-20 토큰 전송 및 조회 |
 | **Flashblocks** | `useFlashblocks` | ~200ms 빠른 사전확인 |
+| **GIWA ID (up.id)** | `useGiwaId` | 온체인 UpnameRegistry를 통한 up.id 이름 해석 |
 | **Dojang (EAS)** | `useDojang` | 온체인 증명 서비스 |
 | **Faucet** | `useFaucet` | 테스트넷 ETH 수령 |
 | **네트워크 정보** | `useNetworkInfo` | 네트워크 상태 및 기능 가용성 |
 | **생체 인증** | `useBiometricAuth` | Face ID / Touch ID / 지문 인식 |
 | **보안 저장소** | - | iOS Keychain / Android Keystore |
 
-### 🚧 준비중 (컨트랙트 배포 대기)
+### ⚠️ 부분 지원
 
-이 기능들은 SDK에 완전히 구현되어 있지만, GIWA 팀의 스마트 컨트랙트 배포가 필요합니다.
+| 기능 | Hook | 설명 |
+|------|------|------|
+| **브릿지** | `useBridge` | L2→L1 출금 시작(입금은 [Superbridge](https://superbridge.app) 이용); 증명(prove)과 완료(finalize)는 구현되어 있지 않음 |
 
-| 기능 | Hook | 상태 | 공식 문서 |
-|------|------|------|----------|
-| **L1 브릿지** | `useBridge` | L1 브릿지 컨트랙트 미배포 | [GIWA 문서](https://docs.giwa.io) |
-| **GIWA ID** | `useGiwaId` | ENS 컨트랙트 미배포 | [GIWA 문서](https://docs.giwa.io) |
-
-:::tip 브릿지 대안
-브릿지 기능이 필요하시면 [Superbridge](https://superbridge.app)를 이용하실 수 있습니다.
-:::
+> `useNetworkInfo().getFeatureInfo('bridge')`는 구현되지 않은 부분을 설명하는 `reason`과 함께 `status: 'partial'`을 반환합니다.
 
 ## 네트워크 정보
 

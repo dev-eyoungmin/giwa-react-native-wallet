@@ -285,7 +285,7 @@ function MyComponent() {
 >
 ```
 
-On initialization, `GiwaClient` calls `getChainId()` on the configured RPC and compares it to `customNetwork.id` (or the built-in chain id). If they don't match, the SDK logs a console warning (`Chain id mismatch: expected ... but RPC reports ...`) rather than throwing. You can also call this check yourself:
+On initialization, `GiwaProvider` calls `client.verifyChainId()` (fire-and-forget) to compare the RPC-reported chain id against `customNetwork.id` (or the built-in chain id). If they don't match, it logs a console warning (`Chain id mismatch: expected ... but RPC reports ...`) rather than throwing. A bare `new GiwaClient(...)` does not run this check automatically — call `verifyChainId()` yourself if you're not going through `GiwaProvider`:
 
 ```tsx
 const client = new GiwaClient({ network: 'testnet' });

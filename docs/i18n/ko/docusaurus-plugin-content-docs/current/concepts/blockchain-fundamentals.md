@@ -359,7 +359,7 @@ Superchain은 OP Stack 기반 체인들이 상호운용 가능한 네트워크�
 │  │                    GIWA Features                             ││
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          ││
 │  │  │ GIWA ID     │  │ Dojang      │  │ Flashblocks │          ││
-│  │  │ (ENS-based) │  │ (EAS-based) │  │ (~200ms)    │          ││
+│  │  │ (up.id)     │  │ (EAS-based) │  │ (~200ms)    │          ││
 │  │  └─────────────┘  └─────────────┘  └─────────────┘          ││
 │  └─────────────────────────────────────────────────────────────┘│
 │                                                                  │
@@ -385,7 +385,7 @@ Superchain은 OP Stack 기반 체인들이 상호운용 가능한 네트워크�
 | **EVM Compatible**      | 기존 Solidity 스마트 컨트랙트를 수정 없이 배포 가능 |
 | **Low Fees**            | 이더리움 대비 약 90% 이상 저렴한 가스 비용          |
 | **Flashblocks**         | ~200ms 사전 확인 제공                               |
-| **GIWA ID**             | ENS 기반 사람이 읽을 수 있는 주소 시스템            |
+| **GIWA ID**             | UpnameRegistry를 통해 해석되는 up.id(Upbit Web3 Names) 사람이 읽을 수 있는 주소 시스템 |
 | **Dojang**              | EAS 기반 증명 시스템                                |
 
 ### 5.5 Network Information
@@ -403,7 +403,7 @@ Superchain은 OP Stack 기반 체인들이 상호운용 가능한 네트워크�
 | Currency              | ETH                                       |
 | Base Layer            | Ethereum Sepolia                          |
 
-#### Mainnet (Coming Soon)
+#### Mainnet (🚧 Under Development)
 
 | 항목           | 값               |
 | -------------- | ---------------- |

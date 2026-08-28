@@ -18,24 +18,20 @@ React Native SDK for GIWA Chain. Works with both Expo and React Native CLI proje
 | **Transactions** | `useTransaction` | Send ETH transactions |
 | **Token Operations** | `useTokens` | ERC-20 token transfers and queries |
 | **Flashblocks** | `useFlashblocks` | ~200ms fast preconfirmation |
+| **GIWA ID (up.id)** | `useGiwaId` | up.id name resolution via on-chain UpnameRegistry |
 | **Dojang (EAS)** | `useDojang` | On-chain attestation service |
 | **Faucet** | `useFaucet` | Testnet ETH faucet |
 | **Network Info** | `useNetworkInfo` | Network status and feature availability |
 | **Biometric Auth** | `useBiometricAuth` | Face ID / Touch ID / Fingerprint |
 | **Secure Storage** | - | iOS Keychain / Android Keystore |
 
-### 🚧 Coming Soon (Contract Deployment Pending)
+### ⚠️ Partial
 
-These features are fully implemented in the SDK, but require smart contract deployment by the GIWA team.
+| Feature | Hook | Description |
+|---------|------|-------------|
+| **Bridge** | `useBridge` | L2→L1 withdrawal initiation (deposit via [Superbridge](https://superbridge.app)); prove and finalize are not implemented |
 
-| Feature | Hook | Status | Official Docs |
-|---------|------|--------|---------------|
-| **L1 Bridge** | `useBridge` | L1 Bridge contract not deployed | [GIWA Docs](https://docs.giwa.io) |
-| **GIWA ID** | `useGiwaId` | ENS contracts not deployed | [GIWA Docs](https://docs.giwa.io) |
-
-:::tip Bridge Alternative
-For bridge operations, you can use [Superbridge](https://superbridge.app) in the meantime.
-:::
+> `useNetworkInfo().getFeatureInfo('bridge')` reports `status: 'partial'` with a `reason` string explaining what is and isn't implemented.
 
 ## Network Information
 

@@ -355,7 +355,7 @@ The name "GIWA" is derived from traditional Korean roof tiles (기와). Just as 
 │  │                    GIWA Features                             ││
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          ││
 │  │  │ GIWA ID     │  │ Dojang      │  │ Flashblocks │          ││
-│  │  │ (ENS-based) │  │ (EAS-based) │  │ (~200ms)    │          ││
+│  │  │ (up.id)     │  │ (EAS-based) │  │ (~200ms)    │          ││
 │  │  └─────────────┘  └─────────────┘  └─────────────┘          ││
 │  └─────────────────────────────────────────────────────────────┘│
 │                                                                  │
@@ -381,7 +381,7 @@ The name "GIWA" is derived from traditional Korean roof tiles (기와). Just as 
 | **EVM Compatible**      | Deploy existing Solidity smart contracts without modification |
 | **Low Fees**            | Gas fees approximately 90%+ cheaper than Ethereum             |
 | **Flashblocks**         | ~200ms preconfirmation provided                               |
-| **GIWA ID**             | ENS-based human-readable address system                       |
+| **GIWA ID**             | up.id (Upbit Web3 Names) human-readable address system, resolved via UpnameRegistry |
 | **Dojang**              | EAS-based attestation system                                  |
 
 ### 5.5 Network Information
