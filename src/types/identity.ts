@@ -16,7 +16,8 @@ export type AttestationType =
   | 'verified_address'
   | 'balance_root'
   | 'verified_balance'
-  | 'verified_code';
+  | 'verified_code'
+  | 'unknown';
 
 export interface Attestation {
   uid: Hex;
@@ -30,3 +31,21 @@ export interface Attestation {
   revocable: boolean;
   revoked: boolean;
 }
+
+/**
+ * Decoded Dojang attestation payload, keyed by the schema it came from.
+ * `decodeAttestationData` returns null for `'unknown'` schemas or on decode
+ * failure (see DojangManager).
+ */
+export type DojangAttestationData =
+  | { type: 'verified_address'; isVerified: boolean }
+  | {
+      type: 'balance_root';
+      coinType: bigint;
+      snapshotAt: bigint;
+      leafCount: bigint;
+      totalAmount: bigint;
+      root: Hex;
+    }
+  | { type: 'verified_balance'; balance: bigint; salt: Hex; proofs: readonly Hex[] }
+  | { type: 'verified_code'; codeHash: Hex; domain: string };

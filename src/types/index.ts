@@ -49,6 +49,7 @@ export type {
   GiwaId,
   AttestationType,
   Attestation,
+  DojangAttestationData,
 } from './identity';
 
 // Config
