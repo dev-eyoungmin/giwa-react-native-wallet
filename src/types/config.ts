@@ -1,7 +1,7 @@
 /**
  * SDK configuration type definitions
  */
-import type { NetworkType } from './network';
+import type { GiwaNetwork, NetworkType } from './network';
 import type { ContractAddresses } from '../constants/contracts';
 
 /**
@@ -34,6 +34,8 @@ export interface GiwaConfig {
   endpoints?: CustomEndpoints;
   /** Custom contract addresses (overrides network defaults) */
   customContracts?: CustomContracts;
+  /** Override the built-in network definition (chain id, name, URLs). Use with `endpoints` when pointing the SDK at a non-default chain. */
+  customNetwork?: Partial<GiwaNetwork>;
   /** Auto-connect wallet on initialization (default: false) */
   autoConnect?: boolean;
   /** Enable Flashblocks for faster block confirmations (default: false) */

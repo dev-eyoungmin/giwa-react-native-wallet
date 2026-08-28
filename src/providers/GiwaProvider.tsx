@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useMemo,
   useCallback,
+  useRef,
   type ReactNode,
 } from 'react';
 import { GiwaClient } from '../core/GiwaClient';
@@ -102,14 +103,30 @@ export function GiwaProvider({
 
   // Memoize config values for stable references
   const networkConfig = config.network;
-  const customRpcUrl = config.customRpcUrl;
   const enableFlashblocks = config.enableFlashblocks;
   const autoConnect = config.autoConnect;
 
-  // Create client (memoized with stable dependencies)
+  // Hold the latest config in a ref so the memo below can read it without
+  // being re-created on every render (only `configKey` changes trigger it).
+  const configRef = useRef(config);
+  configRef.current = config;
+
+  // Stable key derived from the config fields that actually affect client
+  // construction. Using a single JSON-derived key (instead of listing each
+  // field as a dependency) avoids re-creating the client when callers pass
+  // structurally-equal-but-referentially-new config objects.
+  const configKey = JSON.stringify({
+    network: config.network,
+    customRpcUrl: config.customRpcUrl,
+    endpoints: config.endpoints,
+    customContracts: config.customContracts,
+    customNetwork: config.customNetwork,
+  });
+
+  // Create client (memoized with a stable key)
   const client = useMemo(() => {
-    return new GiwaClient(config);
-  }, [networkConfig, customRpcUrl]);
+    return new GiwaClient(configRef.current);
+  }, [configKey]);
 
   // Create managers (memoized, dependent on client)
   const tokenManager = useMemo(() => new TokenManager(client), [client]);
@@ -121,10 +138,29 @@ export function GiwaProvider({
   const giwaIdManager = useMemo(() => new GiwaIdManager(client), [client]);
   const dojangManager = useMemo(() => new DojangManager(client), [client]);
 
+  // Hold the latest onError callback in a ref so consumers passing inline
+  // arrows don't force the init effect to re-run on every render.
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+
   // Initialize adapters
   useEffect(() => {
     let mounted = true;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    // Verify the RPC-reported chain id matches the configured chain.
+    // Fire-and-forget: runs alongside init, not part of the timeout race.
+    client
+      .verifyChainId()
+      .then((result) => {
+        if (!result.matches) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            `[GIWA SDK] Chain id mismatch: expected ${result.expected} (config) but RPC reports ${result.actual}. Set config.customNetwork.id if you are targeting a different chain.`
+          );
+        }
+      })
+      .catch((err) => safeLog('GiwaProvider.verifyChainId', err));
 
     async function initialize() {
       setIsLoading(true);
@@ -198,7 +234,7 @@ export function GiwaProvider({
         safeLog('GiwaProvider initialization', error);
         if (mounted) {
           setError(error);
-          onError?.(error);
+          onErrorRef.current?.(error);
         }
       } finally {
         if (timeoutId) {
@@ -218,7 +254,7 @@ export function GiwaProvider({
         clearTimeout(timeoutId);
       }
     };
-  }, [forceEnvironment, autoConnect, client, initTimeout, onError]);
+  }, [forceEnvironment, autoConnect, client, initTimeout]);
 
   // Update client account when wallet changes (stable callback)
   const setWallet = useCallback(

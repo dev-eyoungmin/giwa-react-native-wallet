@@ -9,7 +9,7 @@ import {
   type Account,
   type Transport,
 } from 'viem';
-import { getNetwork, GIWA_NETWORKS } from '../constants/networks';
+import { GIWA_NETWORKS } from '../constants/networks';
 import {
   getContractAddresses as getDefaultContractAddresses,
   ZERO_ADDRESS,
@@ -28,6 +28,7 @@ import type {
   NetworkStatus,
   FeatureName,
   FeatureAvailability,
+  GiwaNetwork,
 } from '../types';
 
 /**
@@ -96,24 +97,41 @@ export interface ResolvedEndpoints {
 }
 
 /**
- * Custom GIWA Chain definition for viem
+ * Filter out `undefined` values from a partial object, keeping only
+ * explicitly provided (defined) entries. Used to merge override configs
+ * without letting `undefined` properties clobber the base values.
  */
-function createGiwaChain(network: NetworkType): Chain {
-  const networkConfig = getNetwork(network);
-  const multicall3 = getDefaultContractAddresses(network).multicall3;
+function definedEntries<T extends object>(source?: Partial<T>): Partial<T> {
+  if (!source) {
+    return {};
+  }
 
+  return Object.fromEntries(
+    Object.entries(source).filter(([, value]) => value !== undefined)
+  ) as Partial<T>;
+}
+
+/**
+ * Custom GIWA Chain definition for viem, built from the resolved network
+ * and endpoint configuration (after `customNetwork`/`endpoints` overrides).
+ */
+function createGiwaChain(
+  network: GiwaNetwork,
+  endpoints: ResolvedEndpoints,
+  multicall3: `0x${string}`
+): Chain {
   return {
-    id: networkConfig.id,
-    name: networkConfig.name,
-    nativeCurrency: networkConfig.currency,
+    id: network.id,
+    name: network.name,
+    nativeCurrency: network.currency,
     rpcUrls: {
-      default: { http: [networkConfig.rpcUrl] },
-      public: { http: [networkConfig.rpcUrl] },
+      default: { http: [endpoints.rpcUrl] },
+      public: { http: [endpoints.rpcUrl] },
     },
     blockExplorers: {
       default: {
         name: 'GIWA Explorer',
-        url: networkConfig.explorerUrl,
+        url: endpoints.explorerUrl,
       },
     },
     ...(multicall3 !== ZERO_ADDRESS && {
@@ -130,22 +148,31 @@ export class GiwaClient {
   private walletClient: WalletClient<Transport, Chain, Account> | null = null;
   private chain: Chain;
   private network: NetworkType;
+  private resolvedNetwork: GiwaNetwork;
   private endpoints: ResolvedEndpoints;
   private networkStatus: NetworkStatus;
   private customContracts?: CustomContracts;
 
   constructor(config: GiwaConfig = {}) {
     this.network = config.network || 'testnet';
-    this.chain = createGiwaChain(this.network);
     this.customContracts = config.customContracts;
 
+    // Resolve the network definition: built-in defaults overridden by
+    // any explicitly provided `customNetwork` fields.
+    this.resolvedNetwork = {
+      ...GIWA_NETWORKS[this.network],
+      ...definedEntries<GiwaNetwork>(config.customNetwork),
+    };
+
     // Resolve endpoints with custom overrides
-    const networkConfig = GIWA_NETWORKS[this.network];
     this.endpoints = {
-      rpcUrl: config.endpoints?.rpcUrl || config.customRpcUrl || networkConfig.rpcUrl,
-      flashblocksRpcUrl: config.endpoints?.flashblocksRpcUrl || networkConfig.flashblocksRpcUrl,
-      flashblocksWsUrl: config.endpoints?.flashblocksWsUrl || networkConfig.flashblocksWsUrl,
-      explorerUrl: config.endpoints?.explorerUrl || networkConfig.explorerUrl,
+      rpcUrl:
+        config.endpoints?.rpcUrl || config.customRpcUrl || this.resolvedNetwork.rpcUrl,
+      flashblocksRpcUrl:
+        config.endpoints?.flashblocksRpcUrl || this.resolvedNetwork.flashblocksRpcUrl,
+      flashblocksWsUrl:
+        config.endpoints?.flashblocksWsUrl || this.resolvedNetwork.flashblocksWsUrl,
+      explorerUrl: config.endpoints?.explorerUrl || this.resolvedNetwork.explorerUrl,
     };
 
     // Validate custom endpoints for security
@@ -167,6 +194,15 @@ export class GiwaClient {
     if (this.networkStatus.hasWarnings) {
       logNetworkWarnings(this.network);
     }
+
+    // Build the viem chain from the resolved network + endpoints. Must run
+    // after `this.customContracts` is set so `getContractAddresses()`
+    // (used for the multicall3 override) reflects any custom overrides.
+    this.chain = createGiwaChain(
+      this.resolvedNetwork,
+      this.endpoints,
+      this.getContractAddresses().multicall3
+    );
 
     this.publicClient = createPublicClient({
       chain: this.chain,
@@ -219,6 +255,24 @@ export class GiwaClient {
    */
   getNetwork(): NetworkType {
     return this.network;
+  }
+
+  /**
+   * Get the resolved network definition (built-in defaults merged with any
+   * `customNetwork` overrides supplied via config).
+   */
+  getNetworkConfig(): GiwaNetwork {
+    return { ...this.resolvedNetwork };
+  }
+
+  /**
+   * Verify that the RPC endpoint's reported chain id matches the chain id
+   * configured for this client. RPC errors are propagated to the caller.
+   */
+  async verifyChainId(): Promise<{ expected: number; actual: number; matches: boolean }> {
+    const actual = await this.publicClient.getChainId();
+    const expected = this.chain.id;
+    return { expected, actual, matches: expected === actual };
   }
 
   /**

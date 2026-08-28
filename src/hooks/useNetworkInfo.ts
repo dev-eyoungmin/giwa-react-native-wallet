@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useGiwaManagers, useGiwaState } from '../providers/GiwaProvider';
-import { GIWA_NETWORKS } from '../constants/networks';
 import type {
   NetworkType,
   GiwaNetwork,
@@ -108,7 +107,8 @@ export function useNetworkInfo(): UseNetworkInfoReturn {
     }
 
     const { client, network } = managers;
-    const networkConfig = GIWA_NETWORKS[network];
+    const networkConfig = client.getNetworkConfig();
+    const endpoints = client.getEndpoints();
     const status = client.getNetworkStatus();
 
     const unavailableFeatures = Object.entries(status.features)
@@ -127,11 +127,11 @@ export function useNetworkInfo(): UseNetworkInfoReturn {
         client.isFeatureAvailable(feature),
       getFeatureInfo: (feature: FeatureName) => client.getFeatureInfo(feature),
       unavailableFeatures,
-      chainId: networkConfig.id,
-      rpcUrl: networkConfig.rpcUrl,
-      flashblocksRpcUrl: networkConfig.flashblocksRpcUrl,
-      flashblocksWsUrl: networkConfig.flashblocksWsUrl,
-      explorerUrl: networkConfig.explorerUrl,
+      chainId: client.getChainId(),
+      rpcUrl: endpoints.rpcUrl,
+      flashblocksRpcUrl: endpoints.flashblocksRpcUrl,
+      flashblocksWsUrl: endpoints.flashblocksWsUrl,
+      explorerUrl: endpoints.explorerUrl,
       isInitializing: false,
     };
   }, [managers, isLoading]);
