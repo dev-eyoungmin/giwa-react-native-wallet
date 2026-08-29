@@ -127,6 +127,17 @@ const ETH_ADDRESS = '0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000' as Address;
 const DEFAULT_DEPOSIT_MIN_GAS_LIMIT = 200000;
 
 /**
+ * The L1 contracts a bridge operation can depend on. Each method declares
+ * only the ones the underlying viem action actually reads or writes, so a
+ * partially configured `customContracts` still enables the paths it covers.
+ */
+type L1BridgeContract = 'l1StandardBridge' | 'optimismPortal' | 'disputeGameFactory';
+
+const PORTAL = 'optimismPortal' satisfies L1BridgeContract;
+const DISPUTE_GAME_FACTORY = 'disputeGameFactory' satisfies L1BridgeContract;
+const STANDARD_BRIDGE = 'l1StandardBridge' satisfies L1BridgeContract;
+
+/**
  * Bridge Manager - handles L1↔L2 bridge operations
  */
 export class BridgeManager {
@@ -311,7 +322,8 @@ export class BridgeManager {
       ? validateAndChecksumAddress(to, 'recipient')
       : undefined;
 
-    const { publicClientL1, walletClientL1 } = this.requireL1Wallet();
+    // `depositTransaction` writes to the OptimismPortal only.
+    const { publicClientL1, walletClientL1 } = this.requireL1Wallet([PORTAL]);
     const publicClientL2 = this.client.getPublicClient();
     const targetChain = this.getTargetChain();
 
@@ -390,7 +402,8 @@ export class BridgeManager {
       ? validateAndChecksumAddress(to, 'recipient')
       : undefined;
 
-    const { publicClientL1, walletClientL1 } = this.requireL1Wallet();
+    // ERC-20 deposits go through the L1StandardBridge, not the portal.
+    const { publicClientL1, walletClientL1 } = this.requireL1Wallet([STANDARD_BRIDGE]);
     const contracts = this.client.getContractAddresses();
     const owner = walletClientL1.account.address;
     const recipient = validatedRecipient ?? owner;
@@ -460,7 +473,8 @@ export class BridgeManager {
    * @param l2TxHash - The L2 transaction hash that initiated the withdrawal
    */
   async getWithdrawalStatus(l2TxHash: Hash): Promise<WithdrawalStatus> {
-    const publicClientL1 = this.requireL1();
+    // Reads the portal, then resolves the covering dispute game.
+    const publicClientL1 = this.requireL1([PORTAL, DISPUTE_GAME_FACTORY]);
     const publicClientL2 = this.client.getPublicClient();
 
     const receipt = await publicClientL2.getTransactionReceipt({ hash: l2TxHash });
@@ -476,7 +490,8 @@ export class BridgeManager {
    * @param l2TxHash - The L2 transaction hash that initiated the withdrawal
    */
   async getTimeToProve(l2TxHash: Hash): Promise<GetTimeToProveReturnType> {
-    const publicClientL1 = this.requireL1();
+    // Waits on the next dispute game, resolved via the factory.
+    const publicClientL1 = this.requireL1([PORTAL, DISPUTE_GAME_FACTORY]);
     const publicClientL2 = this.client.getPublicClient();
 
     const receipt = await publicClientL2.getTransactionReceipt({ hash: l2TxHash });
@@ -492,7 +507,8 @@ export class BridgeManager {
    * @param l2TxHash - The L2 transaction hash that initiated the withdrawal
    */
   async getTimeToFinalize(l2TxHash: Hash): Promise<GetTimeToFinalizeReturnType> {
-    const publicClientL1 = this.requireL1();
+    // Portal-only on the fault-proof (v3+) path GIWA takes.
+    const publicClientL1 = this.requireL1([PORTAL]);
     const publicClientL2 = this.client.getPublicClient();
 
     const receipt = await publicClientL2.getTransactionReceipt({ hash: l2TxHash });
@@ -526,7 +542,11 @@ export class BridgeManager {
    * @param l2TxHash - The L2 transaction hash that initiated the withdrawal
    */
   async proveWithdrawal(l2TxHash: Hash): Promise<TransactionResult> {
-    const { publicClientL1, walletClientL1 } = this.requireL1Wallet();
+    // `waitToProve` polls the dispute game factory before proving on the portal.
+    const { publicClientL1, walletClientL1 } = this.requireL1Wallet([
+      PORTAL,
+      DISPUTE_GAME_FACTORY,
+    ]);
     const publicClientL2 = this.client.getPublicClient();
     const targetChain = this.getTargetChain();
 
@@ -583,7 +603,8 @@ export class BridgeManager {
    * @param l2TxHash - The L2 transaction hash that initiated the withdrawal
    */
   async finalizeWithdrawal(l2TxHash: Hash): Promise<TransactionResult> {
-    const { publicClientL1, walletClientL1 } = this.requireL1Wallet();
+    // `finalizeWithdrawalTransaction` is a portal call.
+    const { publicClientL1, walletClientL1 } = this.requireL1Wallet([PORTAL]);
     const publicClientL2 = this.client.getPublicClient();
     const targetChain = this.getTargetChain();
 
@@ -655,7 +676,8 @@ export class BridgeManager {
    * Require L1 (Ethereum) read support:
    * - `config.endpoints.l1RpcUrl` supplied to the client
    *   (`L1_RPC_NOT_CONFIGURED`), and
-   * - the L1 bridge contracts actually deployed on the selected network
+   * - the `required` L1 bridge contracts - the ones this particular
+   *   operation calls - actually deployed on the selected network
    *   (`L1_BRIDGE_CONTRACTS_NOT_CONFIGURED`).
    *
    * The second check matters: on GIWA mainnet (not launched) every L1
@@ -663,7 +685,7 @@ export class BridgeManager {
    * `0x000...0`, which has no code, so the call succeeds trivially and
    * `wait()` reports `status: 'success'` while no funds ever move.
    */
-  private requireL1(): GiwaL1PublicClient {
+  private requireL1(required: L1BridgeContract[]): GiwaL1PublicClient {
     if (!this.client.hasL1Support()) {
       throw new GiwaError(ErrorMessages.L1_RPC_NOT_CONFIGURED, ErrorCodes.L1_RPC_NOT_CONFIGURED);
     }
@@ -674,26 +696,27 @@ export class BridgeManager {
       throw new GiwaError(ErrorMessages.L1_RPC_NOT_CONFIGURED, ErrorCodes.L1_RPC_NOT_CONFIGURED);
     }
 
-    this.requireL1BridgeContracts();
+    this.requireL1BridgeContracts(required);
 
     return publicClientL1;
   }
 
   /**
-   * Assert that every L1 bridge contract this manager can call is a real
-   * deployed address rather than the `ZERO_ADDRESS` placeholder.
+   * Assert that the L1 bridge contracts a specific operation calls are real
+   * deployed addresses rather than the `ZERO_ADDRESS` placeholder.
+   *
+   * Checked per operation rather than all at once: `customContracts` is a
+   * `Partial<ContractAddresses>`, so a caller may legitimately configure
+   * only the subset a given path needs (e.g. the portal for ETH deposits
+   * without an `l1StandardBridge` for ERC-20).
    */
-  private requireL1BridgeContracts(): void {
+  private requireL1BridgeContracts(required: L1BridgeContract[]): void {
     const contracts = this.client.getContractAddresses();
-    const required: Address[] = [
-      contracts.l1StandardBridge,
-      contracts.optimismPortal,
-      contracts.disputeGameFactory,
-    ];
+    const missing = required.filter((name) => contracts[name] === ZERO_ADDRESS);
 
-    if (required.some((address) => address === ZERO_ADDRESS)) {
+    if (missing.length > 0) {
       throw new GiwaError(
-        ErrorMessages.L1_BRIDGE_CONTRACTS_NOT_CONFIGURED,
+        `${ErrorMessages.L1_BRIDGE_CONTRACTS_NOT_CONFIGURED} Missing: ${missing.join(', ')}.`,
         ErrorCodes.L1_BRIDGE_CONTRACTS_NOT_CONFIGURED
       );
     }
@@ -703,11 +726,11 @@ export class BridgeManager {
    * Require L1 (Ethereum) write support: L1 read support (see `requireL1`)
    * plus a connected account.
    */
-  private requireL1Wallet(): {
+  private requireL1Wallet(required: L1BridgeContract[]): {
     publicClientL1: GiwaL1PublicClient;
     walletClientL1: GiwaL1WalletClient;
   } {
-    const publicClientL1 = this.requireL1();
+    const publicClientL1 = this.requireL1(required);
 
     const walletClientL1 = this.client.getL1WalletClient();
     if (!walletClientL1) {
