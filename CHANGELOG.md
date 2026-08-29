@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `getFeatureAvailability('bridge')` (and `useNetworkInfo().getFeatureInfo('bridge')`) now reports `status: 'available'` on testnet (was `'partial'`)
 - The GIWA viem chain now carries op-stack `chainConfig`, `sourceId` (the L1 chain id), and the L1 bridge contract addresses (`portal`, `disputeGameFactory`, `l1StandardBridge`), keyed by L1 chain id
 - `BridgeTransaction` adds `direction: 'deposit'`, `l1TxHash`, and `status: 'proved' | 'finalized'`
+- A reverted `withdrawETH`/`withdrawToken` now sets the tracked `BridgeTransaction.status` to `'failed'` (was left at `'pending'`, so a failed withdrawal never resolved for callers polling `getTransaction`)
 
 Deposits, and every withdrawal step past initiation, require `config.endpoints.l1RpcUrl` — the SDK ships no default L1 endpoint on purpose. Withdrawal initiation (`withdrawETH`/`withdrawToken`) works without it. See the [Bridge guide](https://dev-eyoungmin.github.io/giwa-react-native-wallet/docs/guides/bridge).
 

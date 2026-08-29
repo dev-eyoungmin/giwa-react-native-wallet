@@ -210,7 +210,7 @@ export class BridgeManager {
         // Update status
         const tx = this.pendingTransactions.get(hash);
         if (tx) {
-          tx.status = receipt.status === 'success' ? 'confirmed' : 'pending';
+          tx.status = receipt.status === 'success' ? 'confirmed' : 'failed';
         }
 
         return {
@@ -286,7 +286,7 @@ export class BridgeManager {
 
         const tx = this.pendingTransactions.get(hash);
         if (tx) {
-          tx.status = receipt.status === 'success' ? 'confirmed' : 'pending';
+          tx.status = receipt.status === 'success' ? 'confirmed' : 'failed';
         }
 
         return {
@@ -754,7 +754,10 @@ export class BridgeManager {
     const [withdrawal] = getWithdrawals(receipt);
 
     if (!withdrawal) {
-      throw new GiwaTransactionError(ErrorMessages.NO_WITHDRAWAL_IN_RECEIPT);
+      throw new GiwaTransactionError(
+        ErrorMessages.NO_WITHDRAWAL_IN_RECEIPT,
+        ErrorCodes.NO_WITHDRAWAL_IN_RECEIPT
+      );
     }
 
     return withdrawal;
