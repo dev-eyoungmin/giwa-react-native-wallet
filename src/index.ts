@@ -10,7 +10,16 @@ export * from './types';
 
 // Constants
 export { GIWA_NETWORKS, getNetwork, DEFAULT_NETWORK } from './constants/networks';
-export { CONTRACT_ADDRESSES, getContractAddresses, DOJANG_SCHEMAS } from './constants/contracts';
+export {
+  CONTRACT_ADDRESSES,
+  getContractAddresses,
+  DOJANG_SCHEMAS,
+  DOJANG_ATTESTERS,
+  getDojangAttesters,
+  DEFAULT_DOJANG_ATTESTER_ID,
+  ZERO_ADDRESS,
+} from './constants/contracts';
+export type { ContractAddresses, DojangAttester } from './constants/contracts';
 
 // Core
 export { GiwaClient } from './core/GiwaClient';
@@ -19,7 +28,7 @@ export { WalletManager } from './core/WalletManager';
 export { TokenManager } from './core/TokenManager';
 export { BridgeManager } from './core/BridgeManager';
 export { FlashblocksManager } from './core/FlashblocksManager';
-export { GiwaIdManager } from './core/GiwaIdManager';
+export { GiwaIdManager, UP_ID_DOMAIN } from './core/GiwaIdManager';
 export { DojangManager } from './core/DojangManager';
 
 // Core Base (for extending managers)

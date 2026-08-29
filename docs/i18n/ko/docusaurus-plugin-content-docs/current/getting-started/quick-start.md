@@ -56,7 +56,7 @@ SDK는 기본적으로 OP Stack 표준 사전배포 주소를 사용합니다. �
     customContracts: {
       eas: '0x...', // Custom EAS address
       schemaRegistry: '0x...', // Custom Schema Registry
-      ensRegistry: '0x...', // Custom ENS Registry
+      dojangScroll: '0x...', // Custom DojangScroll
     },
   }}
 >

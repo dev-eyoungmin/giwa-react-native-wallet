@@ -1,8 +1,8 @@
 /**
  * SDK configuration type definitions
  */
-import type { Address } from 'viem';
-import type { NetworkType } from './network';
+import type { GiwaNetwork, NetworkType } from './network';
+import type { ContractAddresses } from '../constants/contracts';
 
 /**
  * Custom endpoint configuration
@@ -20,24 +20,10 @@ export interface CustomEndpoints {
 
 /**
  * Custom contract addresses configuration
- * Used to override default OP Stack standard addresses
+ * Used to override default OP Stack / GIWA contract addresses.
+ * Any subset of `ContractAddresses` fields may be overridden.
  */
-export interface CustomContracts {
-  /** Custom EAS contract address */
-  eas?: Address;
-  /** Custom Schema Registry contract address */
-  schemaRegistry?: Address;
-  /** Custom ENS Registry contract address */
-  ensRegistry?: Address;
-  /** Custom ENS Resolver contract address */
-  ensResolver?: Address;
-  /** Custom L2 Standard Bridge contract address */
-  l2StandardBridge?: Address;
-  /** Custom L1 Standard Bridge contract address */
-  l1StandardBridge?: Address;
-  /** Custom WETH contract address */
-  weth?: Address;
-}
+export type CustomContracts = Partial<ContractAddresses>;
 
 export interface GiwaConfig {
   /** Network type: 'testnet' | 'mainnet' (default: 'testnet') */
@@ -48,6 +34,8 @@ export interface GiwaConfig {
   endpoints?: CustomEndpoints;
   /** Custom contract addresses (overrides network defaults) */
   customContracts?: CustomContracts;
+  /** Override the built-in network definition (chain id, name, URLs). Use with `endpoints` when pointing the SDK at a non-default chain. */
+  customNetwork?: Partial<GiwaNetwork>;
   /** Auto-connect wallet on initialization (default: false) */
   autoConnect?: boolean;
   /** Enable Flashblocks for faster block confirmations (default: false) */

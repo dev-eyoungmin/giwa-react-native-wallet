@@ -119,7 +119,7 @@ function useFeatures(): FeatureItem[] {
       icon: '🏷️',
       description: translate({
         id: 'homepage.feature.giwaId.description',
-        message: 'Human-readable addresses with ENS-based naming like alice.giwa.id.'
+        message: 'Human-readable up.id names like alice.up.id, resolved on-chain.'
       }),
       gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
     },

@@ -12,6 +12,22 @@ sidebar_position: 4
 참고: [GIWA Bridge 문서](https://docs.giwa.io/tools/bridges)
 :::
 
+:::caution Partial Feature
+이 SDK는 현재 L2→L1 **출금 시작(withdrawal initiation)** 만 구현되어 있습니다 — L1에서의 증명(prove)과 완료(finalize)는 구현되어 있지 않습니다. `useNetworkInfo().getFeatureInfo('bridge')`는 정확히 이 내용을 설명하는 `reason`과 함께 `status: 'partial'`을 반환합니다. 입금(L1→L2)과 출금의 나머지 과정은 [Superbridge](https://superbridge.app)를 이용하세요.
+:::
+
+## Contract Addresses (GIWA Sepolia)
+
+| 컨트랙트 | 주소 |
+|----------|------|
+| L2StandardBridge | `0x4200000000000000000000000000000000000010` |
+| L1StandardBridge | `0x77b2ffc0F57598cAe1DB76cb398059cF5d10A7E7` |
+| OptimismPortal | `0x956962C34687A954e611A83619ABaA37Ce6bC78A` |
+| L1CrossDomainMessenger | `0x23ce19ED800fbbC964B9350b01B9113a8508D3F1` |
+| DisputeGameFactory | `0x37347caB2afaa49B776372279143D71ad1f354F6` |
+
+L1 주소는 이더리움 Sepolia 기준이며, `L2StandardBridge`는 표준 OP Stack L2 프리디플로이 주소입니다.
+
 ## useBridge Hook
 
 ```tsx

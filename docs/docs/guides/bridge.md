@@ -12,6 +12,22 @@ For deposits from Ethereum to GIWA Chain, use the official [GIWA Superbridge](ht
 See: [GIWA Bridge Documentation](https://docs.giwa.io/tools/bridges)
 :::
 
+:::caution Partial Feature
+The SDK currently implements only L2→L1 **withdrawal initiation** — proving and finalizing a withdrawal on L1 are not implemented. `useNetworkInfo().getFeatureInfo('bridge')` reports `status: 'partial'` with a `reason` describing exactly this. Deposits (L1→L2) and the rest of the withdrawal flow go through [Superbridge](https://superbridge.app).
+:::
+
+## Contract Addresses (GIWA Sepolia)
+
+| Contract | Address |
+|----------|---------|
+| L2StandardBridge | `0x4200000000000000000000000000000000000010` |
+| L1StandardBridge | `0x77b2ffc0F57598cAe1DB76cb398059cF5d10A7E7` |
+| OptimismPortal | `0x956962C34687A954e611A83619ABaA37Ce6bC78A` |
+| L1CrossDomainMessenger | `0x23ce19ED800fbbC964B9350b01B9113a8508D3F1` |
+| DisputeGameFactory | `0x37347caB2afaa49B776372279143D71ad1f354F6` |
+
+L1 addresses are on Ethereum Sepolia; `L2StandardBridge` is the standard OP Stack L2 predeploy.
+
 ## useBridge Hook
 
 ```tsx

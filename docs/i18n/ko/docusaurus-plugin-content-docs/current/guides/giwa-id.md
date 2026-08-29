@@ -4,28 +4,29 @@ sidebar_position: 6
 
 # GIWA ID
 
-이 가이드에서는 ENS 기반 네이밍 서비스인 GIWA ID (up.id) 사용 방법을 설명합니다.
+이 가이드에서는 GIWA ID(`up.id`, Upbit Web3 Names) 사용 방법을 설명합니다. `up.id`는 GIWA L2의 온체인 `UpnameRegistry` 컨트랙트를 통해 해석되는 네이밍 서비스입니다.
 
 :::info Registration
-GIWA ID 등록은 Upbit의 Verified Address 서비스를 통해서만 가능합니다. 이 SDK는 이름 해석 및 텍스트 레코드 관리 기능을 제공합니다.
+`up.id` 이름은 Upbit / GIWA 플레이그라운드를 통해 발행되는 ERC-721 토큰(심볼 `UPNAME`)이며, 이 SDK를 통해 발행할 수는 없습니다. 이 SDK는 읽기 전용으로 이름 해석, 역방향 조회(주소 → 이름), 사용 가능 여부 확인 기능만 제공합니다.
 
-참고: [GIWA ID 문서](https://docs.giwa.io/giwa-ecosystem/giwa-id)
+참고: [GIWA ID 문서](https://docs.giwa.io/giwa-ecosystem/up-id)
 :::
 
 ## What is GIWA ID?
 
-GIWA ID는 ENS 기반의 네이밍 서비스로, 복잡한 이더리움 주소(0x...) 대신 사람이 읽을 수 있는 이름(alice.up.id)을 사용할 수 있게 해줍니다.
+GIWA ID는 복잡한 이더리움 주소(`0x...`) 대신 사람이 읽을 수 있는 이름(`alice.up.id`)을 사용할 수 있게 해줍니다.
 
 ```
 0x742d35Cc6634C0532925a3b844Bc9e7595f...  →  alice.up.id
 ```
 
+각 이름은 `UpnameRegistry`의 ERC-721 토큰이며, `tokenId = uint256(keccak256(bytes(label)))`로 계산됩니다(`label`은 `.up.id` 앞부분). 소유권, 역방향 조회, 사용 가능 여부는 모두 이 컨트랙트에서 직접 읽어옵니다.
+
 ### Key Features
 
-- **ENS 호환**: 모든 ENS 호환 라이브러리 및 도구와 연동
-- **검증된 신원**: KYC 인증된 사용자만 사용 가능
-- **Soul-Bound**: 전송 또는 판매 불가
-- **Cross-Chain**: 여러 블록체인에서 사용 가능
+- **온체인 레지스트리**: 이름은 GIWA L2의 `UpnameRegistry`에 저장되며 컨트랙트 읽기로 해석됩니다
+- **역방향 조회**: 특정 주소가 소유한 `up.id` 이름을 조회할 수 있습니다
+- **텍스트 레코드 없음**: `up.id`는 ENS 스타일의 텍스트 레코드(avatar/description/url 등)를 지원하지 않습니다 — 얻을 수 있는 추가 정보는 ERC-721 `tokenURI`와 그 메타데이터에서 best-effort로 추출한 `avatar`뿐입니다
 
 ## useGiwaId Hook
 
@@ -34,11 +35,9 @@ import { useGiwaId } from 'giwa-react-native-wallet';
 
 function GiwaIdScreen() {
   const {
-    resolveAddress,     // GIWA ID → Address
-    resolveName,        // Address → GIWA ID
-    getGiwaId,          // Get full GIWA ID info
-    getTextRecord,      // Get profile records (avatar, etc.)
-    setTextRecord,      // Set profile records (requires ownership)
+    resolveAddress,     // up.id name → Address
+    resolveName,        // Address → up.id name
+    getGiwaId,          // Get full GiwaId info (tokenId, tokenUri, avatar)
     isAvailable,        // Check name availability
     isLoading,
     isInitializing,
@@ -54,12 +53,12 @@ function GiwaIdScreen() {
 ```tsx
 const handleResolve = async () => {
   // 두 형식 모두 작동
-  const address = await resolveAddress('alice'); // or 'alice.giwa.id'
+  const address = await resolveAddress('alice'); // or 'alice.up.id'
 
   if (address) {
     console.log('Address:', address);
   } else {
-    console.log('GIWA ID not registered');
+    console.log('up.id not registered');
   }
 };
 ```
@@ -73,61 +72,34 @@ const handleReverseLookup = async () => {
   const name = await resolveName(address);
 
   if (name) {
-    console.log('GIWA ID:', name);
+    console.log('GIWA ID:', name); // e.g. "alice.up.id"
   } else {
-    console.log('No registered GIWA ID');
+    console.log('No registered up.id name');
   }
 };
 ```
 
 ## Get GIWA ID Info
 
+`getGiwaId`는 해석된 `name`, `address`, ERC-721 `tokenId`, 원본 `tokenUri`, 그리고 토큰 메타데이터에서 best-effort로 읽은 `avatar` URL을 포함하는 전체 `GiwaId` 레코드를 반환합니다(`https://` URI와 image 필드만 추적하며, 그 외에는 `undefined`가 됩니다).
+
 ```tsx
 const handleGetGiwaId = async () => {
   const giwaId = await getGiwaId('alice');
 
   if (giwaId) {
-    console.log('Name:', giwaId.name);      // alice.giwa.id
+    console.log('Name:', giwaId.name);        // alice.up.id
     console.log('Address:', giwaId.address);
-    console.log('Avatar:', giwaId.avatar);
-  }
-};
-```
-
-## Get Text Records
-
-```tsx
-// 아바타 가져오기
-const avatar = await getTextRecord('alice', 'avatar');
-
-// 다른 레코드 가져오기
-const description = await getTextRecord('alice', 'description');
-const url = await getTextRecord('alice', 'url');
-```
-
-## Set Text Records
-
-소유한 GIWA ID의 텍스트 레코드 업데이트:
-
-```tsx
-const handleSetRecord = async () => {
-  try {
-    // description 설정 (GIWA ID 소유 필요)
-    const hash = await setTextRecord('alice', 'description', 'My profile description');
-    console.log('Transaction hash:', hash);
-
-    // 아바타 URL 설정
-    await setTextRecord('alice', 'avatar', 'https://example.com/avatar.png');
-
-    // 웹사이트 URL 설정
-    await setTextRecord('alice', 'url', 'https://mywebsite.com');
-  } catch (error) {
-    console.error('Failed to set record:', error.message);
+    console.log('Token ID:', giwaId.tokenId);  // bigint
+    console.log('Token URI:', giwaId.tokenUri);
+    console.log('Avatar:', giwaId.avatar);     // string | undefined
   }
 };
 ```
 
 ## Check Name Availability
+
+`isAvailable`은 레지스트리의 `isClaimable` 조회 결과를 그대로 반환합니다.
 
 ```tsx
 const checkAvailability = async () => {
@@ -136,9 +108,9 @@ const checkAvailability = async () => {
   const available = await isAvailable(name);
 
   if (available) {
-    console.log(`${name}.giwa.id is not registered`);
+    console.log(`${name}.up.id is not registered`);
   } else {
-    console.log(`${name}.giwa.id is already taken`);
+    console.log(`${name}.up.id is already taken`);
   }
 };
 ```
@@ -214,7 +186,7 @@ export function GiwaIdScreen() {
         </Text>
         <View style={{ flexDirection: 'row' }}>
           <TextInput
-            placeholder="alice or alice.giwa.id"
+            placeholder="alice or alice.up.id"
             value={searchInput}
             onChangeText={setSearchInput}
             style={{

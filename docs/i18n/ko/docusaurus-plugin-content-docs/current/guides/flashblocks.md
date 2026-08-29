@@ -240,4 +240,4 @@ export function FlashblocksScreen() {
 ## Next Steps
 
 - [Transactions](/docs/guides/transactions) - 일반 트랜잭션
-- [GIWA ID](/docs/guides/giwa-id) - ENS 기반 네이밍
+- [GIWA ID](/docs/guides/giwa-id) - up.id 네이밍 (UpnameRegistry)

@@ -240,4 +240,4 @@ Preconfirmation is a promise from the sequencer that it has accepted the transac
 ## Next Steps
 
 - [Transactions](/docs/guides/transactions) - Regular transactions
-- [GIWA ID](/docs/guides/giwa-id) - ENS-based naming
+- [GIWA ID](/docs/guides/giwa-id) - up.id naming (UpnameRegistry)

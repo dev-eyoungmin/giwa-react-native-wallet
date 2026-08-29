@@ -4,7 +4,7 @@
  * TBD contract address detection and feature availability checking
  */
 import type { Address } from 'viem';
-import { CONTRACT_ADDRESSES, DOJANG_SCHEMAS } from '../constants/contracts';
+import { CONTRACT_ADDRESSES, DOJANG_SCHEMAS, ZERO_ADDRESS } from '../constants/contracts';
 import type {
   NetworkType,
   FeatureName,
@@ -15,9 +15,8 @@ import type {
 } from '../types';
 
 /**
- * TBD address constants
+ * TBD placeholder constants
  */
-const ZERO_ADDRESS: Address = '0x0000000000000000000000000000000000000000';
 const ZERO_BYTES32 =
   '0x0000000000000000000000000000000000000000000000000000000000000000';
 
@@ -43,48 +42,47 @@ export function getFeatureAvailability(
       const l2Available = !isTbdAddress(contracts.l2StandardBridge);
       return {
         name: 'bridge',
-        status:
-          l1Available && l2Available
-            ? 'available'
-            : l2Available
-              ? 'partial'
-              : 'unavailable',
-        reason:
-          !l1Available && !l2Available
-            ? 'Bridge contracts are TBD'
-            : !l1Available
-              ? 'L1 Bridge contract is TBD (L2 withdrawal only)'
-              : undefined,
+        status: l2Available ? 'partial' : 'unavailable',
+        reason: !l2Available
+          ? 'Bridge contracts are TBD'
+          : l1Available
+            ? 'L2→L1 withdrawal initiation only; deposit, prove and finalize are not implemented (use https://superbridge.app)'
+            : 'L1 Bridge contract is TBD (L2 withdrawal only)',
         contractAddress: contracts.l2StandardBridge,
       };
     }
 
     case 'giwaId': {
-      const registryAvailable = !isTbdAddress(contracts.ensRegistry);
-      const resolverAvailable = !isTbdAddress(contracts.ensResolver);
-      const available = registryAvailable && resolverAvailable;
+      const available = !isTbdAddress(contracts.upnameRegistry);
       return {
         name: 'giwaId',
         status: available ? 'available' : 'unavailable',
         reason: available
           ? undefined
-          : 'ENS Registry/Resolver contracts are TBD',
-        contractAddress: contracts.ensRegistry,
+          : 'up.id registry (UpnameRegistry) is TBD on this network',
+        contractAddress: contracts.upnameRegistry,
       };
     }
 
     case 'dojang': {
       const easAvailable = !isTbdAddress(contracts.eas);
-      const schemaAvailable = !isTbdAddress(contracts.schemaRegistry);
+      const schemaRegistryAvailable = !isTbdAddress(contracts.schemaRegistry);
+      const dojangScrollAvailable = !isTbdAddress(contracts.dojangScroll);
+      const attestationIndexerAvailable = !isTbdAddress(contracts.attestationIndexer);
       const schemasConfigured = DOJANG_SCHEMAS.VERIFIED_ADDRESS !== ZERO_BYTES32;
-      const available = easAvailable && schemaAvailable && schemasConfigured;
+      const available =
+        easAvailable &&
+        schemaRegistryAvailable &&
+        dojangScrollAvailable &&
+        attestationIndexerAvailable &&
+        schemasConfigured;
       return {
         name: 'dojang',
         status: available ? 'available' : 'unavailable',
         reason: available
           ? undefined
-          : 'EAS/Schema Registry contracts are TBD',
-        contractAddress: contracts.eas,
+          : 'Dojang contracts (DojangScroll/AttestationIndexer) are TBD on this network',
+        contractAddress: contracts.dojangScroll,
       };
     }
 

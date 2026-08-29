@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-08-29
+
+### Breaking
+
+- `giwa.id` → `up.id`: GIWA ID names now resolve as `alice.up.id` (was `alice.giwa.id`)
+- `GiwaIdManager.getTextRecord`/`setTextRecord` (and the `useGiwaId` equivalents) removed — `up.id` has no ENS-style text records
+- `ContractAddresses.ensRegistry`/`ensResolver` removed
+- `DojangManager.getVerifiedBalance(uid)` replaced by `getVerifiedBalance(recipient, coinType, snapshotAt, attesterId?)`
+- `AttestationType` adds `'unknown'` (for attestations whose schema UID isn't one of the four known Dojang schemas)
+- `GiwaId` shape changed: adds `tokenId`/`tokenUri`, removes `records`
+- `getFeatureAvailability('bridge')` (and `useNetworkInfo().getFeatureInfo('bridge')`) now reports `status: 'partial'` on testnet, with a `reason` explaining that only L2→L1 withdrawal initiation is implemented
+
+### Added
+
+- Real Dojang schema UIDs, attesters (`DOJANG_ATTESTERS`, `getDojangAttesters`), and contract addresses (DojangScroll, AttestationIndexer, SchemaBook, DojangAttesterBook)
+- `DojangManager.getAttestationsForAddress` — reads all known schemas/attesters for an address via `AttestationIndexer` + EAS, batched with multicall
+- `UpnameRegistry` resolution: forward (`resolveAddress`), reverse (`resolveName`), availability (`isAvailable`)
+- L1 Sepolia bridge/portal/messenger/dispute-game addresses (`l1StandardBridge`, `optimismPortal`, `l1CrossDomainMessenger`, `disputeGameFactory`)
+- `GiwaConfig.customNetwork` to override the built-in network definition (chain id, name, URLs)
+- `GiwaClient.getNetworkConfig()` and `GiwaClient.verifyChainId()`
+- `DOJANG_ATTESTERS`, `getDojangAttesters`, `DEFAULT_DOJANG_ATTESTER_ID`, `ZERO_ADDRESS`
+- `pnpm verify:live` — live verification script against GIWA Sepolia (`scripts/verify-live.ts`)
+
+### Fixed
+
+- `GiwaProvider` re-initializing the client on every parent render (stale `onError` dependency, stale memo dependencies)
+- Chain definition now follows overridden `endpoints` instead of the network defaults
+- Unknown attestation schemas are no longer misreported as `verified_address`
+
 ## [0.1.1] - 2025-01-18
 
 ### Changed

@@ -275,24 +275,22 @@ interface Preconfirmation {
 
 ## useGiwaId
 
-GIWA ID (ENS 기반 네이밍) Hook
+GIWA ID (`up.id`, Upbit Web3 Names) Hook — 온체인 `UpnameRegistry`를 통한 읽기 전용 해석
 
 :::info Registration
-GIWA ID (up.id) 등록은 Upbit의 Verified Address 서비스를 통해서만 가능합니다. 이 SDK는 이름 해석 및 텍스트 레코드 관리 기능을 제공합니다.
+`up.id` 이름은 Upbit / GIWA 플레이그라운드를 통해 발행되며, 이 SDK로는 발행할 수 없습니다. 이 훅은 이름 해석, 주소 역방향 해석, 사용 가능 여부 확인만 제공합니다 — `up.id`는 ENS 스타일의 텍스트 레코드를 지원하지 않습니다.
 
-참고: [GIWA ID 문서](https://docs.giwa.io/giwa-ecosystem/giwa-id)
+참고: [GIWA ID 문서](https://docs.giwa.io/giwa-ecosystem/up-id)
 :::
 
 ```tsx
 import { useGiwaId } from 'giwa-react-native-wallet';
 
 const {
-  resolveAddress,    // (giwaId: string) => Promise<Address | null>
+  resolveAddress,    // (name: string) => Promise<Address | null>
   resolveName,       // (address: Address) => Promise<string | null>
-  getGiwaId,         // (giwaId: string) => Promise<GiwaId | null>
-  getTextRecord,     // (giwaId: string, key: string) => Promise<string | null>
-  setTextRecord,     // (giwaId: string, key: string, value: string) => Promise<Hash>
-  isAvailable,       // (giwaId: string) => Promise<boolean>
+  getGiwaId,         // (name: string) => Promise<GiwaId | null>
+  isAvailable,       // (name: string) => Promise<boolean>
   isLoading,         // boolean
   isInitializing,    // boolean
   error,             // Error | null
@@ -303,26 +301,41 @@ const {
 
 ```tsx
 interface GiwaId {
-  name: string;      // e.g., "alice.giwa.id"
+  /** Full name, e.g. "alice.up.id" */
+  name: string;
   address: Address;
+  /** ERC-721 token id in UpnameRegistry (= keccak256(label)) */
+  tokenId: bigint;
+  tokenUri?: string;
+  /** Best-effort image URL from token metadata */
   avatar?: string;
 }
 ```
+
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `resolveAddress` | `(name) => Promise<Address \| null>` | `up.id` 이름을 주소로 해석 |
+| `resolveName` | `(address) => Promise<string \| null>` | 주소를 `up.id` 이름으로 역방향 해석 |
+| `getGiwaId` | `(name) => Promise<GiwaId \| null>` | 전체 GIWA ID 정보 조회 |
+| `isAvailable` | `(name) => Promise<boolean>` | 이름 사용 가능 여부 확인 (`isClaimable`) |
+| `isLoading` | `boolean` | 로딩 상태 |
+| `isInitializing` | `boolean` | 서비스 초기화 여부 |
+| `error` | `Error \| null` | 작업 실패 시 에러 |
 
 ### Usage Example
 
 ```tsx
 // 이름을 주소로 변환
-const address = await resolveAddress('alice'); // or 'alice.giwa.id'
+const address = await resolveAddress('alice'); // or 'alice.up.id'
 
 // 주소를 이름으로 역변환
 const name = await resolveName('0x1234...');
 
-// 아바타 가져오기
-const avatar = await getTextRecord('alice', 'avatar');
-
-// 텍스트 레코드 설정 (소유 필요)
-const hash = await setTextRecord('alice', 'description', 'My profile');
+// 전체 정보 조회 (best-effort 아바타 포함)
+const giwaId = await getGiwaId('alice');
+console.log(giwaId?.avatar);
 ```
 
 ---
@@ -332,24 +345,32 @@ const hash = await setTextRecord('alice', 'description', 'My profile');
 Dojang (EAS 증명) Hook
 
 :::info Attestation Creation
-증명은 공식 발급자(예: Upbit Korea)만 생성할 수 있습니다. 이 SDK는 증명을 검증하기 위한 읽기 전용 접근을 제공합니다.
+증명은 공식 발급자(예: Upbit Korea, 또는 GIWA Sepolia의 테스트넷 파우셋)만 생성할 수 있습니다. 이 SDK는 증명을 검증하기 위한 읽기 전용 접근을 제공합니다.
 
-참고: [Dojang 문서](https://docs.giwa.io/giwa-ecosystem/dojang)
+참고: [Dojang 문서](https://docs.giwa.io/giwa-ecosystem/dojang/contracts)
 :::
 
 ```tsx
 import { useDojang } from 'giwa-react-native-wallet';
 
 const {
-  getAttestation,       // (uid: Hex) => Promise<Attestation | null>
-  isAttestationValid,   // (uid: Hex) => Promise<boolean>
-  hasVerifiedAddress,   // (address: Address) => Promise<boolean>
-  getVerifiedBalance,   // (uid: Hex) => Promise<VerifiedBalance | null>
-  isLoading,            // boolean
-  isInitializing,       // boolean
-  error,                // Error | null
+  getAttestation,                    // (uid: Hex) => Promise<Attestation | null>
+  isAttestationValid,                // (uid: Hex) => Promise<boolean>
+  hasVerifiedAddress,                // (address: Address, attesterId?: Hex) => Promise<boolean>
+  getVerifiedAddressAttestationUid,  // (address: Address, attesterId?: Hex) => Promise<Hex | null>
+  getAttestationsForAddress,         // (address: Address) => Promise<Attestation[]>
+  getVerifiedBalance,                // (recipient: Address, coinType: bigint, snapshotAt: bigint, attesterId?: Hex) => Promise<bigint | null>
+  isVerifiedCode,                    // (codeHash: Hex, domain: string, attesterId?: Hex) => Promise<boolean>
+  decodeAttestationData,             // (attestation: Pick<Attestation, 'attestationType' | 'data'>) => DojangAttestationData | null
+  isLoading,                         // boolean
+  isInitializing,                    // boolean
+  error,                             // Error | null
 } = useDojang();
 ```
+
+:::note Attester defaults
+`attesterId`를 생략하면 `hasVerifiedAddress`와 `getVerifiedAddressAttestationUid`는 현재 네트워크의 **알려진 모든 발급자**를 확인합니다. 반면 `getVerifiedBalance`와 `isVerifiedCode`는 단일 발급자인 `DEFAULT_DOJANG_ATTESTER_ID`(Upbit)로 기본 설정됩니다. 전체 설명과 스키마/발급자 표는 [Dojang 가이드](/docs/guides/dojang)를 참고하세요.
+:::
 
 ### Attestation Types
 
@@ -359,6 +380,7 @@ const {
 | `balance_root` | 잔액의 머클 트리 요약 |
 | `verified_balance` | 특정 시점의 잔액 증명 |
 | `verified_code` | 오프체인 코드의 온체인 검증 |
+| `unknown` | 위 네 가지 스키마 UID와 일치하지 않는 증명 |
 
 ### Types
 
@@ -376,13 +398,43 @@ interface Attestation {
   revoked: boolean;
 }
 
-interface VerifiedBalance {
-  balance: bigint;
-  timestamp: bigint;
-}
+type AttestationType =
+  | 'verified_address'
+  | 'balance_root'
+  | 'verified_balance'
+  | 'verified_code'
+  | 'unknown';
 
-type AttestationType = 'verified_address' | 'balance_root' | 'verified_balance' | 'verified_code';
+// decodeAttestationData(attestation)의 반환 타입 - 'unknown'이거나 디코딩 실패 시 null
+type DojangAttestationData =
+  | { type: 'verified_address'; isVerified: boolean }
+  | {
+      type: 'balance_root';
+      coinType: bigint;
+      snapshotAt: bigint;
+      leafCount: bigint;
+      totalAmount: bigint;
+      root: Hex;
+    }
+  | { type: 'verified_balance'; balance: bigint; salt: Hex; proofs: readonly Hex[] }
+  | { type: 'verified_code'; codeHash: Hex; domain: string };
 ```
+
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `getAttestation` | `(uid) => Promise<Attestation \| null>` | UID로 증명 조회 |
+| `isAttestationValid` | `(uid) => Promise<boolean>` | 증명 유효성 확인 |
+| `hasVerifiedAddress` | `(address, attesterId?) => Promise<boolean>` | 알려진 발급자 중 하나(또는 지정한 하나)가 주소를 인증했는지 확인 |
+| `getVerifiedAddressAttestationUid` | `(address, attesterId?) => Promise<Hex \| null>` | verified-address 증명 UID 조회 |
+| `getAttestationsForAddress` | `(address) => Promise<Attestation[]>` | 알려진 모든 스키마/발급자에 대한 증명 전체 조회 |
+| `getVerifiedBalance` | `(recipient, coinType, snapshotAt, attesterId?) => Promise<bigint \| null>` | 검증된 잔액 조회 |
+| `isVerifiedCode` | `(codeHash, domain, attesterId?) => Promise<boolean>` | 오프체인 코드 검증 확인 |
+| `decodeAttestationData` | `(attestation) => DojangAttestationData \| null` | 원본 증명 `data` 바이트 디코딩 |
+| `isLoading` | `boolean` | 로딩 상태 |
+| `isInitializing` | `boolean` | 서비스 초기화 여부 |
+| `error` | `Error \| null` | 작업 실패 시 에러 |
 
 ### Usage Example
 
@@ -396,9 +448,12 @@ if (attestation && !attestation.revoked) {
   console.log('Attester:', attestation.attester);
 }
 
-// 주소에 인증된 증명이 있는지 확인
+// 알려진 발급자 중 하나로부터 verified-address 증명이 있는지 확인
 const hasVerified = await hasVerifiedAddress('0xabcd...');
 console.log('인증됨:', hasVerified);
+
+// 스키마별 페이로드 디코딩
+const decoded = decodeAttestationData(attestation);
 ```
 
 ---
@@ -463,15 +518,37 @@ const {
   hasWarnings,          // boolean
   warnings,             // string[]
   isFeatureAvailable,   // (feature: FeatureName) => boolean
-  getFeatureInfo,       // (feature: FeatureName) => FeatureAvailability
+  getFeatureInfo,       // (feature: FeatureName) => FeatureAvailability | null
   unavailableFeatures,  // FeatureName[]
   chainId,              // number
   rpcUrl,               // string
   flashblocksRpcUrl,    // string - Flashblocks RPC endpoint
   flashblocksWsUrl,     // string - Flashblocks WebSocket endpoint
   explorerUrl,          // string
+  isInitializing,       // boolean
 } = useNetworkInfo();
 ```
+
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `network` | `'testnet' \| 'mainnet'` | 현재 네트워크 (mainnet: 🚧 개발중) |
+| `networkConfig` | `GiwaNetwork` | 네트워크 설정 |
+| `status` | `NetworkStatus` | 전체 네트워크 상태 |
+| `isTestnet` | `boolean` | 현재 네트워크가 testnet인지 여부 |
+| `isReady` | `boolean` | 네트워크가 사용 준비되었는지 여부 |
+| `hasWarnings` | `boolean` | 경고가 있는지 여부 |
+| `warnings` | `string[]` | 경고 메시지 목록 |
+| `isFeatureAvailable` | `(feature) => boolean` | 기능 가용성 확인 |
+| `getFeatureInfo` | `(feature) => FeatureAvailability \| null` | 기능 상세 정보 조회 (SDK 초기화 중에는 `null`) |
+| `unavailableFeatures` | `FeatureName[]` | 사용 불가능한 기능 목록 |
+| `chainId` | `number` | 네트워크 체인 ID |
+| `rpcUrl` | `string` | RPC 엔드포인트 URL |
+| `flashblocksRpcUrl` | `string` | Flashblocks RPC URL |
+| `flashblocksWsUrl` | `string` | Flashblocks WebSocket URL |
+| `explorerUrl` | `string` | 블록 탐색기 URL |
+| `isInitializing` | `boolean` | SDK 초기화 중인지 여부 |
 
 ### Usage Example
 

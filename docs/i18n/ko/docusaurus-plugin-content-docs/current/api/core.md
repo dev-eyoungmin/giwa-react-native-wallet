@@ -24,9 +24,13 @@ const client = new GiwaClient({
   customContracts: {
     eas: '0x...', // Override EAS address
     schemaRegistry: '0x...', // Override Schema Registry
-    ensRegistry: '0x...', // Override ENS Registry
-    ensResolver: '0x...', // Override ENS Resolver
+    dojangScroll: '0x...', // Override DojangScroll
     l2StandardBridge: '0x...', // Override L2 Bridge
+  },
+  // 내장 네트워크 정의(chain id, name, URLs) 자체를 오버라이드합니다.
+  // 기본과 다른 체인을 대상으로 할 때 `endpoints`/`customContracts`와 함께 사용하세요.
+  customNetwork: {
+    id: 91342,
   },
 });
 ```
@@ -37,24 +41,40 @@ const client = new GiwaClient({
 // Public Client (read-only)
 client.getPublicClient(): PublicClient
 
-// Wallet Client (requires signing)
-client.getWalletClient(privateKey: string): WalletClient
+// Wallet Client (requires signing, set via setAccount)
+client.getWalletClient(): WalletClient | null
 
-// Network information
-client.getNetwork(): NetworkInfo
+// Network type ('testnet' | 'mainnet')
+client.getNetwork(): NetworkType
+
+// Resolved network definition (built-in defaults merged with `customNetwork`)
+client.getNetworkConfig(): GiwaNetwork
+
+// Verify the RPC-reported chain id matches the configured chain id
+client.verifyChainId(): Promise<{ expected: number; actual: number; matches: boolean }>
+
+// Chain ID
+client.getChainId(): number
 
 // Block number
 client.getBlockNumber(): Promise<bigint>
 
-// Balance query
-client.getBalance(address: string): Promise<bigint>
+// Gas price
+client.getGasPrice(): Promise<bigint>
 
-// Transaction query
-client.getTransaction(hash: string): Promise<Transaction | null>
+// Whether the RPC endpoint is reachable
+client.isConnected(): Promise<boolean>
 
-// Transaction receipt
-client.getTransactionReceipt(hash: string): Promise<TransactionReceipt | null>
+// Contract addresses (network defaults merged with `customContracts`)
+client.getContractAddresses(): ContractAddresses
+
+// Feature availability
+client.isFeatureAvailable(feature: FeatureName): boolean
+client.getFeatureInfo(feature: FeatureName): FeatureAvailability
+client.getNetworkStatus(): NetworkStatus
 ```
+
+`GiwaProvider`는 초기화 시 `verifyChainId()`를 한 번 호출하며(fire-and-forget), RPC의 chain id가 설정된 chain id와 다르면 콘솔 경고를 출력합니다.
 
 ---
 
@@ -229,7 +249,7 @@ flashblocksManager.getAverageLatency(): number
 
 ## GiwaIdManager
 
-GIWA ID (ENS) 관리
+GIWA ID (`up.id`, Upbit Web3 Names) 관리 — 온체인 `UpnameRegistry`를 통한 읽기 전용 해석. 이름은 Upbit / GIWA 플레이그라운드를 통해 발행되며, 이 매니저를 통해서는 발행할 수 없습니다.
 
 ```tsx
 import { GiwaIdManager } from 'giwa-react-native-wallet';
@@ -241,32 +261,28 @@ const giwaIdManager = new GiwaIdManager(client);
 
 ```tsx
 // Name -> Address
-giwaIdManager.resolveAddress(name: string): Promise<string | null>
+giwaIdManager.resolveAddress(name: string): Promise<Address | null>
 
-// Address -> Name
-giwaIdManager.resolveName(address: string): Promise<string | null>
+// Address -> Name (역방향 조회)
+giwaIdManager.resolveName(address: Address): Promise<string | null>
 
-// Check name availability
-giwaIdManager.isNameAvailable(name: string): Promise<boolean>
+// 전체 GiwaId 정보 (tokenId, tokenUri, best-effort avatar)
+giwaIdManager.getGiwaId(name: string): Promise<GiwaId | null>
 
-// Register name
-giwaIdManager.register(
-  name: string,
-  duration: number
-): Promise<{ txHash: string }>
+// 이름 사용 가능 여부 확인 (isClaimable)
+giwaIdManager.isAvailable(name: string): Promise<boolean>
 
-// Get profile
-giwaIdManager.getProfile(name: string): Promise<Profile>
-
-// Set profile
-giwaIdManager.setProfile(profile: Partial<Profile>): Promise<string>
+// getGiwaId() 내부 캐시 초기화
+giwaIdManager.clearCache(): void
 ```
+
+`GiwaId` 형태와 `tokenId`/`avatar` 필드에 대한 자세한 설명은 [GIWA ID 가이드](/docs/guides/giwa-id)를 참고하세요.
 
 ---
 
 ## DojangManager
 
-Dojang 증명 관리
+Dojang (EAS 기반 증명) 관리 — 읽기 전용입니다. 스키마/발급자 표와 발급자 기본값 동작 방식은 [Dojang 가이드](/docs/guides/dojang)를 참고하세요.
 
 ```tsx
 import { DojangManager } from 'giwa-react-native-wallet';
@@ -277,30 +293,45 @@ const dojangManager = new DojangManager(client);
 ### Methods
 
 ```tsx
-// Get attestation
-dojangManager.getAttestation(id: string): Promise<Attestation>
+// 원시 EAS 조회
+dojangManager.getAttestation(uid: Hex): Promise<Attestation | null>
+dojangManager.isAttestationValid(uid: Hex): Promise<boolean>
+dojangManager.getSchema(schemaUid: Hex): Promise<{ uid: Hex; schema: string; revocable: boolean } | null>
 
-// Get attestation list
-dojangManager.getAttestations(filter: {
-  recipient?: string;
-  attester?: string;
-  schemaId?: string;
-}): Promise<Attestation[]>
+// Verified address (attesterId 생략 = 알려진 모든 발급자)
+dojangManager.hasVerifiedAddress(address: Address, attesterId?: Hex): Promise<boolean>
+dojangManager.getVerifiedAddressAttestationUid(address: Address, attesterId?: Hex): Promise<Hex | null>
 
-// Verify attestation
-dojangManager.verifyAttestation(id: string): Promise<boolean>
+// Verified balance (attesterId 생략 = DEFAULT_DOJANG_ATTESTER_ID)
+dojangManager.getVerifiedBalance(
+  recipient: Address,
+  coinType: bigint,
+  snapshotAt: bigint,
+  attesterId?: Hex
+): Promise<bigint | null>
+dojangManager.getVerifiedBalanceAttestationUid(
+  recipient: Address,
+  coinType: bigint,
+  snapshotAt: bigint,
+  attesterId?: Hex
+): Promise<Hex | null>
+dojangManager.getBalanceRootAttestationUid(
+  coinType: bigint,
+  snapshotAt: bigint,
+  attesterId?: Hex
+): Promise<Hex | null>
 
-// Create attestation (issuer only)
-dojangManager.createAttestation(params: {
-  schemaId: string;
-  recipient: string;
-  data: Record<string, any>;
-  expirationTime?: number;
-  revocable?: boolean;
-}): Promise<{ attestationId: string; txHash: string }>
+// Verified code (attesterId 생략 = DEFAULT_DOJANG_ATTESTER_ID)
+dojangManager.isVerifiedCode(codeHash: Hex, domain: string, attesterId?: Hex): Promise<boolean>
+dojangManager.getVerifyCodeAttestationUid(codeHash: Hex, domain: string, attesterId?: Hex): Promise<Hex | null>
 
-// Revoke attestation (issuer only)
-dojangManager.revokeAttestation(id: string): Promise<string>
+// 알려진 모든 스키마/발급자에 대해 주소의 전체 증명 조회
+dojangManager.getAttestationsForAddress(address: Address): Promise<Attestation[]>
+
+// 원본 증명 `data` 바이트를 스키마에 맞게 디코딩 ('unknown'이거나 디코딩 실패 시 null)
+dojangManager.decodeAttestationData(
+  attestation: Pick<Attestation, 'attestationType' | 'data'>
+): DojangAttestationData | null
 ```
 
 ---
@@ -348,29 +379,56 @@ interface Adapters {
 
 ## Default Contract Addresses
 
-SDK는 기본적으로 OP Stack 표준 predeploy 주소를 사용합니다. 이 주소들은 `GiwaConfig`의 `customContracts`를 통해 오버라이드할 수 있습니다.
+`getContractAddresses(network)`(및 `CONTRACT_ADDRESSES[network]`)는 아래 모든 필드를 반환합니다. 아래 값은 현재 GIWA Sepolia(`testnet`) 주소이며, `GiwaConfig`의 `customContracts`를 통해 필드별로 오버라이드할 수 있습니다.
 
-### OP Stack Standard Addresses
+### Testnet (GIWA Sepolia) Addresses
 
-| 컨트랙트 | 주소 | 설명 |
-|----------|------|------|
-| EAS | `0x4200000000000000000000000000000000000021` | Ethereum Attestation Service (Dojang) |
-| Schema Registry | `0x4200000000000000000000000000000000000020` | EAS Schema Registry |
-| L2 Standard Bridge | `0x4200000000000000000000000000000000000010` | L2 Bridge for ETH/ERC-20 withdrawals |
-| WETH | `0x4200000000000000000000000000000000000006` | Wrapped ETH |
+| 필드 | 주소 | 설명 |
+|------|------|------|
+| `l1StandardBridge` | `0x77b2ffc0F57598cAe1DB76cb398059cF5d10A7E7` | L1 (Ethereum Sepolia) Standard Bridge |
+| `l2StandardBridge` | `0x4200000000000000000000000000000000000010` | L2 Standard Bridge (OP Stack predeploy) |
+| `optimismPortal` | `0x956962C34687A954e611A83619ABaA37Ce6bC78A` | L1 OptimismPortal |
+| `l1CrossDomainMessenger` | `0x23ce19ED800fbbC964B9350b01B9113a8508D3F1` | L1 CrossDomainMessenger |
+| `disputeGameFactory` | `0x37347caB2afaa49B776372279143D71ad1f354F6` | L1 DisputeGameFactory |
+| `upnameRegistry` | `0x091D00004f21eb2Fc30964A8a4995692d9b49628` | GIWA ID (`up.id`) registry |
+| `eas` | `0x4200000000000000000000000000000000000021` | Ethereum Attestation Service (Dojang) |
+| `schemaRegistry` | `0x4200000000000000000000000000000000000020` | EAS Schema Registry |
+| `dojangScroll` | `0xd5077b67dcb56caC8b270C7788FC3E6ee03F17B9` | Dojang verified-address/balance/code reads |
+| `attestationIndexer` | `0x9C9Bf29880448aB39795a11b669e22A0f1d790ec` | Dojang attestation index (schema × attester → uid) |
+| `schemaBook` | `0x78cBb3413FBb6aF05EF1D21e646440e56baE3AD6` | Dojang SchemaBook |
+| `dojangAttesterBook` | `0xDA282E89244424E297Ce8e78089B54D043FB28B6` | Dojang AttesterBook |
+| `weth` | `0x4200000000000000000000000000000000000006` | Wrapped ETH |
+| `multicall3` | `0xcA11bde05977b3631167028862bE2a173976CA11` | Multicall3 |
 
-### CustomContracts Type
+`mainnet`에서는 `l2StandardBridge`, `eas`, `schemaRegistry`, `weth`만 설정되어 있습니다(OP Stack 표준 predeploy). 나머지 필드는 GIWA 메인넷이 출시되기 전까지 모두 `ZERO_ADDRESS`(TBD)입니다.
+
+### ContractAddresses / CustomContracts Types
 
 ```tsx
-interface CustomContracts {
-  eas?: Address;           // EAS contract address
-  schemaRegistry?: Address; // Schema Registry address
-  ensRegistry?: Address;    // ENS Registry address
-  ensResolver?: Address;    // ENS Resolver address
-  l2StandardBridge?: Address; // L2 Standard Bridge address
-  l1StandardBridge?: Address; // L1 Standard Bridge address
-  weth?: Address;           // WETH address
+interface ContractAddresses {
+  // Bridge – L2 predeploys + L1 (Ethereum Sepolia) OP Stack contracts
+  l1StandardBridge: Address;
+  l2StandardBridge: Address;
+  optimismPortal: Address;
+  l1CrossDomainMessenger: Address;
+  disputeGameFactory: Address;
+  // GIWA ID (up.id) – L2 name registry
+  upnameRegistry: Address;
+  // EAS (Dojang)
+  eas: Address;
+  schemaRegistry: Address;
+  dojangScroll: Address;
+  attestationIndexer: Address;
+  schemaBook: Address;
+  dojangAttesterBook: Address;
+  // Tokens
+  weth: Address;
+  // Utility
+  multicall3: Address;
 }
+
+// ContractAddresses의 임의 부분집합을 오버라이드할 수 있습니다.
+type CustomContracts = Partial<ContractAddresses>;
 ```
 
 ### Usage Example
@@ -385,7 +443,7 @@ import { GiwaProvider } from 'giwa-react-native-wallet';
     customContracts: {
       // Only override what you need
       eas: '0xYourCustomEASAddress',
-      ensRegistry: '0xYourCustomENSRegistry',
+      dojangScroll: '0xYourCustomDojangScroll',
     },
   }}
 >

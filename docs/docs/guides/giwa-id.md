@@ -4,28 +4,29 @@ sidebar_position: 6
 
 # GIWA ID
 
-This guide explains how to use GIWA ID (up.id), an ENS-based naming service.
+This guide explains how to use GIWA ID (`up.id`), Upbit Web3 Names — a naming service resolved via the on-chain `UpnameRegistry` contract on GIWA L2.
 
 :::info Registration
-GIWA ID registration is only available through Upbit's Verified Address service. This SDK provides name resolution and text record management.
+`up.id` names are ERC-721 tokens (symbol `UPNAME`) minted through Upbit / the GIWA playground — not through this SDK. This SDK is read-only: it resolves names, resolves addresses back to names, and checks availability.
 
-See: [GIWA ID Documentation](https://docs.giwa.io/giwa-ecosystem/giwa-id)
+See: [GIWA ID Documentation](https://docs.giwa.io/giwa-ecosystem/up-id)
 :::
 
 ## What is GIWA ID?
 
-GIWA ID is an ENS-based naming service that allows you to use human-readable names (alice.up.id) instead of complex Ethereum addresses (0x...).
+GIWA ID lets you use human-readable names (`alice.up.id`) instead of complex Ethereum addresses (`0x...`).
 
 ```
 0x742d35Cc6634C0532925a3b844Bc9e7595f...  →  alice.up.id
 ```
 
+Each name is an ERC-721 token in `UpnameRegistry`, where `tokenId = uint256(keccak256(bytes(label)))` (the label is the part before `.up.id`). Ownership, reverse lookup, and availability are all read from that contract.
+
 ### Key Features
 
-- **ENS Compatible**: Works with all ENS-compatible libraries and tools
-- **Verified Identity**: Only available to KYC-verified users
-- **Soul-Bound**: Cannot be transferred or sold
-- **Cross-Chain**: Works across multiple blockchains
+- **On-chain registry**: names live in `UpnameRegistry` on GIWA L2, resolved with plain contract reads
+- **Reverse resolution**: look up the `up.id` name owned by an address
+- **No text records**: `up.id` does not support ENS-style text records (avatar/description/url/etc.) — the only extra data available is the ERC-721 `tokenURI` and a best-effort `avatar` extracted from its metadata
 
 ## useGiwaId Hook
 
@@ -34,11 +35,9 @@ import { useGiwaId } from 'giwa-react-native-wallet';
 
 function GiwaIdScreen() {
   const {
-    resolveAddress,     // GIWA ID → Address
-    resolveName,        // Address → GIWA ID
-    getGiwaId,          // Get full GIWA ID info
-    getTextRecord,      // Get profile records (avatar, etc.)
-    setTextRecord,      // Set profile records (requires ownership)
+    resolveAddress,     // up.id name → Address
+    resolveName,        // Address → up.id name
+    getGiwaId,          // Get full GiwaId info (tokenId, tokenUri, avatar)
     isAvailable,        // Check name availability
     isLoading,
     isInitializing,
@@ -54,12 +53,12 @@ function GiwaIdScreen() {
 ```tsx
 const handleResolve = async () => {
   // Both formats work
-  const address = await resolveAddress('alice'); // or 'alice.giwa.id'
+  const address = await resolveAddress('alice'); // or 'alice.up.id'
 
   if (address) {
     console.log('Address:', address);
   } else {
-    console.log('GIWA ID not registered');
+    console.log('up.id not registered');
   }
 };
 ```
@@ -73,61 +72,34 @@ const handleReverseLookup = async () => {
   const name = await resolveName(address);
 
   if (name) {
-    console.log('GIWA ID:', name);
+    console.log('GIWA ID:', name); // e.g. "alice.up.id"
   } else {
-    console.log('No registered GIWA ID');
+    console.log('No registered up.id name');
   }
 };
 ```
 
 ## Get GIWA ID Info
 
+`getGiwaId` returns the full `GiwaId` record: the resolved `name`, `address`, ERC-721 `tokenId`, the raw `tokenUri`, and a best-effort `avatar` URL read from the token's metadata (only `https://` URIs and image fields are followed; anything else resolves to `undefined`).
+
 ```tsx
 const handleGetGiwaId = async () => {
   const giwaId = await getGiwaId('alice');
 
   if (giwaId) {
-    console.log('Name:', giwaId.name);      // alice.giwa.id
+    console.log('Name:', giwaId.name);        // alice.up.id
     console.log('Address:', giwaId.address);
-    console.log('Avatar:', giwaId.avatar);
-  }
-};
-```
-
-## Get Text Records
-
-```tsx
-// Get avatar
-const avatar = await getTextRecord('alice', 'avatar');
-
-// Get other records
-const description = await getTextRecord('alice', 'description');
-const url = await getTextRecord('alice', 'url');
-```
-
-## Set Text Records
-
-Update text records for a GIWA ID you own:
-
-```tsx
-const handleSetRecord = async () => {
-  try {
-    // Set description (requires ownership of the GIWA ID)
-    const hash = await setTextRecord('alice', 'description', 'My profile description');
-    console.log('Transaction hash:', hash);
-
-    // Set avatar URL
-    await setTextRecord('alice', 'avatar', 'https://example.com/avatar.png');
-
-    // Set website URL
-    await setTextRecord('alice', 'url', 'https://mywebsite.com');
-  } catch (error) {
-    console.error('Failed to set record:', error.message);
+    console.log('Token ID:', giwaId.tokenId);  // bigint
+    console.log('Token URI:', giwaId.tokenUri);
+    console.log('Avatar:', giwaId.avatar);     // string | undefined
   }
 };
 ```
 
 ## Check Name Availability
+
+`isAvailable` mirrors the registry's `isClaimable` check.
 
 ```tsx
 const checkAvailability = async () => {
@@ -136,9 +108,9 @@ const checkAvailability = async () => {
   const available = await isAvailable(name);
 
   if (available) {
-    console.log(`${name}.giwa.id is not registered`);
+    console.log(`${name}.up.id is not registered`);
   } else {
-    console.log(`${name}.giwa.id is already taken`);
+    console.log(`${name}.up.id is already taken`);
   }
 };
 ```
@@ -214,7 +186,7 @@ export function GiwaIdScreen() {
         </Text>
         <View style={{ flexDirection: 'row' }}>
           <TextInput
-            placeholder="alice or alice.giwa.id"
+            placeholder="alice or alice.up.id"
             value={searchInput}
             onChangeText={setSearchInput}
             style={{

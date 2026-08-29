@@ -1,23 +1,22 @@
 import { useMemo, useRef } from 'react';
 import { useGiwaManagers, useGiwaState } from '../providers/GiwaProvider';
 import { useAsyncActions } from './shared/useAsyncAction';
-import type { Address, Hash } from 'viem';
+import type { Address } from 'viem';
 import type { GiwaId } from '../types';
 
 export interface UseGiwaIdReturn {
-  resolveAddress: (giwaId: string) => Promise<Address | null>;
+  resolveAddress: (name: string) => Promise<Address | null>;
   resolveName: (address: Address) => Promise<string | null>;
-  getGiwaId: (giwaId: string) => Promise<GiwaId | null>;
-  getTextRecord: (giwaId: string, key: string) => Promise<string | null>;
-  setTextRecord: (giwaId: string, key: string, value: string) => Promise<Hash>;
-  isAvailable: (giwaId: string) => Promise<boolean>;
+  getGiwaId: (name: string) => Promise<GiwaId | null>;
+  isAvailable: (name: string) => Promise<boolean>;
   isInitializing: boolean;
   isLoading: boolean;
   error: Error | null;
 }
 
 /**
- * Hook for GIWA ID (ENS-based naming) operations
+ * Hook for GIWA ID (`up.id`) operations, resolved via the on-chain
+ * UpnameRegistry.
  *
  * Clean code principles:
  * - Removed duplicate state management logic with useAsyncActions
@@ -31,11 +30,11 @@ export function useGiwaId(): UseGiwaIdReturn {
   giwaIdManagerRef.current = giwaIdManager;
 
   const actions = useAsyncActions({
-    resolveAddress: (giwaId: string) => {
+    resolveAddress: (name: string) => {
       if (!giwaIdManagerRef.current) {
         throw new Error('SDK is still initializing');
       }
-      return giwaIdManagerRef.current.resolveAddress(giwaId);
+      return giwaIdManagerRef.current.resolveAddress(name);
     },
     resolveName: (address: Address) => {
       if (!giwaIdManagerRef.current) {
@@ -43,30 +42,17 @@ export function useGiwaId(): UseGiwaIdReturn {
       }
       return giwaIdManagerRef.current.resolveName(address);
     },
-    getGiwaId: (giwaId: string) => {
+    getGiwaId: (name: string) => {
       if (!giwaIdManagerRef.current) {
         throw new Error('SDK is still initializing');
       }
-      return giwaIdManagerRef.current.getGiwaId(giwaId);
+      return giwaIdManagerRef.current.getGiwaId(name);
     },
-    getTextRecord: (giwaId: string, key: string) => {
+    isAvailable: (name: string) => {
       if (!giwaIdManagerRef.current) {
         throw new Error('SDK is still initializing');
       }
-      return giwaIdManagerRef.current.getTextRecord(giwaId, key);
-    },
-    setTextRecord: async (giwaId: string, key: string, value: string) => {
-      if (!giwaIdManagerRef.current) {
-        throw new Error('SDK is still initializing');
-      }
-      const result = await giwaIdManagerRef.current.setTextRecord(giwaId, key, value);
-      return result.hash;
-    },
-    isAvailable: (giwaId: string) => {
-      if (!giwaIdManagerRef.current) {
-        throw new Error('SDK is still initializing');
-      }
-      return giwaIdManagerRef.current.isAvailable(giwaId);
+      return giwaIdManagerRef.current.isAvailable(name);
     },
   });
 
@@ -74,24 +60,18 @@ export function useGiwaId(): UseGiwaIdReturn {
     actions.resolveAddress.isLoading ||
     actions.resolveName.isLoading ||
     actions.getGiwaId.isLoading ||
-    actions.getTextRecord.isLoading ||
-    actions.setTextRecord.isLoading ||
     actions.isAvailable.isLoading;
 
   const error =
     actions.resolveAddress.error ||
     actions.resolveName.error ||
     actions.getGiwaId.error ||
-    actions.getTextRecord.error ||
-    actions.setTextRecord.error ||
     actions.isAvailable.error;
 
   return useMemo(() => ({
     resolveAddress: actions.resolveAddress.execute,
     resolveName: actions.resolveName.execute,
     getGiwaId: actions.getGiwaId.execute,
-    getTextRecord: actions.getTextRecord.execute,
-    setTextRecord: actions.setTextRecord.execute,
     isAvailable: actions.isAvailable.execute,
     isInitializing: sdkLoading,
     isLoading,
@@ -100,8 +80,6 @@ export function useGiwaId(): UseGiwaIdReturn {
     actions.resolveAddress.execute,
     actions.resolveName.execute,
     actions.getGiwaId.execute,
-    actions.getTextRecord.execute,
-    actions.setTextRecord.execute,
     actions.isAvailable.execute,
     sdkLoading,
     isLoading,

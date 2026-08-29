@@ -209,7 +209,7 @@ describe('GIWA ID Flow', () => {
 
     // Resolve name to address
     await act(async () => {
-      const address = await giwaIdResult.current.resolveAddress('test.giwa.id');
+      const address = await giwaIdResult.current.resolveAddress('test.up.id');
       // Either null or address format
       if (address) {
         expect(address).toMatch(/^0x[a-fA-F0-9]{40}$/);
