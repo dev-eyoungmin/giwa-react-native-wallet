@@ -1,16 +1,41 @@
 import {
   type Address,
+  type Chain,
+  type ChainContract,
   type Hash,
 } from 'viem';
-import type { GiwaClient } from './GiwaClient';
-import type { BridgeTransaction, TransactionResult } from '../types';
-import { GiwaTransactionError } from '../utils/errors';
+import { getWithdrawals, type GetTimeToFinalizeReturnType, type GetTimeToProveReturnType } from 'viem/op-stack';
+import type { GiwaClient, GiwaL1PublicClient, GiwaL1WalletClient } from './GiwaClient';
+import type { BridgeTransaction, TransactionResult, WithdrawalStatus } from '../types';
+import { GiwaError, GiwaTransactionError, ErrorCodes, ErrorMessages } from '../utils/errors';
 import {
   validateBridgeAmount,
   validateAndChecksumAddress,
   validateTokenAddress,
   validateWeiAmount,
 } from '../utils/validation';
+
+/**
+ * `GiwaClient.getChain()` returns the general viem `Chain` type, whose
+ * `contracts` map is optional and loosely typed (arbitrary string keys).
+ * viem's op-stack actions used below (`depositTransaction`,
+ * `getWithdrawalStatus`, `getTimeToProve`, `getTimeToFinalize`,
+ * `waitToProve`, `proveWithdrawal`, `finalizeWithdrawal`) require a
+ * `targetChain` whose `contracts.portal` / `disputeGameFactory` /
+ * `l2OutputOracle` are statically known to be present, keyed by the L1
+ * chain id. `GiwaClient`'s `createGiwaChain` always populates `portal` and
+ * `disputeGameFactory` (GIWA has no `l2OutputOracle`; it's fault-proof
+ * only) when the corresponding contract address is configured - which
+ * `requireL1`/`requireL1Wallet` already guard for every call site that
+ * uses this narrowing.
+ */
+type OpStackTargetChain = Chain & {
+  contracts: NonNullable<Chain['contracts']> & {
+    portal: Record<number, ChainContract>;
+    disputeGameFactory: Record<number, ChainContract>;
+    l2OutputOracle: Record<number, ChainContract>;
+  };
+};
 
 // L2 Standard Bridge ABI (simplified)
 const L2_STANDARD_BRIDGE_ABI = [
@@ -41,8 +66,65 @@ const L2_STANDARD_BRIDGE_ABI = [
   },
 ] as const;
 
+// L1 Standard Bridge ABI (simplified) - used for the ERC-20 deposit path.
+const L1_STANDARD_BRIDGE_ABI = [
+  {
+    name: 'depositERC20To',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: '_l1Token', type: 'address' },
+      { name: '_l2Token', type: 'address' },
+      { name: '_to', type: 'address' },
+      { name: '_amount', type: 'uint256' },
+      { name: '_minGasLimit', type: 'uint32' },
+      { name: '_extraData', type: 'bytes' },
+    ],
+    outputs: [],
+  },
+  {
+    name: 'depositETHTo',
+    type: 'function',
+    stateMutability: 'payable',
+    inputs: [
+      { name: '_to', type: 'address' },
+      { name: '_minGasLimit', type: 'uint32' },
+      { name: '_extraData', type: 'bytes' },
+    ],
+    outputs: [],
+  },
+] as const;
+
+// Minimal ERC-20 ABI - only what's needed for the allowance/approve dance
+// ahead of an ERC-20 deposit (docs.giwa.io/get-started/bridging/erc-20).
+const ERC20_ABI = [
+  {
+    name: 'allowance',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+    ],
+    outputs: [{ type: 'uint256' }],
+  },
+  {
+    name: 'approve',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ type: 'bool' }],
+  },
+] as const;
+
 // ETH address constant for bridge
 const ETH_ADDRESS = '0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000' as Address;
+
+// Minimum gas limit forwarded to the L2 side of an L1StandardBridge deposit.
+const DEFAULT_DEPOSIT_MIN_GAS_LIMIT = 200000;
 
 /**
  * Bridge Manager - handles L1↔L2 bridge operations
@@ -207,6 +289,331 @@ export class BridgeManager {
   }
 
   /**
+   * Deposit ETH from L1 to L2.
+   *
+   * Builds an L2 deposit transaction via viem's `buildDepositTransaction`
+   * (against the L2 public client) and submits it through the
+   * `OptimismPortal` contract via `depositTransaction` (on the L1 wallet
+   * client).
+   *
+   * IMPORTANT: `wait()` resolves once the **L1** transaction is confirmed,
+   * not once the funds land on L2. Deposits are relayed to L2 asynchronously
+   * (usually within a couple of minutes); the returned hash is the L1
+   * transaction hash, not an L2 transaction hash.
+   *
+   * @param amount - Amount in ETH (e.g., "0.1")
+   * @param to - Optional recipient address on L2 (defaults to the sender)
+   */
+  async depositETH(amount: string, to?: Address): Promise<TransactionResult> {
+    const amountInWei = validateBridgeAmount(amount, 'ETH');
+
+    const validatedRecipient = to
+      ? validateAndChecksumAddress(to, 'recipient')
+      : undefined;
+
+    const { publicClientL1, walletClientL1 } = this.requireL1Wallet();
+    const publicClientL2 = this.client.getPublicClient();
+    const targetChain = this.getTargetChain();
+
+    const depositArgs = await publicClientL2.buildDepositTransaction({
+      mint: amountInWei,
+      to: validatedRecipient ?? walletClientL1.account.address,
+    });
+
+    // Built explicitly (rather than `{ ...depositArgs, targetChain }`):
+    // `buildDepositTransaction`'s return type carries the same
+    // `targetChain`-or-`portalAddress` union as `depositTransaction`'s
+    // parameters, and spreading it would retain a leftover `portalAddress`
+    // member alongside our own `targetChain`, which fails to type-check
+    // against either union arm.
+    const hash = await walletClientL1.depositTransaction({
+      account: depositArgs.account,
+      request: depositArgs.request,
+      targetChain,
+    });
+
+    // Track transaction
+    this.pendingTransactions.set(hash, {
+      direction: 'deposit',
+      amount: amountInWei,
+      l1TxHash: hash,
+      status: 'pending',
+    });
+
+    return {
+      hash,
+      wait: async () => {
+        const receipt = await publicClientL1.waitForTransactionReceipt({ hash });
+
+        const tx = this.pendingTransactions.get(hash);
+        if (tx) {
+          tx.status = receipt.status === 'success' ? 'confirmed' : 'failed';
+        }
+
+        return {
+          hash: receipt.transactionHash,
+          blockNumber: receipt.blockNumber,
+          status: receipt.status === 'success' ? 'success' : 'reverted',
+          gasUsed: receipt.gasUsed,
+        };
+      },
+    };
+  }
+
+  /**
+   * Deposit ERC-20 tokens from L1 to L2.
+   *
+   * Per docs.giwa.io/get-started/bridging/erc-20: reads the L1 token
+   * allowance for the `L1StandardBridge`, sends an `approve` first (and
+   * waits for its receipt) only if the current allowance is insufficient,
+   * then calls `L1StandardBridge.depositERC20To`.
+   *
+   * IMPORTANT: `wait()` resolves once the **L1** deposit transaction is
+   * confirmed, not once the tokens land on L2.
+   *
+   * @param l1TokenAddress - L1 token contract address
+   * @param l2TokenAddress - Corresponding L2 token contract address
+   * @param amount - Amount to deposit (in token units)
+   * @param to - Optional recipient address on L2 (defaults to the sender)
+   */
+  async depositToken(
+    l1TokenAddress: Address,
+    l2TokenAddress: Address,
+    amount: bigint,
+    to?: Address
+  ): Promise<TransactionResult> {
+    const validatedL1Token = validateTokenAddress(l1TokenAddress);
+    const validatedL2Token = validateTokenAddress(l2TokenAddress);
+    validateWeiAmount(amount, 'deposit amount');
+
+    const validatedRecipient = to
+      ? validateAndChecksumAddress(to, 'recipient')
+      : undefined;
+
+    const { publicClientL1, walletClientL1 } = this.requireL1Wallet();
+    const contracts = this.client.getContractAddresses();
+    const owner = walletClientL1.account.address;
+    const recipient = validatedRecipient ?? owner;
+
+    const allowance = await publicClientL1.readContract({
+      address: validatedL1Token,
+      abi: ERC20_ABI,
+      functionName: 'allowance',
+      args: [owner, contracts.l1StandardBridge],
+    });
+
+    if (allowance < amount) {
+      const approveHash = await walletClientL1.writeContract({
+        address: validatedL1Token,
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [contracts.l1StandardBridge, amount],
+      });
+      await publicClientL1.waitForTransactionReceipt({ hash: approveHash });
+    }
+
+    const hash = await walletClientL1.writeContract({
+      address: contracts.l1StandardBridge,
+      abi: L1_STANDARD_BRIDGE_ABI,
+      functionName: 'depositERC20To',
+      args: [
+        validatedL1Token,
+        validatedL2Token,
+        recipient,
+        amount,
+        DEFAULT_DEPOSIT_MIN_GAS_LIMIT,
+        '0x',
+      ],
+    });
+
+    // Track transaction
+    this.pendingTransactions.set(hash, {
+      direction: 'deposit',
+      amount,
+      token: validatedL1Token,
+      l1TxHash: hash,
+      status: 'pending',
+    });
+
+    return {
+      hash,
+      wait: async () => {
+        const receipt = await publicClientL1.waitForTransactionReceipt({ hash });
+
+        const tx = this.pendingTransactions.get(hash);
+        if (tx) {
+          tx.status = receipt.status === 'success' ? 'confirmed' : 'failed';
+        }
+
+        return {
+          hash: receipt.transactionHash,
+          blockNumber: receipt.blockNumber,
+          status: receipt.status === 'success' ? 'success' : 'reverted',
+          gasUsed: receipt.gasUsed,
+        };
+      },
+    };
+  }
+
+  /**
+   * Get the current status of an L2 -> L1 withdrawal.
+   * @param l2TxHash - The L2 transaction hash that initiated the withdrawal
+   */
+  async getWithdrawalStatus(l2TxHash: Hash): Promise<WithdrawalStatus> {
+    const publicClientL1 = this.requireL1();
+    const publicClientL2 = this.client.getPublicClient();
+
+    const receipt = await publicClientL2.getTransactionReceipt({ hash: l2TxHash });
+
+    return publicClientL1.getWithdrawalStatus({
+      receipt,
+      targetChain: this.getTargetChain(),
+    });
+  }
+
+  /**
+   * Get the estimated time until a withdrawal is ready to prove.
+   * @param l2TxHash - The L2 transaction hash that initiated the withdrawal
+   */
+  async getTimeToProve(l2TxHash: Hash): Promise<GetTimeToProveReturnType> {
+    const publicClientL1 = this.requireL1();
+    const publicClientL2 = this.client.getPublicClient();
+
+    const receipt = await publicClientL2.getTransactionReceipt({ hash: l2TxHash });
+
+    return publicClientL1.getTimeToProve({
+      receipt,
+      targetChain: this.getTargetChain(),
+    });
+  }
+
+  /**
+   * Get the estimated time until a proved withdrawal is ready to finalize.
+   * @param l2TxHash - The L2 transaction hash that initiated the withdrawal
+   */
+  async getTimeToFinalize(l2TxHash: Hash): Promise<GetTimeToFinalizeReturnType> {
+    const publicClientL1 = this.requireL1();
+    const publicClientL2 = this.client.getPublicClient();
+
+    const receipt = await publicClientL2.getTransactionReceipt({ hash: l2TxHash });
+    const [withdrawal] = getWithdrawals(receipt);
+
+    return publicClientL1.getTimeToFinalize({
+      withdrawalHash: withdrawal.withdrawalHash,
+      targetChain: this.getTargetChain(),
+    });
+  }
+
+  /**
+   * Prove an L2 -> L1 withdrawal on L1.
+   *
+   * WARNING: this method blocks until the withdrawal is provable, which can
+   * take hours (it waits for the L2 output root / dispute game that covers
+   * the withdrawal's block to be submitted on L1). Use
+   * `getWithdrawalStatus`/`getTimeToProve` for a non-blocking readiness
+   * check before calling this.
+   *
+   * `wait()` resolves once the **L1** prove transaction is confirmed.
+   *
+   * @param l2TxHash - The L2 transaction hash that initiated the withdrawal
+   */
+  async proveWithdrawal(l2TxHash: Hash): Promise<TransactionResult> {
+    const { publicClientL1, walletClientL1 } = this.requireL1Wallet();
+    const publicClientL2 = this.client.getPublicClient();
+    const targetChain = this.getTargetChain();
+
+    const receipt = await publicClientL2.getTransactionReceipt({ hash: l2TxHash });
+
+    // Blocks until the withdrawal's L2 output/dispute game is available on L1.
+    const { output, withdrawal } = await publicClientL1.waitToProve({
+      receipt,
+      targetChain,
+    });
+
+    const args = await publicClientL2.buildProveWithdrawal({ output, withdrawal });
+    const hash = await walletClientL1.proveWithdrawal({ ...args, targetChain });
+
+    // Track transaction
+    this.pendingTransactions.set(hash, {
+      direction: 'withdraw',
+      amount: withdrawal.value,
+      l1TxHash: hash,
+      l2TxHash,
+      status: 'pending',
+    });
+
+    return {
+      hash,
+      wait: async () => {
+        const proveReceipt = await publicClientL1.waitForTransactionReceipt({ hash });
+
+        const tx = this.pendingTransactions.get(hash);
+        if (tx) {
+          tx.status = proveReceipt.status === 'success' ? 'proved' : 'failed';
+        }
+
+        return {
+          hash: proveReceipt.transactionHash,
+          blockNumber: proveReceipt.blockNumber,
+          status: proveReceipt.status === 'success' ? 'success' : 'reverted',
+          gasUsed: proveReceipt.gasUsed,
+        };
+      },
+    };
+  }
+
+  /**
+   * Finalize a proved L2 -> L1 withdrawal on L1, releasing the funds.
+   *
+   * Does NOT wait for the finalization window to elapse - callers must
+   * confirm readiness themselves first (e.g. via `getWithdrawalStatus` ===
+   * `'ready-to-finalize'`, or `getTimeToFinalize`). Calling this before the
+   * withdrawal is ready to finalize will revert on L1.
+   *
+   * `wait()` resolves once the **L1** finalize transaction is confirmed.
+   *
+   * @param l2TxHash - The L2 transaction hash that initiated the withdrawal
+   */
+  async finalizeWithdrawal(l2TxHash: Hash): Promise<TransactionResult> {
+    const { publicClientL1, walletClientL1 } = this.requireL1Wallet();
+    const publicClientL2 = this.client.getPublicClient();
+    const targetChain = this.getTargetChain();
+
+    const receipt = await publicClientL2.getTransactionReceipt({ hash: l2TxHash });
+    const [withdrawal] = getWithdrawals(receipt);
+
+    const hash = await walletClientL1.finalizeWithdrawal({ targetChain, withdrawal });
+
+    // Track transaction
+    this.pendingTransactions.set(hash, {
+      direction: 'withdraw',
+      amount: withdrawal.value,
+      l1TxHash: hash,
+      l2TxHash,
+      status: 'pending',
+    });
+
+    return {
+      hash,
+      wait: async () => {
+        const finalizeReceipt = await publicClientL1.waitForTransactionReceipt({ hash });
+
+        const tx = this.pendingTransactions.get(hash);
+        if (tx) {
+          tx.status = finalizeReceipt.status === 'success' ? 'finalized' : 'failed';
+        }
+
+        return {
+          hash: finalizeReceipt.transactionHash,
+          blockNumber: finalizeReceipt.blockNumber,
+          status: finalizeReceipt.status === 'success' ? 'success' : 'reverted',
+          gasUsed: finalizeReceipt.gasUsed,
+        };
+      },
+    };
+  }
+
+  /**
    * Get pending bridge transactions
    */
   getPendingTransactions(): BridgeTransaction[] {
@@ -234,5 +641,50 @@ export class BridgeManager {
    */
   clearPendingTransactions(): void {
     this.pendingTransactions.clear();
+  }
+
+  /**
+   * Require L1 (Ethereum) read support. Throws `L1_RPC_NOT_CONFIGURED` when
+   * `config.endpoints.l1RpcUrl` was not supplied to the client.
+   */
+  private requireL1(): GiwaL1PublicClient {
+    if (!this.client.hasL1Support()) {
+      throw new GiwaError(ErrorMessages.L1_RPC_NOT_CONFIGURED, ErrorCodes.L1_RPC_NOT_CONFIGURED);
+    }
+
+    const publicClientL1 = this.client.getL1PublicClient();
+    if (!publicClientL1) {
+      // Defensive: hasL1Support() guarantees this is non-null by construction.
+      throw new GiwaError(ErrorMessages.L1_RPC_NOT_CONFIGURED, ErrorCodes.L1_RPC_NOT_CONFIGURED);
+    }
+
+    return publicClientL1;
+  }
+
+  /**
+   * Require L1 (Ethereum) write support: L1 RPC configured (see `requireL1`)
+   * plus a connected account (`WALLET_NOT_CONNECTED`).
+   */
+  private requireL1Wallet(): {
+    publicClientL1: GiwaL1PublicClient;
+    walletClientL1: GiwaL1WalletClient;
+  } {
+    const publicClientL1 = this.requireL1();
+
+    const walletClientL1 = this.client.getL1WalletClient();
+    if (!walletClientL1) {
+      throw new GiwaError(ErrorMessages.WALLET_NOT_CONNECTED, 'WALLET_NOT_CONNECTED');
+    }
+
+    return { publicClientL1, walletClientL1 };
+  }
+
+  /**
+   * The GIWA chain (`client.getChain()`) narrowed to the op-stack contract
+   * shape required by `targetChain` params. See `OpStackTargetChain` above
+   * for why this narrowing is necessary and safe.
+   */
+  private getTargetChain(): OpStackTargetChain {
+    return this.client.getChain() as OpStackTargetChain;
   }
 }

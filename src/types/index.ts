@@ -39,7 +39,7 @@ export type {
 export type { Token, TokenBalance } from './token';
 
 // Bridge
-export type { BridgeDirection, BridgeTransaction } from './bridge';
+export type { BridgeDirection, BridgeTransaction, WithdrawalStatus } from './bridge';
 
 // Flashblocks
 export type { FlashblocksPreconfirmation } from './flashblocks';

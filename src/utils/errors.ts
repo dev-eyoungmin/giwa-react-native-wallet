@@ -97,6 +97,7 @@ export const ErrorCodes = {
   // Bridge
   BRIDGE_DEPOSIT_FAILED: 'BRIDGE_DEPOSIT_FAILED',
   BRIDGE_WITHDRAW_FAILED: 'BRIDGE_WITHDRAW_FAILED',
+  L1_RPC_NOT_CONFIGURED: 'L1_RPC_NOT_CONFIGURED',
 
   // Network
   FEATURE_UNAVAILABLE: 'FEATURE_UNAVAILABLE',
@@ -148,6 +149,8 @@ export const ErrorMessages = {
   BRIDGE_WITHDRAW_FAILED: 'Withdrawal failed.',
   ETH_WITHDRAW_FAILED: 'ETH withdrawal failed.',
   TOKEN_WITHDRAW_FAILED: 'Token withdrawal failed.',
+  L1_RPC_NOT_CONFIGURED:
+    'L1 RPC is not configured. Set config.endpoints.l1RpcUrl to use bridge deposits, proving and finalizing.',
 
   // Flashblocks
   FLASHBLOCKS_FAILED: 'Flashblocks transaction failed.',
