@@ -23,7 +23,13 @@ export type { ContractAddresses, DojangAttester } from './constants/contracts';
 
 // Core
 export { GiwaClient } from './core/GiwaClient';
-export type { ResolvedEndpoints } from './core/GiwaClient';
+export type {
+  ResolvedEndpoints,
+  GiwaL1PublicClient,
+  GiwaL1WalletClient,
+  GiwaL2PublicClient,
+  GiwaL2WalletClient,
+} from './core/GiwaClient';
 export { WalletManager } from './core/WalletManager';
 export { TokenManager } from './core/TokenManager';
 export { BridgeManager } from './core/BridgeManager';

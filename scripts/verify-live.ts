@@ -5,14 +5,33 @@
  * Never import `../src/index` - it pulls in the React Native
  * `react-native-get-random-values` polyfill, unavailable under plain Node/tsx.
  */
-import type { Address } from 'viem';
+import type { Address, Chain } from 'viem';
 import { GiwaClient } from '../src/core/GiwaClient';
 import { DojangManager } from '../src/core/DojangManager';
 import { GiwaIdManager } from '../src/core/GiwaIdManager';
 import { ZERO_ADDRESS } from '../src/constants/contracts';
 
 /** Ambient `process` type only (no @types/node); Node supplies the real global. */
-declare const process: { exit(code: number): never };
+declare const process: { exit(code: number): never; env: Record<string, string | undefined> };
+
+const L1_CHAIN_ID = 11155111; // Ethereum Sepolia
+
+/**
+ * Read an L1-scoped contract address (`{ [l1ChainId]: { address } }`) off a
+ * `Chain.contracts` entry. Returns `undefined` if the entry is absent or is
+ * a flat (non source-keyed) `ChainContract`.
+ */
+function getL1ContractAddress(
+  chain: Chain,
+  contractName: 'portal' | 'disputeGameFactory' | 'l1StandardBridge',
+  l1ChainId: number
+): Address | undefined {
+  const entry = chain.contracts?.[contractName];
+  if (entry && typeof entry === 'object' && !('address' in entry)) {
+    return entry[l1ChainId]?.address;
+  }
+  return undefined;
+}
 
 const UNVERIFIED_ADDRESS: Address = '0x0000000000000000000000000000000000000001';
 const RANDOM_LABEL = 'qzqzqzqzqzqz';
@@ -84,9 +103,8 @@ async function main(): Promise<void> {
     const { features } = client.getNetworkStatus();
     assertEqual('features.dojang.status', features.dojang.status, 'available');
     assertEqual('features.giwaId.status', features.giwaId.status, 'available');
-    assertEqual('features.bridge.status', features.bridge.status, 'partial');
-    if (features.bridge.reason) pass('features.bridge.reason non-empty');
-    else fail('features.bridge.reason non-empty', 'reason was empty/undefined');
+    assertEqual('features.bridge.status', features.bridge.status, 'available');
+    assertEqual('features.bridge.reason', features.bridge.reason, undefined);
     assertEqual('features.faucet.status', features.faucet.status, 'available');
     assertEqual('features.flashblocks.status', features.flashblocks.status, 'available');
     assertEqual('features.tokens.status', features.tokens.status, 'available');
@@ -106,6 +124,28 @@ async function main(): Promise<void> {
       if (address !== ZERO_ADDRESS) pass(`getContractAddresses().${name} non-zero`);
       else fail(`getContractAddresses().${name} non-zero`, `got ${address}`);
     }
+  });
+
+  // 3b. op-stack chain wiring (sourceId + L1 contract map)
+  await guarded('op-stack chain wiring', async () => {
+    const chain = client.getChain();
+    assertEqual('getChain().sourceId', chain.sourceId, L1_CHAIN_ID);
+    assertEqual(
+      'getChain().contracts.portal[l1ChainId].address',
+      getL1ContractAddress(chain, 'portal', L1_CHAIN_ID),
+      contracts.optimismPortal
+    );
+    assertEqual(
+      'getChain().contracts.disputeGameFactory[l1ChainId].address',
+      getL1ContractAddress(chain, 'disputeGameFactory', L1_CHAIN_ID),
+      contracts.disputeGameFactory
+    );
+    assertEqual(
+      'getChain().contracts.l1StandardBridge[l1ChainId].address',
+      getL1ContractAddress(chain, 'l1StandardBridge', L1_CHAIN_ID),
+      contracts.l1StandardBridge
+    );
+    assertEqual('hasL1Support() (no l1RpcUrl configured)', client.hasL1Support(), false);
   });
 
   // 4. Dojang negative path (unverified address)
@@ -183,6 +223,24 @@ async function main(): Promise<void> {
       fail(attLabel, `no verified_address attestation among ${ownerAttestations.length}`);
       skip(decodedLabel, 'no verified_address attestation found for owner');
     }
+  }
+
+  // 7. L1 client (only runs when GIWA_L1_RPC_URL is set)
+  const l1RpcUrl = process.env.GIWA_L1_RPC_URL;
+  if (!l1RpcUrl) {
+    skip('L1 client (GIWA_L1_RPC_URL)', 'GIWA_L1_RPC_URL env var not set');
+  } else {
+    await guarded('L1 client (GIWA_L1_RPC_URL)', async () => {
+      const l1Client = new GiwaClient({ network: 'testnet', endpoints: { l1RpcUrl } });
+      assertEqual('hasL1Support() === true', l1Client.hasL1Support(), true);
+      const l1PublicClient = l1Client.getL1PublicClient();
+      if (!l1PublicClient) {
+        fail('getL1PublicClient() non-null', 'was null despite l1RpcUrl set');
+      } else {
+        const l1ChainId = await l1PublicClient.getChainId();
+        assertEqual('getL1PublicClient().getChainId()', l1ChainId, L1_CHAIN_ID);
+      }
+    });
   }
 
   console.log('');

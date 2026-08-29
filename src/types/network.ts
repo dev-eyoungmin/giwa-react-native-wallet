@@ -18,6 +18,8 @@ export interface GiwaNetwork {
     symbol: string;
     decimals: number;
   };
+  /** Chain id of the L1 this network settles to (Ethereum Sepolia 11155111 / Ethereum mainnet 1) */
+  l1ChainId: number;
 }
 
 /**

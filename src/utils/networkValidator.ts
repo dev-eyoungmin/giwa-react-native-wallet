@@ -42,11 +42,11 @@ export function getFeatureAvailability(
       const l2Available = !isTbdAddress(contracts.l2StandardBridge);
       return {
         name: 'bridge',
-        status: l2Available ? 'partial' : 'unavailable',
+        status: !l2Available ? 'unavailable' : l1Available ? 'available' : 'partial',
         reason: !l2Available
           ? 'Bridge contracts are TBD'
           : l1Available
-            ? 'L2→L1 withdrawal initiation only; deposit, prove and finalize are not implemented (use https://superbridge.app)'
+            ? undefined
             : 'L1 Bridge contract is TBD (L2 withdrawal only)',
         contractAddress: contracts.l2StandardBridge,
       };
