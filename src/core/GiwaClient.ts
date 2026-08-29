@@ -358,12 +358,15 @@ export class GiwaClient {
   }
 
   /**
-   * Whether this client has L1 (Ethereum) support configured — i.e. the
-   * network has a known L1 chain definition and an `l1RpcUrl` endpoint was
-   * supplied.
+   * Whether this client has L1 (Ethereum) support configured — i.e.
+   * `getL1PublicClient()` (and, once an account is set, `getL1WalletClient()`)
+   * will return a non-null client. Derived from the actual L1 public client
+   * rather than re-checking the raw config, so this can never disagree with
+   * what the L1 accessors return (e.g. a falsy `endpoints.l1RpcUrl` like `''`
+   * won't report support that doesn't exist).
    */
   hasL1Support(): boolean {
-    return this.l1Chain !== null && this.endpoints.l1RpcUrl !== undefined;
+    return this.l1PublicClient !== null;
   }
 
   /**
