@@ -8,6 +8,7 @@ import { getWithdrawals, type GetTimeToFinalizeReturnType, type GetTimeToProveRe
 import type { GiwaClient, GiwaL1PublicClient, GiwaL1WalletClient } from './GiwaClient';
 import type { BridgeTransaction, TransactionResult, WithdrawalStatus } from '../types';
 import { GiwaError, GiwaTransactionError, ErrorCodes, ErrorMessages } from '../utils/errors';
+import { ZERO_ADDRESS } from '../constants/contracts';
 import {
   validateBridgeAmount,
   validateAndChecksumAddress,
@@ -21,19 +22,18 @@ import {
  * viem's op-stack actions used below (`depositTransaction`,
  * `getWithdrawalStatus`, `getTimeToProve`, `getTimeToFinalize`,
  * `waitToProve`, `proveWithdrawal`, `finalizeWithdrawal`) require a
- * `targetChain` whose `contracts.portal` / `disputeGameFactory` /
- * `l2OutputOracle` are statically known to be present, keyed by the L1
- * chain id. `GiwaClient`'s `createGiwaChain` always populates `portal` and
- * `disputeGameFactory` (GIWA has no `l2OutputOracle`; it's fault-proof
- * only) when the corresponding contract address is configured - which
- * `requireL1`/`requireL1Wallet` already guard for every call site that
- * uses this narrowing.
+ * `targetChain` whose `contracts.portal` / `disputeGameFactory` are
+ * statically known to be present, keyed by the L1 chain id.
+ * `GiwaClient`'s `createGiwaChain` populates exactly those two - GIWA is
+ * fault-proof only and has no `l2OutputOracle`, which viem only reads
+ * behind an on-chain `getPortalVersion() < 3` check that GIWA never
+ * satisfies. `requireL1`/`requireL1Wallet` guard that both addresses are
+ * actually deployed for every call site that uses this narrowing.
  */
 type OpStackTargetChain = Chain & {
   contracts: NonNullable<Chain['contracts']> & {
     portal: Record<number, ChainContract>;
     disputeGameFactory: Record<number, ChainContract>;
-    l2OutputOracle: Record<number, ChainContract>;
   };
 };
 
@@ -496,11 +496,19 @@ export class BridgeManager {
     const publicClientL2 = this.client.getPublicClient();
 
     const receipt = await publicClientL2.getTransactionReceipt({ hash: l2TxHash });
-    const [withdrawal] = getWithdrawals(receipt);
+    const withdrawal = this.requireWithdrawal(receipt);
 
     return publicClientL1.getTimeToFinalize({
       withdrawalHash: withdrawal.withdrawalHash,
-      targetChain: this.getTargetChain(),
+      // `getTimeToFinalize` is the one action whose parameter type also
+      // demands `contracts.l2OutputOracle`, even though it only reads it
+      // behind an on-chain `getPortalVersion().major < 3` branch - the
+      // pre-fault-proof path, which GIWA (portal v3+) never takes. The
+      // cast is confined here rather than baked into `OpStackTargetChain`,
+      // which would claim an address GIWA does not have.
+      targetChain: this.getTargetChain() as OpStackTargetChain & {
+        contracts: { l2OutputOracle: Record<number, ChainContract> };
+      },
     });
   }
 
@@ -580,7 +588,7 @@ export class BridgeManager {
     const targetChain = this.getTargetChain();
 
     const receipt = await publicClientL2.getTransactionReceipt({ hash: l2TxHash });
-    const [withdrawal] = getWithdrawals(receipt);
+    const withdrawal = this.requireWithdrawal(receipt);
 
     const hash = await walletClientL1.finalizeWithdrawal({ targetChain, withdrawal });
 
@@ -644,8 +652,16 @@ export class BridgeManager {
   }
 
   /**
-   * Require L1 (Ethereum) read support. Throws `L1_RPC_NOT_CONFIGURED` when
-   * `config.endpoints.l1RpcUrl` was not supplied to the client.
+   * Require L1 (Ethereum) read support:
+   * - `config.endpoints.l1RpcUrl` supplied to the client
+   *   (`L1_RPC_NOT_CONFIGURED`), and
+   * - the L1 bridge contracts actually deployed on the selected network
+   *   (`L1_BRIDGE_CONTRACTS_NOT_CONFIGURED`).
+   *
+   * The second check matters: on GIWA mainnet (not launched) every L1
+   * address is `ZERO_ADDRESS`. Without it, a deposit would be sent to
+   * `0x000...0`, which has no code, so the call succeeds trivially and
+   * `wait()` reports `status: 'success'` while no funds ever move.
    */
   private requireL1(): GiwaL1PublicClient {
     if (!this.client.hasL1Support()) {
@@ -658,12 +674,34 @@ export class BridgeManager {
       throw new GiwaError(ErrorMessages.L1_RPC_NOT_CONFIGURED, ErrorCodes.L1_RPC_NOT_CONFIGURED);
     }
 
+    this.requireL1BridgeContracts();
+
     return publicClientL1;
   }
 
   /**
-   * Require L1 (Ethereum) write support: L1 RPC configured (see `requireL1`)
-   * plus a connected account (`WALLET_NOT_CONNECTED`).
+   * Assert that every L1 bridge contract this manager can call is a real
+   * deployed address rather than the `ZERO_ADDRESS` placeholder.
+   */
+  private requireL1BridgeContracts(): void {
+    const contracts = this.client.getContractAddresses();
+    const required: Address[] = [
+      contracts.l1StandardBridge,
+      contracts.optimismPortal,
+      contracts.disputeGameFactory,
+    ];
+
+    if (required.some((address) => address === ZERO_ADDRESS)) {
+      throw new GiwaError(
+        ErrorMessages.L1_BRIDGE_CONTRACTS_NOT_CONFIGURED,
+        ErrorCodes.L1_BRIDGE_CONTRACTS_NOT_CONFIGURED
+      );
+    }
+  }
+
+  /**
+   * Require L1 (Ethereum) write support: L1 read support (see `requireL1`)
+   * plus a connected account.
    */
   private requireL1Wallet(): {
     publicClientL1: GiwaL1PublicClient;
@@ -673,10 +711,30 @@ export class BridgeManager {
 
     const walletClientL1 = this.client.getL1WalletClient();
     if (!walletClientL1) {
-      throw new GiwaError(ErrorMessages.WALLET_NOT_CONNECTED, 'WALLET_NOT_CONNECTED');
+      throw new GiwaTransactionError(ErrorMessages.WALLET_NOT_CONNECTED);
     }
 
     return { publicClientL1, walletClientL1 };
+  }
+
+  /**
+   * Extract the single withdrawal a receipt is expected to contain.
+   *
+   * Mirrors viem's own `ReceiptContainsNoWithdrawalsError` guard: a receipt
+   * for a transaction that never initiated a withdrawal yields an empty
+   * list, and indexing it blindly would surface as an opaque
+   * `Cannot read properties of undefined` further down the call stack.
+   */
+  private requireWithdrawal(
+    receipt: Parameters<typeof getWithdrawals>[0]
+  ): ReturnType<typeof getWithdrawals>[number] {
+    const [withdrawal] = getWithdrawals(receipt);
+
+    if (!withdrawal) {
+      throw new GiwaTransactionError(ErrorMessages.NO_WITHDRAWAL_IN_RECEIPT);
+    }
+
+    return withdrawal;
   }
 
   /**
