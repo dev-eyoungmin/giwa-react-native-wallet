@@ -17,6 +17,7 @@ React Native SDK for GIWA Chain. Works with both Expo and React Native CLI proje
 | **Balance Query** | `useBalance` | Check ETH and token balances |
 | **Transactions** | `useTransaction` | Send ETH transactions |
 | **Token Operations** | `useTokens` | ERC-20 token transfers and queries |
+| **Bridge** | `useBridge` | L1↔L2 ETH/ERC-20 deposits and withdrawals (initiate, status, prove, finalize); deposits/prove/finalize require `endpoints.l1RpcUrl` |
 | **Flashblocks** | `useFlashblocks` | ~200ms fast preconfirmation |
 | **GIWA ID (up.id)** | `useGiwaId` | up.id name resolution via on-chain UpnameRegistry |
 | **Dojang (EAS)** | `useDojang` | On-chain attestation service |
@@ -25,13 +26,7 @@ React Native SDK for GIWA Chain. Works with both Expo and React Native CLI proje
 | **Biometric Auth** | `useBiometricAuth` | Face ID / Touch ID / Fingerprint |
 | **Secure Storage** | - | iOS Keychain / Android Keystore |
 
-### ⚠️ Partial
-
-| Feature | Hook | Description |
-|---------|------|-------------|
-| **Bridge** | `useBridge` | L2→L1 withdrawal initiation (deposit via [Superbridge](https://superbridge.app)); prove and finalize are not implemented |
-
-> `useNetworkInfo().getFeatureInfo('bridge')` reports `status: 'partial'` with a `reason` string explaining what is and isn't implemented.
+> Bridge operations work on GIWA Sepolia (testnet) only — GIWA mainnet has not launched, so every L1 bridge contract address is `ZERO_ADDRESS` there and every bridge call throws. See the [Bridge guide](/docs/guides/bridge).
 
 ## Network Information
 

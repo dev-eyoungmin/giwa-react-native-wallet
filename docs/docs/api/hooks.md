@@ -242,26 +242,32 @@ interface AllowanceResult {
 
 ## useBridge
 
-L2→L1 Bridge Withdrawal Hook
+L1↔L2 Bridge Hook — deposits, withdrawals, and the withdrawal prove/finalize flow
 
-:::info L1→L2 Deposit
-For deposits (L1→L2), use the official [GIWA Superbridge](https://superbridge.app). This SDK only supports L2→L1 withdrawals.
-
-See: [GIWA Bridge Documentation](https://docs.giwa.io/tools/bridges)
+:::info L1 Configuration Required
+Deposits (`depositETH`/`depositToken`) and every withdrawal step past initiation (`getWithdrawalStatus`, `getTimeToProve`, `getTimeToFinalize`, `proveWithdrawal`, `finalizeWithdrawal`) require `endpoints.l1RpcUrl` to be configured on `GiwaProvider`/`GiwaConfig` — the SDK ships no default. `withdrawETH`/`withdrawToken` work without it. See the [Bridge guide](/docs/guides/bridge) for setup and the full withdrawal lifecycle.
 :::
 
 ```tsx
 import { useBridge } from 'giwa-react-native-wallet';
 
 const {
-  withdrawETH,       // (amount: string, to?: Address) => Promise<Hash>
-  withdrawToken,     // (l2TokenAddress: Address, amount: bigint, to?: Address) => Promise<Hash>
+  depositETH,             // (amount: string, to?: Address) => Promise<Hash>
+  depositToken,           // (l1TokenAddress: Address, l2TokenAddress: Address, amount: bigint, to?: Address) => Promise<Hash>
+  withdrawETH,            // (amount: string, to?: Address) => Promise<Hash>
+  withdrawToken,          // (l2TokenAddress: Address, amount: bigint, to?: Address) => Promise<Hash>
+  getWithdrawalStatus,    // (l2TxHash: Hash) => Promise<WithdrawalStatus>
+  getTimeToProve,         // (l2TxHash: Hash) => Promise<GetTimeToProveReturnType>
+  getTimeToFinalize,      // (l2TxHash: Hash) => Promise<GetTimeToFinalizeReturnType>
+  proveWithdrawal,        // (l2TxHash: Hash) => Promise<Hash>
+  finalizeWithdrawal,     // (l2TxHash: Hash) => Promise<Hash>
   getPendingTransactions, // () => BridgeTransaction[]
-  getTransaction,    // (hash: Hash) => BridgeTransaction | undefined
+  getTransaction,         // (hash: Hash) => BridgeTransaction | undefined
   getEstimatedWithdrawalTime, // () => number (seconds)
-  isLoading,         // boolean
-  isInitializing,    // boolean
-  error,             // Error | null
+  isL1Configured,         // boolean - whether endpoints.l1RpcUrl is set
+  isLoading,              // boolean
+  isInitializing,         // boolean
+  error,                  // Error | null
 } = useBridge();
 ```
 
@@ -270,12 +276,20 @@ const {
 ```tsx
 type Hash = `0x${string}`;
 
+type WithdrawalStatus =
+  | 'waiting-to-prove'
+  | 'ready-to-prove'
+  | 'waiting-to-finalize'
+  | 'ready-to-finalize'
+  | 'finalized';
+
 interface BridgeTransaction {
-  direction: 'withdraw';
+  direction: 'deposit' | 'withdraw';
   amount: bigint;
   token?: Address;
-  l2TxHash: string;
-  status: 'pending' | 'confirmed';
+  l1TxHash?: Hash;
+  l2TxHash?: Hash;
+  status: 'pending' | 'confirmed' | 'proved' | 'finalized' | 'failed';
 }
 ```
 
@@ -283,11 +297,19 @@ interface BridgeTransaction {
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `withdrawETH` | `(amount, to?) => Promise<Hash>` | Withdraw ETH to L1 |
-| `withdrawToken` | `(l2TokenAddress, amount, to?) => Promise<Hash>` | Withdraw ERC-20 to L1 |
-| `getPendingTransactions` | `() => BridgeTransaction[]` | Get pending withdrawals |
+| `depositETH` | `(amount, to?) => Promise<Hash>` | Deposit ETH from L1 to L2. Returns the **L1** tx hash |
+| `depositToken` | `(l1TokenAddress, l2TokenAddress, amount, to?) => Promise<Hash>` | Deposit ERC-20 from L1 to L2 (auto-approves if needed). Returns the **L1** tx hash |
+| `withdrawETH` | `(amount, to?) => Promise<Hash>` | Initiate an ETH withdrawal to L1 |
+| `withdrawToken` | `(l2TokenAddress, amount, to?) => Promise<Hash>` | Initiate an ERC-20 withdrawal to L1 |
+| `getWithdrawalStatus` | `(l2TxHash) => Promise<WithdrawalStatus>` | Current status of a withdrawal |
+| `getTimeToProve` | `(l2TxHash) => Promise<GetTimeToProveReturnType>` | Non-blocking: time until provable |
+| `getTimeToFinalize` | `(l2TxHash) => Promise<GetTimeToFinalizeReturnType>` | Non-blocking: time until finalizable |
+| `proveWithdrawal` | `(l2TxHash) => Promise<Hash>` | Prove a withdrawal on L1. **Blocks until provable** (can take hours) |
+| `finalizeWithdrawal` | `(l2TxHash) => Promise<Hash>` | Finalize a proved withdrawal on L1, releasing funds |
+| `getPendingTransactions` | `() => BridgeTransaction[]` | Get pending deposits/withdrawals |
 | `getTransaction` | `(hash) => BridgeTransaction \| undefined` | Get transaction by hash |
-| `getEstimatedWithdrawalTime` | `() => number` | Get withdrawal time (seconds) |
+| `getEstimatedWithdrawalTime` | `() => number` | Get the challenge period estimate (seconds) |
+| `isL1Configured` | `boolean` | Whether `endpoints.l1RpcUrl` is configured |
 | `isLoading` | `boolean` | Loading state |
 | `isInitializing` | `boolean` | Whether bridge is initializing |
 | `error` | `Error \| null` | Error if operation failed |
@@ -295,15 +317,27 @@ interface BridgeTransaction {
 ### Usage Example
 
 ```tsx
+// Deposit 0.1 ETH to L2 (requires endpoints.l1RpcUrl)
+const depositHash = await depositETH('0.1');
+console.log('L1 TX Hash:', depositHash);
+
 // Withdraw 0.1 ETH to L1
-const hash = await withdrawETH('0.1');
-console.log('L2 TX Hash:', hash);
+const withdrawHash = await withdrawETH('0.1');
+console.log('L2 TX Hash:', withdrawHash);
 
 // Track transaction status
-const tx = getTransaction(hash);
+const tx = getTransaction(withdrawHash);
 console.log('Status:', tx?.status);
 
-// Estimated withdrawal time (~7 days for OP Stack)
+// Poll status, then prove and finalize once ready (requires endpoints.l1RpcUrl)
+const status = await getWithdrawalStatus(withdrawHash);
+if (status === 'ready-to-prove') {
+  await proveWithdrawal(withdrawHash); // blocks until provable, can take hours
+} else if (status === 'ready-to-finalize') {
+  await finalizeWithdrawal(withdrawHash);
+}
+
+// Estimated challenge period (~7 days for OP Stack)
 const time = getEstimatedWithdrawalTime(); // 604800 seconds
 ```
 

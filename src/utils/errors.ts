@@ -97,6 +97,9 @@ export const ErrorCodes = {
   // Bridge
   BRIDGE_DEPOSIT_FAILED: 'BRIDGE_DEPOSIT_FAILED',
   BRIDGE_WITHDRAW_FAILED: 'BRIDGE_WITHDRAW_FAILED',
+  L1_RPC_NOT_CONFIGURED: 'L1_RPC_NOT_CONFIGURED',
+  L1_BRIDGE_CONTRACTS_NOT_CONFIGURED: 'L1_BRIDGE_CONTRACTS_NOT_CONFIGURED',
+  NO_WITHDRAWAL_IN_RECEIPT: 'NO_WITHDRAWAL_IN_RECEIPT',
 
   // Network
   FEATURE_UNAVAILABLE: 'FEATURE_UNAVAILABLE',
@@ -148,6 +151,12 @@ export const ErrorMessages = {
   BRIDGE_WITHDRAW_FAILED: 'Withdrawal failed.',
   ETH_WITHDRAW_FAILED: 'ETH withdrawal failed.',
   TOKEN_WITHDRAW_FAILED: 'Token withdrawal failed.',
+  L1_RPC_NOT_CONFIGURED:
+    'L1 RPC is not configured. Set config.endpoints.l1RpcUrl to use bridge deposits, proving and finalizing.',
+  L1_BRIDGE_CONTRACTS_NOT_CONFIGURED:
+    'L1 bridge contracts (OptimismPortal / DisputeGameFactory / L1StandardBridge) are not yet deployed on this network.',
+  NO_WITHDRAWAL_IN_RECEIPT:
+    'The transaction receipt contains no withdrawal. Pass the L2 transaction hash that initiated the withdrawal.',
 
   // Flashblocks
   FLASHBLOCKS_FAILED: 'Flashblocks transaction failed.',

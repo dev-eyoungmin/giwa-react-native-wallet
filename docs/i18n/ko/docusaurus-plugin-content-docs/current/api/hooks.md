@@ -178,26 +178,32 @@ interface AllowanceResult {
 
 ## useBridge
 
-L2→L1 Bridge 출금 Hook
+L1↔L2 Bridge Hook — 입금, 출금, 그리고 출금 증명(prove)/완료(finalize) 흐름
 
-:::info L1→L2 Deposit
-입금(L1→L2)은 공식 [GIWA Superbridge](https://superbridge.app)를 사용하세요. 이 SDK는 L2→L1 출금만 지원합니다.
-
-참고: [GIWA Bridge 문서](https://docs.giwa.io/tools/bridges)
+:::info L1 설정 필요
+입금(`depositETH`/`depositToken`)과 출금 시작 이후의 모든 단계(`getWithdrawalStatus`, `getTimeToProve`, `getTimeToFinalize`, `proveWithdrawal`, `finalizeWithdrawal`)는 `GiwaProvider`/`GiwaConfig`에 `endpoints.l1RpcUrl`이 설정되어 있어야 합니다 — SDK는 기본값을 제공하지 않습니다. `withdrawETH`/`withdrawToken`은 이것 없이도 동작합니다. 설정 방법과 전체 출금 생명주기는 [Bridge 가이드](/docs/guides/bridge)를 참고하세요.
 :::
 
 ```tsx
 import { useBridge } from 'giwa-react-native-wallet';
 
 const {
-  withdrawETH,       // (amount: string, to?: Address) => Promise<Hash>
-  withdrawToken,     // (l2TokenAddress: Address, amount: bigint, to?: Address) => Promise<Hash>
+  depositETH,             // (amount: string, to?: Address) => Promise<Hash>
+  depositToken,           // (l1TokenAddress: Address, l2TokenAddress: Address, amount: bigint, to?: Address) => Promise<Hash>
+  withdrawETH,            // (amount: string, to?: Address) => Promise<Hash>
+  withdrawToken,          // (l2TokenAddress: Address, amount: bigint, to?: Address) => Promise<Hash>
+  getWithdrawalStatus,    // (l2TxHash: Hash) => Promise<WithdrawalStatus>
+  getTimeToProve,         // (l2TxHash: Hash) => Promise<GetTimeToProveReturnType>
+  getTimeToFinalize,      // (l2TxHash: Hash) => Promise<GetTimeToFinalizeReturnType>
+  proveWithdrawal,        // (l2TxHash: Hash) => Promise<Hash>
+  finalizeWithdrawal,     // (l2TxHash: Hash) => Promise<Hash>
   getPendingTransactions, // () => BridgeTransaction[]
-  getTransaction,    // (hash: Hash) => BridgeTransaction | undefined
+  getTransaction,         // (hash: Hash) => BridgeTransaction | undefined
   getEstimatedWithdrawalTime, // () => number (seconds)
-  isLoading,         // boolean
-  isInitializing,    // boolean
-  error,             // Error | null
+  isL1Configured,         // boolean
+  isLoading,              // boolean
+  isInitializing,         // boolean
+  error,                  // Error | null
 } = useBridge();
 ```
 
@@ -206,27 +212,68 @@ const {
 ```tsx
 type Hash = `0x${string}`;
 
+type WithdrawalStatus =
+  | 'waiting-to-prove'
+  | 'ready-to-prove'
+  | 'waiting-to-finalize'
+  | 'ready-to-finalize'
+  | 'finalized';
+
 interface BridgeTransaction {
-  direction: 'withdraw';
+  direction: 'deposit' | 'withdraw';
   amount: bigint;
   token?: Address;
-  l2TxHash: string;
-  status: 'pending' | 'confirmed';
+  l1TxHash?: Hash;
+  l2TxHash?: Hash;
+  status: 'pending' | 'confirmed' | 'proved' | 'finalized' | 'failed';
 }
 ```
+
+### Returns
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `depositETH` | `(amount, to?) => Promise<Hash>` | ETH를 L1에서 L2로 입금. **L1** tx 해시 반환 |
+| `depositToken` | `(l1TokenAddress, l2TokenAddress, amount, to?) => Promise<Hash>` | ERC-20을 L1에서 L2로 입금(필요 시 자동 approve). **L1** tx 해시 반환 |
+| `withdrawETH` | `(amount, to?) => Promise<Hash>` | L1로의 ETH 출금 시작 |
+| `withdrawToken` | `(l2TokenAddress, amount, to?) => Promise<Hash>` | L1로의 ERC-20 출금 시작 |
+| `getWithdrawalStatus` | `(l2TxHash) => Promise<WithdrawalStatus>` | 출금의 현재 상태 |
+| `getTimeToProve` | `(l2TxHash) => Promise<GetTimeToProveReturnType>` | 논블로킹: 증명 가능해지기까지 남은 시간 |
+| `getTimeToFinalize` | `(l2TxHash) => Promise<GetTimeToFinalizeReturnType>` | 논블로킹: 완료 가능해지기까지 남은 시간 |
+| `proveWithdrawal` | `(l2TxHash) => Promise<Hash>` | L1에서 출금 증명. **증명 가능해질 때까지 블로킹**(몇 시간 소요 가능) |
+| `finalizeWithdrawal` | `(l2TxHash) => Promise<Hash>` | 증명된 출금을 L1에서 완료하여 자금 해제 |
+| `getPendingTransactions` | `() => BridgeTransaction[]` | 대기 중인 입금/출금 조회 |
+| `getTransaction` | `(hash) => BridgeTransaction \| undefined` | 해시로 트랜잭션 조회 |
+| `getEstimatedWithdrawalTime` | `() => number` | Challenge period 예상 시간(초) |
+| `isL1Configured` | `boolean` | `endpoints.l1RpcUrl` 설정 여부 |
+| `isLoading` | `boolean` | 로딩 상태 |
+| `isInitializing` | `boolean` | 브릿지 초기화 여부 |
+| `error` | `Error \| null` | 작업 실패 시 에러 |
 
 ### Usage Example
 
 ```tsx
+// 0.1 ETH를 L2로 입금 (endpoints.l1RpcUrl 필요)
+const depositHash = await depositETH('0.1');
+console.log('L1 TX Hash:', depositHash);
+
 // L1으로 0.1 ETH 출금
-const hash = await withdrawETH('0.1');
-console.log('L2 TX Hash:', hash);
+const withdrawHash = await withdrawETH('0.1');
+console.log('L2 TX Hash:', withdrawHash);
 
 // 트랜잭션 상태 추적
-const tx = getTransaction(hash);
+const tx = getTransaction(withdrawHash);
 console.log('Status:', tx?.status);
 
-// 예상 출금 시간 (~OP Stack의 경우 7일)
+// 상태를 폴링한 뒤 준비되면 증명하고 완료 (endpoints.l1RpcUrl 필요)
+const status = await getWithdrawalStatus(withdrawHash);
+if (status === 'ready-to-prove') {
+  await proveWithdrawal(withdrawHash); // 증명 가능해질 때까지 블로킹, 몇 시간 소요 가능
+} else if (status === 'ready-to-finalize') {
+  await finalizeWithdrawal(withdrawHash);
+}
+
+// 예상 challenge period (~OP Stack의 경우 7일)
 const time = getEstimatedWithdrawalTime(); // 604800 seconds
 ```
 

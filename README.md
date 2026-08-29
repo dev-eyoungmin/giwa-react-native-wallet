@@ -16,6 +16,7 @@ GIWA Chain SDK for React Native - Expo and React Native CLI compatible
 | **Balance Query** | `useBalance` | Check ETH and token balances |
 | **Transactions** | `useTransaction` | Send ETH transactions |
 | **Token Operations** | `useTokens` | ERC-20 token transfers and queries |
+| **Bridge** | `useBridge` | L1↔L2 ETH/ERC-20 deposits and withdrawals (initiate, status, prove, finalize); deposits/prove/finalize require `endpoints.l1RpcUrl` |
 | **Flashblocks** | `useFlashblocks` | ~200ms fast preconfirmation |
 | **GIWA ID (up.id)** | `useGiwaId` | up.id name resolution via on-chain UpnameRegistry |
 | **Dojang (EAS)** | `useDojang` | Verified Address / Balance / Code attestations (read-only) |
@@ -24,13 +25,7 @@ GIWA Chain SDK for React Native - Expo and React Native CLI compatible
 | **Biometric Auth** | `useBiometricAuth` | Face ID / Touch ID / Fingerprint |
 | **Secure Storage** | - | iOS Keychain / Android Keystore |
 
-### ⚠️ Partial
-
-| Feature | Hook | Description |
-|---------|------|-------------|
-| **Bridge** | `useBridge` | L2→L1 withdrawal initiation (deposit via [Superbridge](https://superbridge.app)); prove and finalize are not implemented |
-
-> `useNetworkInfo().getFeatureInfo('bridge')` reports `status: 'partial'` with a `reason` string explaining what is and isn't implemented.
+> Bridge operations work on GIWA Sepolia (testnet) only — GIWA mainnet has not launched, so every L1 bridge contract address is `ZERO_ADDRESS` there and every bridge call throws. See the [Bridge guide](https://dev-eyoungmin.github.io/giwa-react-native-wallet/docs/guides/bridge).
 
 ## Installation
 
@@ -211,15 +206,13 @@ function GiwaIdScreen() {
 | `useBalance`       | ETH balance queries                                       | ✅ |
 | `useTransaction`   | Send ETH transactions                                     | ✅ |
 | `useTokens`        | ERC-20 token operations                                   | ✅ |
-| `useBridge`        | L2→L1 withdrawal initiation (deposit via Superbridge)      | ⚠️ |
+| `useBridge`        | L1↔L2 deposits/withdrawals (initiate, status, prove, finalize) | ✅ |
 | `useFlashblocks`   | Fast preconfirmation transactions                         | ✅ |
 | `useGiwaId`        | GIWA ID (up.id) resolution                                | ✅ |
 | `useDojang`        | Attestation verification                                  | ✅ |
 | `useFaucet`        | Testnet faucet                                            | ✅ |
 | `useNetworkInfo`   | Network status and feature availability                   | ✅ |
 | `useBiometricAuth` | Biometric authentication (Face ID, Touch ID, Fingerprint) | ✅ |
-
-> ⚠️ = Partial. See `useNetworkInfo().getFeatureInfo('bridge')` for the reason.
 
 ### Configuration (All Optional)
 
@@ -252,6 +245,7 @@ You can override default network endpoints:
       flashblocksRpcUrl: 'https://my-flashblocks-rpc.example.com',
       flashblocksWsUrl: 'wss://my-flashblocks-ws.example.com',
       explorerUrl: 'https://my-explorer.example.com',
+      l1RpcUrl: 'https://my-ethereum-sepolia-rpc.example.com', // L1 (Ethereum) RPC - required for bridge deposits, proving and finalizing
     },
   }}
 >
@@ -268,6 +262,8 @@ function MyComponent() {
   // Use the resolved endpoints
 }
 ```
+
+> `l1RpcUrl` has no network default and isn't exposed via `useNetworkInfo()` — read it back with `useBridge().isL1Configured` or `GiwaClient.getL1RpcUrl()`. See the [Bridge guide](https://dev-eyoungmin.github.io/giwa-react-native-wallet/docs/guides/bridge).
 
 ### Custom Network
 
@@ -336,7 +332,7 @@ function NetworkStatus() {
 
 ### Network Warnings
 
-`getNetworkWarnings('testnet')` returns no warnings today — every testnet feature is either `available` (`giwaId`, `dojang`, `faucet`, `flashblocks`, `tokens`) or `partial` (`bridge`), and only `unavailable` features produce a warning.
+`getNetworkWarnings('testnet')` returns no warnings today — every testnet feature (`bridge`, `giwaId`, `dojang`, `faucet`, `flashblocks`, `tokens`) is `available`, and only `unavailable` features produce a warning.
 
 On mainnet, where several contracts are still TBD, the SDK logs warnings on init:
 
@@ -659,7 +655,7 @@ npm test -- --watch
 
 ### Verification (Live)
 
-`pnpm verify:live` runs `scripts/verify-live.ts` against live GIWA Sepolia — it exercises `GiwaClient`, `DojangManager`, and `GiwaIdManager` read paths (chain id, feature availability, contract addresses, up.id resolution, Dojang attestations) with no mocks.
+`pnpm verify:live` runs `scripts/verify-live.ts` against live GIWA Sepolia — it exercises `GiwaClient`, `DojangManager`, and `GiwaIdManager` read paths (chain id, feature availability, contract addresses, op-stack chain wiring, up.id resolution, Dojang attestations) with no mocks. It does not call `depositETH`/`depositToken`/`proveWithdrawal`/`finalizeWithdrawal` — those require funded L1 and L2 accounts and are verified manually instead.
 
 ```bash
 pnpm verify:live

@@ -9,6 +9,18 @@ import {
   type Account,
   type Transport,
 } from 'viem';
+import { mainnet, sepolia } from 'viem/chains';
+import {
+  chainConfig,
+  publicActionsL1,
+  publicActionsL2,
+  walletActionsL1,
+  walletActionsL2,
+  type PublicActionsL1,
+  type PublicActionsL2,
+  type WalletActionsL1,
+  type WalletActionsL2,
+} from 'viem/op-stack';
 import { GIWA_NETWORKS } from '../constants/networks';
 import {
   getContractAddresses as getDefaultContractAddresses,
@@ -94,6 +106,44 @@ export interface ResolvedEndpoints {
   flashblocksRpcUrl: string;
   flashblocksWsUrl: string;
   explorerUrl: string;
+  /** L1 (Ethereum) RPC URL. No network default; stays `undefined` when unset. */
+  l1RpcUrl?: string;
+}
+
+/**
+ * L2 (GIWA) public client, extended with viem's op-stack L2 public actions.
+ */
+export type GiwaL2PublicClient = PublicClient<Transport, Chain> &
+  PublicActionsL2<Chain, undefined>;
+
+/**
+ * L2 (GIWA) wallet client, extended with viem's op-stack L2 wallet actions.
+ */
+export type GiwaL2WalletClient = WalletClient<Transport, Chain, Account> &
+  WalletActionsL2<Chain, Account>;
+
+/**
+ * L1 (Ethereum) public client, extended with viem's op-stack L1 public actions.
+ * Used to read L2 output/dispute-game state and withdrawal status from L1.
+ */
+export type GiwaL1PublicClient = PublicClient<Transport, Chain> &
+  PublicActionsL1<Chain, undefined>;
+
+/**
+ * L1 (Ethereum) wallet client, extended with viem's op-stack L1 wallet actions.
+ * Used to deposit, prove and finalize withdrawals from L1.
+ */
+export type GiwaL1WalletClient = WalletClient<Transport, Chain, Account> &
+  WalletActionsL1<Chain, Account>;
+
+/**
+ * Resolve the L1 (Ethereum) chain definition for a given L1 chain id.
+ * Returns `null` for L1 chain ids the SDK doesn't ship a definition for.
+ */
+function resolveL1Chain(l1ChainId: number): Chain | null {
+  if (l1ChainId === sepolia.id) return sepolia;
+  if (l1ChainId === mainnet.id) return mainnet;
+  return null;
 }
 
 /**
@@ -114,13 +164,40 @@ function definedEntries<T extends object>(source?: Partial<T>): Partial<T> {
 /**
  * Custom GIWA Chain definition for viem, built from the resolved network
  * and endpoint configuration (after `customNetwork`/`endpoints` overrides).
+ *
+ * Spreads viem's op-stack `chainConfig` (formatters, serializers and L2
+ * predeploy contracts) and adds the L1 contract map — keyed by the L1 chain
+ * id — so viem's op-stack actions (`publicActionsL1`/`walletActionsL1`,
+ * `publicActionsL2`/`walletActionsL2`) can resolve L1 addresses from this
+ * chain object.
  */
 function createGiwaChain(
   network: GiwaNetwork,
   endpoints: ResolvedEndpoints,
-  multicall3: `0x${string}`
+  contracts: Pick<
+    ContractAddresses,
+    'optimismPortal' | 'disputeGameFactory' | 'l1StandardBridge' | 'multicall3'
+  >
 ): Chain {
+  const { optimismPortal, disputeGameFactory, l1StandardBridge, multicall3 } = contracts;
+  const l1ChainId = network.l1ChainId;
+
+  // L1 (OP Stack) contract addresses, keyed by the L1 chain id. This is the
+  // shape viem's op-stack actions expect on `targetChain.contracts.<name>`.
+  const opContracts: NonNullable<Chain['contracts']> = {
+    ...(optimismPortal !== ZERO_ADDRESS && {
+      portal: { [l1ChainId]: { address: optimismPortal } },
+    }),
+    ...(disputeGameFactory !== ZERO_ADDRESS && {
+      disputeGameFactory: { [l1ChainId]: { address: disputeGameFactory } },
+    }),
+    ...(l1StandardBridge !== ZERO_ADDRESS && {
+      l1StandardBridge: { [l1ChainId]: { address: l1StandardBridge } },
+    }),
+  };
+
   return {
+    ...chainConfig, // formatters + serializers + L2 predeploy contracts
     id: network.id,
     name: network.name,
     nativeCurrency: network.currency,
@@ -134,9 +211,12 @@ function createGiwaChain(
         url: endpoints.explorerUrl,
       },
     },
-    ...(multicall3 !== ZERO_ADDRESS && {
-      contracts: { multicall3: { address: multicall3 } },
-    }),
+    sourceId: l1ChainId,
+    contracts: {
+      ...chainConfig.contracts,
+      ...(multicall3 !== ZERO_ADDRESS && { multicall3: { address: multicall3 } }),
+      ...opContracts,
+    },
   };
 }
 
@@ -144,14 +224,17 @@ function createGiwaChain(
  * GIWA Client - viem based blockchain client
  */
 export class GiwaClient {
-  private publicClient: PublicClient<Transport, Chain>;
-  private walletClient: WalletClient<Transport, Chain, Account> | null = null;
+  private publicClient: GiwaL2PublicClient;
+  private walletClient: GiwaL2WalletClient | null = null;
   private chain: Chain;
   private network: NetworkType;
   private resolvedNetwork: GiwaNetwork;
   private endpoints: ResolvedEndpoints;
   private networkStatus: NetworkStatus;
   private customContracts?: CustomContracts;
+  private l1Chain: Chain | null;
+  private l1PublicClient: GiwaL1PublicClient | null = null;
+  private l1WalletClient: GiwaL1WalletClient | null = null;
 
   constructor(config: GiwaConfig = {}) {
     this.network = config.network || 'testnet';
@@ -173,6 +256,8 @@ export class GiwaClient {
       flashblocksWsUrl:
         config.endpoints?.flashblocksWsUrl || this.resolvedNetwork.flashblocksWsUrl,
       explorerUrl: config.endpoints?.explorerUrl || this.resolvedNetwork.explorerUrl,
+      // L1 (Ethereum) RPC URL. No network default: stays `undefined` when unset.
+      l1RpcUrl: config.endpoints?.l1RpcUrl,
     };
 
     // Validate custom endpoints for security. A custom URL can originate
@@ -191,6 +276,9 @@ export class GiwaClient {
     if (config.endpoints?.explorerUrl || config.customNetwork?.explorerUrl) {
       validateEndpointUrl(this.endpoints.explorerUrl, 'http');
     }
+    if (this.endpoints.l1RpcUrl) {
+      validateEndpointUrl(this.endpoints.l1RpcUrl, 'http');
+    }
 
     // Network status validation and warning output
     this.networkStatus = getNetworkStatus(this.network);
@@ -200,23 +288,36 @@ export class GiwaClient {
 
     // Build the viem chain from the resolved network + endpoints. Must run
     // after `this.customContracts` is set so `getContractAddresses()`
-    // (used for the multicall3 override) reflects any custom overrides.
+    // (used for the multicall3/portal/disputeGameFactory/l1StandardBridge
+    // overrides) reflects any custom overrides.
     this.chain = createGiwaChain(
       this.resolvedNetwork,
       this.endpoints,
-      this.getContractAddresses().multicall3
+      this.getContractAddresses()
     );
 
     this.publicClient = createPublicClient({
       chain: this.chain,
       transport: http(this.endpoints.rpcUrl),
-    });
+    }).extend(publicActionsL2());
+
+    // Resolve the L1 (Ethereum) chain and build the L1 public client when an
+    // `l1RpcUrl` was configured. There is no network default for `l1RpcUrl`,
+    // so this stays unset unless the caller opts in.
+    const l1Chain = resolveL1Chain(this.resolvedNetwork.l1ChainId);
+    this.l1Chain = l1Chain;
+    if (this.endpoints.l1RpcUrl && l1Chain) {
+      this.l1PublicClient = createPublicClient({
+        chain: l1Chain,
+        transport: http(this.endpoints.l1RpcUrl),
+      }).extend(publicActionsL1());
+    }
   }
 
   /**
    * Get the public client for read operations
    */
-  getPublicClient(): PublicClient<Transport, Chain> {
+  getPublicClient(): GiwaL2PublicClient {
     return this.publicClient;
   }
 
@@ -224,19 +325,28 @@ export class GiwaClient {
    * Get the wallet client for write operations
    * Must be set via setAccount first
    */
-  getWalletClient(): WalletClient<Transport, Chain, Account> | null {
+  getWalletClient(): GiwaL2WalletClient | null {
     return this.walletClient;
   }
 
   /**
-   * Set account for wallet operations
+   * Set account for wallet operations. Also builds the L1 wallet client
+   * when L1 support (`l1RpcUrl`) is configured.
    */
   setAccount(account: Account): void {
     this.walletClient = createWalletClient({
       account,
       chain: this.chain,
       transport: http(this.endpoints.rpcUrl),
-    });
+    }).extend(walletActionsL2());
+
+    if (this.endpoints.l1RpcUrl && this.l1Chain) {
+      this.l1WalletClient = createWalletClient({
+        account,
+        chain: this.l1Chain,
+        transport: http(this.endpoints.l1RpcUrl),
+      }).extend(walletActionsL1());
+    }
   }
 
   /**
@@ -244,6 +354,50 @@ export class GiwaClient {
    */
   clearAccount(): void {
     this.walletClient = null;
+    this.l1WalletClient = null;
+  }
+
+  /**
+   * Whether this client has L1 (Ethereum) support configured — i.e.
+   * `getL1PublicClient()` (and, once an account is set, `getL1WalletClient()`)
+   * will return a non-null client. Derived from the actual L1 public client
+   * rather than re-checking the raw config, so this can never disagree with
+   * what the L1 accessors return (e.g. a falsy `endpoints.l1RpcUrl` like `''`
+   * won't report support that doesn't exist).
+   */
+  hasL1Support(): boolean {
+    return this.l1PublicClient !== null;
+  }
+
+  /**
+   * Get the L1 (Ethereum) chain definition, or `null` if the L1 chain id is
+   * unknown to the SDK.
+   */
+  getL1Chain(): Chain | null {
+    return this.l1Chain;
+  }
+
+  /**
+   * Get the L1 public client for read operations, or `null` if `l1RpcUrl`
+   * was not configured.
+   */
+  getL1PublicClient(): GiwaL1PublicClient | null {
+    return this.l1PublicClient;
+  }
+
+  /**
+   * Get the L1 wallet client for write operations, or `null` if no account
+   * has been set via `setAccount` or `l1RpcUrl` was not configured.
+   */
+  getL1WalletClient(): GiwaL1WalletClient | null {
+    return this.l1WalletClient;
+  }
+
+  /**
+   * Get the configured L1 RPC URL, or `undefined` if not set.
+   */
+  getL1RpcUrl(): string | undefined {
+    return this.endpoints.l1RpcUrl;
   }
 
   /**

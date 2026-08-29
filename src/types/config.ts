@@ -16,6 +16,8 @@ export interface CustomEndpoints {
   flashblocksWsUrl?: string;
   /** Custom Block Explorer URL */
   explorerUrl?: string;
+  /** L1 (Ethereum) RPC URL. Required for bridge deposits, proving and finalizing withdrawals. The SDK ships no default: pick your own provider. */
+  l1RpcUrl?: string;
 }
 
 /**

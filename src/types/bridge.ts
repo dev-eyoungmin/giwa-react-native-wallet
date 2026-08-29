@@ -11,5 +11,16 @@ export interface BridgeTransaction {
   token?: Address;
   l1TxHash?: Hash;
   l2TxHash?: Hash;
-  status: 'pending' | 'confirmed' | 'finalized';
+  status: 'pending' | 'confirmed' | 'proved' | 'finalized' | 'failed';
 }
+
+/**
+ * Status of an L2 -> L1 withdrawal, as reported by viem's
+ * `getWithdrawalStatus` op-stack action.
+ */
+export type WithdrawalStatus =
+  | 'waiting-to-prove'
+  | 'ready-to-prove'
+  | 'waiting-to-finalize'
+  | 'ready-to-finalize'
+  | 'finalized';

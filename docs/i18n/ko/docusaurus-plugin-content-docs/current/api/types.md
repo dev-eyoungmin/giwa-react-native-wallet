@@ -11,41 +11,43 @@ GIWA SDK의 TypeScript 타입 정의입니다.
 ```tsx
 type NetworkType = 'testnet' | 'mainnet';
 
-interface NetworkInfo {
+interface GiwaNetwork {
+  id: number;
   name: string;
-  chainId: number;
   rpcUrl: string;
+  flashblocksRpcUrl: string;
+  flashblocksWsUrl: string;
   explorerUrl: string;
-  nativeCurrency: {
+  currency: {
     name: string;
     symbol: string;
     decimals: number;
   };
+  /** 이 네트워크가 정산되는 L1의 chain id (이더리움 Sepolia 11155111 / 이더리움 메인넷 1) */
+  l1ChainId: number;
 }
 
 // Network Constants
-const GIWA_NETWORKS: Record<NetworkType, NetworkInfo> = {
+const GIWA_NETWORKS: Record<NetworkType, GiwaNetwork> = {
   testnet: {
-    name: 'GIWA Testnet',
-    chainId: 91342,
-    rpcUrl: 'https://sepolia-rpc.giwa.io/',
+    id: 91342,
+    name: 'GIWA Sepolia',
+    rpcUrl: 'https://sepolia-rpc.giwa.io',
+    flashblocksRpcUrl: 'https://sepolia-rpc-flashblocks.giwa.io',
+    flashblocksWsUrl: 'wss://sepolia-rpc-flashblocks.giwa.io',
     explorerUrl: 'https://sepolia-explorer.giwa.io',
-    nativeCurrency: {
-      name: 'GIWA ETH',
-      symbol: 'ETH',
-      decimals: 18,
-    },
+    currency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
+    l1ChainId: 11155111, // 이더리움 Sepolia
   },
   mainnet: {
+    id: 0, // TBD - 메인넷 출시 시 업데이트 예정
     name: 'GIWA Mainnet',
-    chainId: -,
-    rpcUrl: -,
-    explorerUrl: -,
-    nativeCurrency: {
-      name: 'GIWA ETH',
-      symbol: 'ETH',
-      decimals: 18,
-    },
+    rpcUrl: '-',
+    flashblocksRpcUrl: '-', // TBD
+    flashblocksWsUrl: '-', // TBD
+    explorerUrl: '-',
+    currency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
+    l1ChainId: 1, // 이더리움 메인넷
   },
 };
 ```
@@ -126,46 +128,30 @@ interface AllowanceResult {
 ## Bridge
 
 ```tsx
-interface BridgeParams {
-  amount: string;
-  token: "ETH" | string;
+type BridgeDirection = "deposit" | "withdraw";
+
+interface BridgeTransaction {
+  direction: BridgeDirection;
+  amount: bigint;
+  token?: Address;
+  l1TxHash?: Hash;
+  l2TxHash?: Hash;
+  status: "pending" | "confirmed" | "proved" | "finalized" | "failed";
 }
 
-interface DepositResult {
-  l1TxHash: string;
-  estimatedTime: number;
-}
+/**
+ * viem의 `getWithdrawalStatus` op-stack 액션이 보고하는 L2 -> L1 출금 상태.
+ */
+type WithdrawalStatus =
+  | "waiting-to-prove"
+  | "ready-to-prove"
+  | "waiting-to-finalize"
+  | "ready-to-finalize"
+  | "finalized";
 
-interface WithdrawResult {
-  l2TxHash: string;
-  estimatedTime: number;
-}
-
-interface DepositStatus {
-  state: "pending" | "l1_confirmed" | "completed" | "failed";
-  l1TxHash: string;
-  l2TxHash?: string;
-  error?: string;
-}
-
-interface WithdrawStatus {
-  state:
-    | "pending"
-    | "waiting_for_proof"
-    | "ready_to_prove"
-    | "in_challenge"
-    | "ready_to_finalize"
-    | "completed";
-  l2TxHash: string;
-  l1TxHash?: string;
-  remainingTime?: number;
-  error?: string;
-}
-
-interface FeeEstimate {
-  l1GasFee: string;
-  l2GasFee: string;
-  totalFee: string;
+interface TransactionResult {
+  hash: Hash;
+  wait: () => Promise<TransactionReceipt>;
 }
 ```
 
@@ -389,6 +375,8 @@ interface CustomEndpoints {
   flashblocksWsUrl?: string;
   /** Block Explorer URL */
   explorerUrl?: string;
+  /** L1(이더리움) RPC URL. 브릿지 입금, 증명, 완료에 필요. SDK는 기본값을 제공하지 않으므로 직접 provider를 선택하세요. */
+  l1RpcUrl?: string;
 }
 
 interface GiwaConfig {

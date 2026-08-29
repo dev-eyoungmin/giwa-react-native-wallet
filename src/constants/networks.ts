@@ -13,6 +13,7 @@ export const GIWA_NETWORKS: Record<NetworkType, GiwaNetwork> = {
       symbol: "ETH",
       decimals: 18,
     },
+    l1ChainId: 11155111, // Ethereum Sepolia
   },
   mainnet: {
     id: 0, // TBD - will be updated when mainnet launches
@@ -26,6 +27,7 @@ export const GIWA_NETWORKS: Record<NetworkType, GiwaNetwork> = {
       symbol: "ETH",
       decimals: 18,
     },
+    l1ChainId: 1, // Ethereum mainnet
   },
 };
 

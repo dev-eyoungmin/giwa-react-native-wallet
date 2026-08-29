@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-08-29
+
+### Added
+
+- ETH and ERC-20 deposits (`BridgeManager.depositETH`/`depositToken`, `useBridge().depositETH`/`depositToken`), submitted via viem op-stack's `depositTransaction` against the `OptimismPortal`
+- Withdrawal status and time queries (`getWithdrawalStatus`, `getTimeToProve`, `getTimeToFinalize`) and prove/finalize (`proveWithdrawal`, `finalizeWithdrawal`) on `BridgeManager`/`useBridge`, via viem op-stack's `getWithdrawalStatus`/`getTimeToProve`/`getTimeToFinalize`/`waitToProve`/`proveWithdrawal`/`finalizeWithdrawal`
+- L1 (Ethereum) client support: `GiwaConfig.endpoints.l1RpcUrl`, `GiwaNetwork.l1ChainId`, and `GiwaClient.hasL1Support()`/`getL1Chain()`/`getL1PublicClient()`/`getL1WalletClient()`/`getL1RpcUrl()`
+- `useBridge().isL1Configured`
+- `L1_RPC_NOT_CONFIGURED` and `L1_BRIDGE_CONTRACTS_NOT_CONFIGURED` error codes
+
+### Changed
+
+- `getFeatureAvailability('bridge')` (and `useNetworkInfo().getFeatureInfo('bridge')`) now reports `status: 'available'` on testnet (was `'partial'`)
+- The GIWA viem chain now carries op-stack `chainConfig`, `sourceId` (the L1 chain id), and the L1 bridge contract addresses (`portal`, `disputeGameFactory`, `l1StandardBridge`), keyed by L1 chain id
+- `BridgeTransaction` adds `direction: 'deposit'`, `l1TxHash`, and `status: 'proved' | 'finalized'`
+- A reverted `withdrawETH`/`withdrawToken` now sets the tracked `BridgeTransaction.status` to `'failed'` (was left at `'pending'`, so a failed withdrawal never resolved for callers polling `getTransaction`)
+
+Deposits, and every withdrawal step past initiation, require `config.endpoints.l1RpcUrl` — the SDK ships no default L1 endpoint on purpose. Withdrawal initiation (`withdrawETH`/`withdrawToken`) works without it. See the [Bridge guide](https://dev-eyoungmin.github.io/giwa-react-native-wallet/docs/guides/bridge).
+
 ## [0.2.0] - 2026-08-29
 
 ### Breaking
