@@ -17,6 +17,7 @@ GIWA Chain을 위한 React Native SDK입니다. Expo와 React Native CLI 프로�
 | **잔액 조회** | `useBalance` | ETH 및 토큰 잔액 조회 |
 | **트랜잭션** | `useTransaction` | ETH 전송 |
 | **토큰 관리** | `useTokens` | ERC-20 토큰 전송 및 조회 |
+| **브릿지** | `useBridge` | L1↔L2 ETH/ERC-20 입금 및 출금(시작, 상태 확인, 증명, 완료); 입금/증명/완료는 `endpoints.l1RpcUrl`이 필요 |
 | **Flashblocks** | `useFlashblocks` | ~200ms 빠른 사전확인 |
 | **GIWA ID (up.id)** | `useGiwaId` | 온체인 UpnameRegistry를 통한 up.id 이름 해석 |
 | **Dojang (EAS)** | `useDojang` | 온체인 증명 서비스 |
@@ -25,13 +26,7 @@ GIWA Chain을 위한 React Native SDK입니다. Expo와 React Native CLI 프로�
 | **생체 인증** | `useBiometricAuth` | Face ID / Touch ID / 지문 인식 |
 | **보안 저장소** | - | iOS Keychain / Android Keystore |
 
-### ⚠️ 부분 지원
-
-| 기능 | Hook | 설명 |
-|------|------|------|
-| **브릿지** | `useBridge` | L2→L1 출금 시작(입금은 [Superbridge](https://superbridge.app) 이용); 증명(prove)과 완료(finalize)는 구현되어 있지 않음 |
-
-> `useNetworkInfo().getFeatureInfo('bridge')`는 구현되지 않은 부분을 설명하는 `reason`과 함께 `status: 'partial'`을 반환합니다.
+> 브릿지 기능은 GIWA Sepolia(테스트넷)에서만 동작합니다 — GIWA 메인넷은 아직 출시되지 않아 모든 L1 브릿지 컨트랙트 주소가 `ZERO_ADDRESS`이며, 모든 브릿지 호출이 실패합니다. [Bridge 가이드](/docs/guides/bridge)를 참고하세요.
 
 ## 네트워크 정보
 

@@ -20,6 +20,7 @@ const client = new GiwaClient({
     flashblocksRpcUrl: 'https://...', // Custom Flashblocks RPC
     flashblocksWsUrl: 'wss://...', // Custom Flashblocks WebSocket
     explorerUrl: 'https://...', // Custom Explorer URL
+    l1RpcUrl: 'https://...', // L1 (Ethereum) RPC URL - required for bridge deposits, proving and finalizing. No default is shipped.
   },
   customContracts: {
     eas: '0x...', // Override EAS address
@@ -67,6 +68,21 @@ client.isConnected(): Promise<boolean>
 
 // Contract addresses (network defaults merged with `customContracts`)
 client.getContractAddresses(): ContractAddresses
+
+// Whether L1 (Ethereum) support is configured (endpoints.l1RpcUrl)
+client.hasL1Support(): boolean
+
+// L1 (Ethereum) chain definition, or null if the L1 chain id is unknown to the SDK
+client.getL1Chain(): Chain | null
+
+// L1 public client for read operations, or null if l1RpcUrl was not configured
+client.getL1PublicClient(): GiwaL1PublicClient | null
+
+// L1 wallet client for write operations, or null if no account is set or l1RpcUrl was not configured
+client.getL1WalletClient(): GiwaL1WalletClient | null
+
+// Configured L1 RPC URL, or undefined if not set
+client.getL1RpcUrl(): string | undefined
 
 // Feature availability
 client.isFeatureAvailable(feature: FeatureName): boolean
@@ -170,48 +186,70 @@ tokenManager.allowance(
 
 ## BridgeManager
 
-L1↔L2 bridge management
+L1↔L2 bridge management: ETH/ERC-20 deposits, withdrawals, and the withdrawal prove/finalize flow (viem op-stack actions under the hood). See the [Bridge guide](/docs/guides/bridge) for the full lifecycle and `endpoints.l1RpcUrl` setup.
 
 ```tsx
 import { BridgeManager } from 'giwa-react-native-wallet';
 
-const bridgeManager = new BridgeManager(l1Client, l2Client, walletClient);
+const bridgeManager = new BridgeManager(client); // GiwaClient
 ```
 
 ### Methods
 
 ```tsx
-// L1 -> L2 deposit
-bridgeManager.deposit(params: {
-  amount: bigint;
-  token: 'ETH' | string;
-}): Promise<{
-  l1TxHash: string;
-  estimatedTime: number;
-}>
+// L1 -> L2 ETH deposit. Returns the L1 tx hash; wait() resolves once the L1 tx confirms
+// (not once funds land on L2). Requires client.hasL1Support().
+bridgeManager.depositETH(amount: string, to?: Address): Promise<TransactionResult>
 
-// L2 -> L1 withdrawal
-bridgeManager.withdraw(params: {
-  amount: bigint;
-  token: 'ETH' | string;
-}): Promise<{
-  l2TxHash: string;
-  estimatedTime: number;
-}>
+// L1 -> L2 ERC-20 deposit. Auto-approves the L1StandardBridge allowance if insufficient.
+bridgeManager.depositToken(
+  l1TokenAddress: Address,
+  l2TokenAddress: Address,
+  amount: bigint,
+  to?: Address
+): Promise<TransactionResult>
 
-// Get deposit status
-bridgeManager.getDepositStatus(l1TxHash: string): Promise<DepositStatus>
+// L2 -> L1 ETH withdrawal (initiation only). Works without an L1 client.
+bridgeManager.withdrawETH(amount: string, to?: Address): Promise<TransactionResult>
 
-// Get withdrawal status
-bridgeManager.getWithdrawStatus(l2TxHash: string): Promise<WithdrawStatus>
+// L2 -> L1 ERC-20 withdrawal (initiation only). Works without an L1 client.
+bridgeManager.withdrawToken(
+  l2TokenAddress: Address,
+  amount: bigint,
+  to?: Address
+): Promise<TransactionResult>
 
-// Estimate fees
-bridgeManager.estimateFees(params: {
-  direction: 'deposit' | 'withdraw';
-  amount: bigint;
-  token: 'ETH' | string;
-}): Promise<FeeEstimate>
+// Current status of a withdrawal. Requires client.hasL1Support().
+bridgeManager.getWithdrawalStatus(l2TxHash: Hash): Promise<WithdrawalStatus>
+
+// Non-blocking: time until the withdrawal is provable.
+bridgeManager.getTimeToProve(l2TxHash: Hash): Promise<GetTimeToProveReturnType>
+
+// Non-blocking: time until a proved withdrawal is finalizable.
+bridgeManager.getTimeToFinalize(l2TxHash: Hash): Promise<GetTimeToFinalizeReturnType>
+
+// Prove a withdrawal on L1. BLOCKS until provable (can take hours) - waits for
+// the L2 output/dispute game covering the withdrawal's block to land on L1.
+bridgeManager.proveWithdrawal(l2TxHash: Hash): Promise<TransactionResult>
+
+// Finalize a proved withdrawal on L1, releasing the funds. Does NOT wait for
+// the ~7-day challenge period - callers must confirm readiness first.
+bridgeManager.finalizeWithdrawal(l2TxHash: Hash): Promise<TransactionResult>
+
+// Locally tracked deposits/withdrawals (in-memory, per BridgeManager instance)
+bridgeManager.getPendingTransactions(): BridgeTransaction[]
+bridgeManager.getTransaction(hash: Hash): BridgeTransaction | undefined
+bridgeManager.clearPendingTransactions(): void
+
+// Challenge period estimate in seconds (fixed: 7 * 24 * 60 * 60)
+bridgeManager.getEstimatedWithdrawalTime(): number
 ```
+
+`TransactionResult` is `{ hash: Hash; wait: () => Promise<TransactionReceipt> }`. For `depositETH`/`depositToken`/`proveWithdrawal`/`finalizeWithdrawal`, `hash` and the receipt `wait()` resolves are **L1** transactions; for `withdrawETH`/`withdrawToken` they are **L2**.
+
+:::note L1 requirements
+`depositETH`, `depositToken`, `getWithdrawalStatus`, `getTimeToProve`, `getTimeToFinalize`, `proveWithdrawal`, and `finalizeWithdrawal` all require `endpoints.l1RpcUrl` to be configured (`client.hasL1Support()`), and throw `GiwaError` (`L1_RPC_NOT_CONFIGURED`) otherwise. Each of these also requires the specific L1 bridge contracts it calls to be deployed (not `ZERO_ADDRESS`) on the selected network, throwing `GiwaError` (`L1_BRIDGE_CONTRACTS_NOT_CONFIGURED`, naming the missing contract(s)) otherwise — on GIWA mainnet (not launched), every L1 bridge contract is `ZERO_ADDRESS`, so all of these throw. `withdrawETH`/`withdrawToken` need only the L2 wallet client and work without any L1 configuration.
+:::
 
 ---
 

@@ -369,6 +369,12 @@ import { ErrorCodes } from 'giwa-react-native-wallet';
 |------|-------------|
 | `BRIDGE_DEPOSIT_FAILED` | Bridge deposit failed |
 | `BRIDGE_WITHDRAW_FAILED` | Bridge withdrawal failed |
+| `L1_RPC_NOT_CONFIGURED` | `endpoints.l1RpcUrl` was not set. Required for deposits, and for every withdrawal step past initiation (`getWithdrawalStatus`, `getTimeToProve`, `getTimeToFinalize`, `proveWithdrawal`, `finalizeWithdrawal`) |
+| `L1_BRIDGE_CONTRACTS_NOT_CONFIGURED` | The L1 bridge contract(s) a bridge method calls (`optimismPortal` / `disputeGameFactory` / `l1StandardBridge`) are `ZERO_ADDRESS` on the selected network |
+
+:::caution GIWA Mainnet Not Launched
+GIWA mainnet has not launched: every L1 bridge contract address is `ZERO_ADDRESS` on `network: 'mainnet'`, so every bridge operation that touches L1 throws `L1_BRIDGE_CONTRACTS_NOT_CONFIGURED` there. Bridge operations work on GIWA Sepolia (`network: 'testnet'`) only. See the [Bridge guide](/docs/guides/bridge).
+:::
 
 ---
 

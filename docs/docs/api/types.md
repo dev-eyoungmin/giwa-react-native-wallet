@@ -15,41 +15,43 @@ TypeScript type definitions for GIWA SDK.
 ```tsx
 type NetworkType = 'testnet' | 'mainnet';  // mainnet: 🚧 Under Development
 
-interface NetworkInfo {
+interface GiwaNetwork {
+  id: number;
   name: string;
-  chainId: number;
   rpcUrl: string;
+  flashblocksRpcUrl: string;
+  flashblocksWsUrl: string;
   explorerUrl: string;
-  nativeCurrency: {
+  currency: {
     name: string;
     symbol: string;
     decimals: number;
   };
+  /** Chain id of the L1 this network settles to (Ethereum Sepolia 11155111 / Ethereum mainnet 1) */
+  l1ChainId: number;
 }
 
 // Network Constants
-const GIWA_NETWORKS: Record<NetworkType, NetworkInfo> = {
+const GIWA_NETWORKS: Record<NetworkType, GiwaNetwork> = {
   testnet: {
-    name: 'GIWA Testnet',
-    chainId: 91342,
-    rpcUrl: 'https://sepolia-rpc.giwa.io/',
+    id: 91342,
+    name: 'GIWA Sepolia',
+    rpcUrl: 'https://sepolia-rpc.giwa.io',
+    flashblocksRpcUrl: 'https://sepolia-rpc-flashblocks.giwa.io',
+    flashblocksWsUrl: 'wss://sepolia-rpc-flashblocks.giwa.io',
     explorerUrl: 'https://sepolia-explorer.giwa.io',
-    nativeCurrency: {
-      name: 'GIWA ETH',
-      symbol: 'ETH',
-      decimals: 18,
-    },
+    currency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
+    l1ChainId: 11155111, // Ethereum Sepolia
   },
   mainnet: {
+    id: 0, // TBD - will be updated when mainnet launches
     name: 'GIWA Mainnet',
-    chainId: -,
-    rpcUrl: -,
-    explorerUrl: -,
-    nativeCurrency: {
-      name: 'GIWA ETH',
-      symbol: 'ETH',
-      decimals: -,
-    },
+    rpcUrl: '-',
+    flashblocksRpcUrl: '-', // TBD
+    flashblocksWsUrl: '-', // TBD
+    explorerUrl: '-',
+    currency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
+    l1ChainId: 1, // Ethereum mainnet
   },
 };
 ```
@@ -130,46 +132,31 @@ interface AllowanceResult {
 ## Bridge
 
 ```tsx
-interface BridgeParams {
-  amount: string;
-  token: "ETH" | string;
+type BridgeDirection = "deposit" | "withdraw";
+
+interface BridgeTransaction {
+  direction: BridgeDirection;
+  amount: bigint;
+  token?: Address;
+  l1TxHash?: Hash;
+  l2TxHash?: Hash;
+  status: "pending" | "confirmed" | "proved" | "finalized" | "failed";
 }
 
-interface DepositResult {
-  l1TxHash: string;
-  estimatedTime: number;
-}
+/**
+ * Status of an L2 -> L1 withdrawal, as reported by viem's
+ * `getWithdrawalStatus` op-stack action.
+ */
+type WithdrawalStatus =
+  | "waiting-to-prove"
+  | "ready-to-prove"
+  | "waiting-to-finalize"
+  | "ready-to-finalize"
+  | "finalized";
 
-interface WithdrawResult {
-  l2TxHash: string;
-  estimatedTime: number;
-}
-
-interface DepositStatus {
-  state: "pending" | "l1_confirmed" | "completed" | "failed";
-  l1TxHash: string;
-  l2TxHash?: string;
-  error?: string;
-}
-
-interface WithdrawStatus {
-  state:
-    | "pending"
-    | "waiting_for_proof"
-    | "ready_to_prove"
-    | "in_challenge"
-    | "ready_to_finalize"
-    | "completed";
-  l2TxHash: string;
-  l1TxHash?: string;
-  remainingTime?: number;
-  error?: string;
-}
-
-interface FeeEstimate {
-  l1GasFee: string;
-  l2GasFee: string;
-  totalFee: string;
+interface TransactionResult {
+  hash: Hash;
+  wait: () => Promise<TransactionReceipt>;
 }
 ```
 
@@ -421,6 +408,8 @@ interface CustomEndpoints {
   flashblocksWsUrl?: string;
   /** Block Explorer URL */
   explorerUrl?: string;
+  /** L1 (Ethereum) RPC URL. Required for bridge deposits, proving and finalizing withdrawals. The SDK ships no default: pick your own provider. */
+  l1RpcUrl?: string;
 }
 
 interface GiwaConfig {

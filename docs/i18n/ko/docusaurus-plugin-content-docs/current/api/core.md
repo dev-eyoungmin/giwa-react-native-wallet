@@ -20,6 +20,7 @@ const client = new GiwaClient({
     flashblocksRpcUrl: 'https://...', // Custom Flashblocks RPC
     flashblocksWsUrl: 'wss://...', // Custom Flashblocks WebSocket
     explorerUrl: 'https://...', // Custom Explorer URL
+    l1RpcUrl: 'https://...', // L1(이더리움) RPC URL - 브릿지 입금, 증명, 완료에 필요. 기본값 없음.
   },
   customContracts: {
     eas: '0x...', // Override EAS address
@@ -67,6 +68,21 @@ client.isConnected(): Promise<boolean>
 
 // Contract addresses (network defaults merged with `customContracts`)
 client.getContractAddresses(): ContractAddresses
+
+// L1(이더리움) 지원이 설정되어 있는지 여부 (endpoints.l1RpcUrl)
+client.hasL1Support(): boolean
+
+// L1(이더리움) 체인 정의, SDK가 모르는 L1 chain id면 null
+client.getL1Chain(): Chain | null
+
+// 읽기 전용 L1 public client, l1RpcUrl이 설정되지 않았으면 null
+client.getL1PublicClient(): GiwaL1PublicClient | null
+
+// 쓰기용 L1 wallet client, 계정이 설정되지 않았거나 l1RpcUrl이 없으면 null
+client.getL1WalletClient(): GiwaL1WalletClient | null
+
+// 설정된 L1 RPC URL, 없으면 undefined
+client.getL1RpcUrl(): string | undefined
 
 // Feature availability
 client.isFeatureAvailable(feature: FeatureName): boolean
@@ -170,48 +186,70 @@ tokenManager.allowance(
 
 ## BridgeManager
 
-L1↔L2 브릿지 관리
+L1↔L2 브릿지 관리: ETH/ERC-20 입금, 출금, 출금 증명(prove)/완료(finalize) 흐름(내부적으로 viem op-stack 액션 사용). 전체 생명주기와 `endpoints.l1RpcUrl` 설정은 [Bridge 가이드](/docs/guides/bridge)를 참고하세요.
 
 ```tsx
 import { BridgeManager } from 'giwa-react-native-wallet';
 
-const bridgeManager = new BridgeManager(l1Client, l2Client, walletClient);
+const bridgeManager = new BridgeManager(client); // GiwaClient
 ```
 
 ### Methods
 
 ```tsx
-// L1 -> L2 deposit
-bridgeManager.deposit(params: {
-  amount: bigint;
-  token: 'ETH' | string;
-}): Promise<{
-  l1TxHash: string;
-  estimatedTime: number;
-}>
+// L1 -> L2 ETH 입금. L1 tx 해시를 반환하며, wait()는 L1 트랜잭션이 확인될 때
+// 완료됩니다(자산이 L2에 도착할 때가 아님). client.hasL1Support()가 필요합니다.
+bridgeManager.depositETH(amount: string, to?: Address): Promise<TransactionResult>
 
-// L2 -> L1 withdrawal
-bridgeManager.withdraw(params: {
-  amount: bigint;
-  token: 'ETH' | string;
-}): Promise<{
-  l2TxHash: string;
-  estimatedTime: number;
-}>
+// L1 -> L2 ERC-20 입금. allowance가 부족하면 L1StandardBridge allowance를 자동 승인합니다.
+bridgeManager.depositToken(
+  l1TokenAddress: Address,
+  l2TokenAddress: Address,
+  amount: bigint,
+  to?: Address
+): Promise<TransactionResult>
 
-// Get deposit status
-bridgeManager.getDepositStatus(l1TxHash: string): Promise<DepositStatus>
+// L2 -> L1 ETH 출금(시작만). L1 클라이언트 없이도 동작합니다.
+bridgeManager.withdrawETH(amount: string, to?: Address): Promise<TransactionResult>
 
-// Get withdrawal status
-bridgeManager.getWithdrawStatus(l2TxHash: string): Promise<WithdrawStatus>
+// L2 -> L1 ERC-20 출금(시작만). L1 클라이언트 없이도 동작합니다.
+bridgeManager.withdrawToken(
+  l2TokenAddress: Address,
+  amount: bigint,
+  to?: Address
+): Promise<TransactionResult>
 
-// Estimate fees
-bridgeManager.estimateFees(params: {
-  direction: 'deposit' | 'withdraw';
-  amount: bigint;
-  token: 'ETH' | string;
-}): Promise<FeeEstimate>
+// 출금의 현재 상태. client.hasL1Support()가 필요합니다.
+bridgeManager.getWithdrawalStatus(l2TxHash: Hash): Promise<WithdrawalStatus>
+
+// 논블로킹: 증명 가능해지기까지 남은 시간.
+bridgeManager.getTimeToProve(l2TxHash: Hash): Promise<GetTimeToProveReturnType>
+
+// 논블로킹: 증명된 출금이 완료 가능해지기까지 남은 시간.
+bridgeManager.getTimeToFinalize(l2TxHash: Hash): Promise<GetTimeToFinalizeReturnType>
+
+// L1에서 출금 증명. 증명 가능해질 때까지 **블로킹**됩니다(몇 시간 소요 가능) - 출금의
+// 블록을 커버하는 L2 output/dispute game이 L1에 반영될 때까지 기다립니다.
+bridgeManager.proveWithdrawal(l2TxHash: Hash): Promise<TransactionResult>
+
+// 증명된 출금을 L1에서 완료하여 자금을 해제합니다. 약 7일의 challenge period를
+// 기다리지 않으므로, 호출자가 먼저 준비 상태를 확인해야 합니다.
+bridgeManager.finalizeWithdrawal(l2TxHash: Hash): Promise<TransactionResult>
+
+// 로컬에서 추적되는 입금/출금 (BridgeManager 인스턴스별 인메모리)
+bridgeManager.getPendingTransactions(): BridgeTransaction[]
+bridgeManager.getTransaction(hash: Hash): BridgeTransaction | undefined
+bridgeManager.clearPendingTransactions(): void
+
+// challenge period 예상 시간(초) (고정값: 7 * 24 * 60 * 60)
+bridgeManager.getEstimatedWithdrawalTime(): number
 ```
+
+`TransactionResult`는 `{ hash: Hash; wait: () => Promise<TransactionReceipt> }`입니다. `depositETH`/`depositToken`/`proveWithdrawal`/`finalizeWithdrawal`의 `hash`와 `wait()`가 반환하는 영수증은 **L1** 트랜잭션이고, `withdrawETH`/`withdrawToken`은 **L2** 트랜잭션입니다.
+
+:::note L1 요구 사항
+`depositETH`, `depositToken`, `getWithdrawalStatus`, `getTimeToProve`, `getTimeToFinalize`, `proveWithdrawal`, `finalizeWithdrawal`은 모두 `endpoints.l1RpcUrl` 설정(`client.hasL1Support()`)이 필요하며, 그렇지 않으면 `GiwaError`(`L1_RPC_NOT_CONFIGURED`)를 던집니다. 각 메서드는 자신이 호출하는 L1 브릿지 컨트랙트가 해당 네트워크에 배포되어 있어야 하며(`ZERO_ADDRESS`가 아니어야 함), 그렇지 않으면 `GiwaError`(`L1_BRIDGE_CONTRACTS_NOT_CONFIGURED`, 누락된 컨트랙트를 명시)를 던집니다 — GIWA 메인넷(아직 미출시)에서는 모든 L1 브릿지 컨트랙트가 `ZERO_ADDRESS`이므로 위 메서드가 모두 실패합니다. `withdrawETH`/`withdrawToken`은 L2 지갑 클라이언트만 필요하며 L1 설정 없이도 동작합니다.
+:::
 
 ---
 
