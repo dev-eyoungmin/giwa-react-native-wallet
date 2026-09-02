@@ -4,6 +4,8 @@ import { renderHook, act } from '@testing-library/react';
 import type { Address, Hash } from 'viem';
 import type { GetTimeToFinalizeReturnType, GetTimeToProveReturnType } from 'viem/op-stack';
 import type { BridgeTransaction, WithdrawalStatus } from '../types';
+import type { GiwaClient } from '../core/GiwaClient';
+import type { BridgeManager } from '../core/BridgeManager';
 
 // `../providers/GiwaProvider` transitively imports `react-native` (via
 // AdapterFactory), which ships Flow-typed source that cannot load under
@@ -46,11 +48,24 @@ function createMockBridgeManager() {
 
 type MockBridgeManager = ReturnType<typeof createMockBridgeManager>;
 
+// Compile-time guard: every method the hook delegates to must keep existing on
+// the real BridgeManager, with a compatible signature. A rename on either side
+// fails the type-check instead of silently passing here.
+type BridgeManagerContract = Pick<BridgeManager, keyof MockBridgeManager>;
+const _mockMatchesBridgeManager: BridgeManagerContract = createMockBridgeManager();
+void _mockMatchesBridgeManager;
+
 function createManagers(bridgeManager: MockBridgeManager, hasL1Support = true): ManagersReturn {
-  return {
-    client: { hasL1Support: vi.fn(() => hasL1Support) },
-    bridgeManager,
-  } as unknown as ManagersReturn;
+  // Annotated with the real client's surface rather than cast straight to
+  // `ManagersReturn`: the outer double-cast below has to stay (the fixture
+  // deliberately omits the managers `useBridge` never touches), and it would
+  // otherwise swallow a rename or signature change on `hasL1Support`, leaving
+  // these tests green while `useBridge` broke at runtime.
+  const client: Pick<GiwaClient, 'hasL1Support'> = {
+    hasL1Support: vi.fn(() => hasL1Support),
+  };
+
+  return { client, bridgeManager } as unknown as ManagersReturn;
 }
 
 const READY_STATE = {

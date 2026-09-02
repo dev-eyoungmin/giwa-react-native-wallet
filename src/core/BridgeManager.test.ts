@@ -771,6 +771,7 @@ describe('BridgeManager', () => {
 
       const err = await captureError(manager.getWithdrawalStatus(L2_TX_HASH));
       assertGiwaError(err);
+      expect(err.code).toBe(ErrorCodes.L1_BRIDGE_CONTRACTS_NOT_CONFIGURED);
       expect(err.message).toContain('disputeGameFactory');
       expect(l1Public.getWithdrawalStatus).not.toHaveBeenCalled();
     });
