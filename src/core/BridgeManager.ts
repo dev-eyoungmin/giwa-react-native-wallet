@@ -552,6 +552,12 @@ export class BridgeManager {
 
     const receipt = await publicClientL2.getTransactionReceipt({ hash: l2TxHash });
 
+    // Checked up front so a wrong hash fails immediately rather than after
+    // `waitToProve` has blocked for hours, and so all three receipt-reading
+    // methods report the same documented error instead of viem's
+    // `ReceiptContainsNoWithdrawalsError` leaking out of this one.
+    this.requireWithdrawal(receipt);
+
     // Blocks until the withdrawal's L2 output/dispute game is available on L1.
     const { output, withdrawal } = await publicClientL1.waitToProve({
       receipt,

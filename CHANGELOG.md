@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-09-02
+
+### Fixed
+
+- `proveWithdrawal` now validates the L2 receipt up front and throws the documented `NO_WITHDRAWAL_IN_RECEIPT`, like `getTimeToFinalize` and `finalizeWithdrawal`. It previously let viem's `ReceiptContainsNoWithdrawalsError` surface instead — and only after `waitToProve` had already blocked, which can take hours, so a mistyped hash now fails immediately
+
+### Added
+
+- Unit test suite (`vitest`): 78 tests covering `BridgeManager` and `useBridge`. `pnpm test` / `pnpm test:watch`; `pnpm type-check` now type-checks test files too
+
 ## [0.3.0] - 2026-08-29
 
 ### Added
