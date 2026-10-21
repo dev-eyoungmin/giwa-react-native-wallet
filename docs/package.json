@@ -54,7 +54,7 @@
       "node-forge": "^1.4.0",
       "picomatch@2": "^2.3.2",
       "lodash": "^4.17.23",
-      "follow-redirects": "^1.16.0",
+      "follow-redirects": "^1.16.1",
       "postcss@8": "^8.5.23",
       "webpack-dev-server@5": "^5.2.6",
       "ws@7": "^7.5.11",
