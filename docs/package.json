@@ -62,7 +62,7 @@
       "uuid@8": "^8.3.2",
       "shell-quote": "^1.9.0",
       "joi": "^17.13.4",
-      "launch-editor": "^2.14.1",
+      "launch-editor": "^2.14.2",
       "http-proxy-middleware@2": "^2.0.10",
       "js-yaml@3": "^3.15.1",
       "js-yaml@4": "^4.3.1",
